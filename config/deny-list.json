@@ -1,0 +1,4 @@
+{
+  "$comment": "Extra field phrases Filler must never fill, on top of the hard-core list in packages/core/src/policy/deny.ts (which cannot be removed). Phrases match whole words on the normalised label, name, id and placeholder.",
+  "extraPatterns": []
+}

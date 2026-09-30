@@ -1,0 +1,181 @@
+/**
+ * Zod schemas for every record that crosses a boundary (storage, messaging,
+ * AI I/O). Types are inferred from the schemas, so there is one definition.
+ * See ARCHITECTURE §7.
+ */
+import { z } from 'zod';
+import { SENSITIVITIES, isValidFactKey } from './keys';
+
+const isoDate = z.iso.datetime({ offset: true });
+const id = z.string().min(1).max(128);
+
+export const SensitivitySchema = z.enum(SENSITIVITIES);
+
+export const FactKeySchema = z
+  .string()
+  .refine(isValidFactKey, { message: 'Not a canonical or custom.* fact key' });
+
+/** A single fact value: text, or a list of strings (e.g. skills). */
+export const FactValueSchema = z.union([
+  z.string().max(20_000),
+  z.array(z.string().max(2_000)).max(200),
+]);
+export type FactValue = z.infer<typeof FactValueSchema>;
+
+export const FactSchema = z.object({
+  key: FactKeySchema,
+  value: FactValueSchema,
+  sensitivity: SensitivitySchema,
+  source: z.enum(['user', 'resume_import', 'ai_suggested_approved']),
+  /** Site the fact was first learned on, if it was learned from a form. */
+  learnedOn: z.string().max(253).optional(),
+  updatedAt: isoDate,
+});
+export type Fact = z.infer<typeof FactSchema>;
+
+export const DocumentRecordSchema = z.object({
+  id,
+  type: z.enum(['resume', 'portfolio', 'bio', 'other']),
+  name: z.string().max(255),
+  text: z.string().max(200_000),
+  parsedFactKeys: z.array(FactKeySchema),
+  createdAt: isoDate,
+});
+export type DocumentRecord = z.infer<typeof DocumentRecordSchema>;
+
+export const FieldMemorySchema = z.object({
+  signature: z.string().regex(/^[0-9a-f]{64}$/),
+  site: z.string().min(1).max(253),
+  canonicalKey: FactKeySchema.optional(),
+  /** Pointer to the Answer used last time, for open-ended fields. */
+  lastAnswerId: id.optional(),
+  timesUsed: z.number().int().nonnegative(),
+  updatedAt: isoDate,
+});
+export type FieldMemory = z.infer<typeof FieldMemorySchema>;
+
+export const AnswerSchema = z.object({
+  id,
+  questionText: z.string().min(1).max(2_000),
+  platform: z.string().max(253),
+  goal: z.string().max(2_000),
+  value: z.string().max(20_000),
+  approvedAt: isoDate,
+});
+export type Answer = z.infer<typeof AnswerSchema>;
+
+export const FIELD_KINDS = ['fact', 'open_ended', 'choice', 'skip', 'denied'] as const;
+export const FieldKindSchema = z.enum(FIELD_KINDS);
+export type FieldKind = z.infer<typeof FieldKindSchema>;
+
+export const LabelSourceSchema = z.enum([
+  'label-for',
+  'label-wrap',
+  'aria',
+  'container',
+  'proximity',
+  'placeholder',
+  'name',
+  'vision',
+]);
+export type LabelSource = z.infer<typeof LabelSourceSchema>;
+
+export const FieldOptionSchema = z.object({
+  value: z.string().max(2_000),
+  text: z.string().max(2_000),
+});
+export type FieldOption = z.infer<typeof FieldOptionSchema>;
+
+export const BBoxSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number().nonnegative(),
+  height: z.number().nonnegative(),
+});
+export type BBox = z.infer<typeof BBoxSchema>;
+
+export const FieldDescriptorSchema = z.object({
+  id,
+  frameId: z.number().int().nonnegative(),
+  selector: z.string().max(2_000),
+  tag: z.string().max(64),
+  inputType: z.string().max(64),
+  name: z.string().max(512).optional(),
+  domId: z.string().max(512).optional(),
+  autocomplete: z.string().max(256).optional(),
+  label: z.string().max(2_000),
+  labelSource: LabelSourceSchema,
+  placeholder: z.string().max(2_000).optional(),
+  helpText: z.string().max(4_000).optional(),
+  sectionHeading: z.string().max(2_000).optional(),
+  options: z.array(FieldOptionSchema).max(1_000).optional(),
+  /** True for checkbox groups and multi-selects. */
+  multiple: z.boolean().optional(),
+  required: z.boolean(),
+  maxLength: z.number().int().positive().optional(),
+  pattern: z.string().max(1_000).optional(),
+  currentValue: z.union([z.string(), z.array(z.string())]).optional(),
+  isVisible: z.boolean(),
+  isDisabled: z.boolean(),
+  bbox: BBoxSchema.optional(),
+  signature: z.string().regex(/^[0-9a-f]{64}$/),
+});
+export type FieldDescriptor = z.infer<typeof FieldDescriptorSchema>;
+
+export const PlanSourceSchema = z.enum(['vault', 'memory', 'ai', 'user']);
+export type PlanSource = z.infer<typeof PlanSourceSchema>;
+
+export const PlanStatusSchema = z.enum([
+  'pending',
+  'approved',
+  'edited',
+  'skipped',
+  'filled',
+  'failed',
+]);
+export type PlanStatus = z.infer<typeof PlanStatusSchema>;
+
+export const PlanItemSchema = z.object({
+  fieldId: id,
+  kind: FieldKindSchema,
+  canonicalKey: FactKeySchema.optional(),
+  value: FactValueSchema.optional(),
+  source: PlanSourceSchema.optional(),
+  confidence: z.number().min(0).max(1),
+  status: PlanStatusSchema,
+  /** Plain-language reason shown to the user (why this value, why skipped, why failed). */
+  reason: z.string().max(1_000),
+  /** Set when Filler must ask the user before this field can be filled. */
+  question: z.string().max(1_000).optional(),
+});
+export type PlanItem = z.infer<typeof PlanItemSchema>;
+
+export const GoalSchema = z.object({
+  text: z.string().min(1).max(2_000),
+  platform: z.string().max(253).optional(),
+  role: z.string().max(200).optional(),
+  tone: z.string().max(100).optional(),
+  targetAudience: z.string().max(500).optional(),
+  language: z.string().max(50).optional(),
+});
+export type Goal = z.infer<typeof GoalSchema>;
+
+export const PageSnapshotSchema = z.object({
+  url: z.string().url(),
+  title: z.string().max(1_000),
+  capturedAt: isoDate,
+  fieldIds: z.array(id),
+});
+export type PageSnapshot = z.infer<typeof PageSnapshotSchema>;
+
+export const SessionSchema = z.object({
+  id,
+  tabId: z.number().int(),
+  goal: GoalSchema.optional(),
+  site: z.string().max(253),
+  pages: z.array(PageSnapshotSchema),
+  fields: z.array(FieldDescriptorSchema),
+  plan: z.array(PlanItemSchema),
+  startedAt: isoDate,
+});
+export type Session = z.infer<typeof SessionSchema>;

@@ -1,0 +1,723 @@
+/**
+ * Canonical key registry: the vault's vocabulary.
+ *
+ * Scalar keys look like `contact.phone.mobile`. Repeating sections ("list
+ * groups") are declared with an empty index, `projects[].name`, and stored
+ * with a concrete one, `projects[0].name`. User-specific facts with no
+ * canonical home live under `custom.<slug>`.
+ */
+
+export const VALUE_TYPES = [
+  'text',
+  'email',
+  'phone',
+  'date',
+  'url',
+  'number',
+  'enum',
+  'list',
+  'longtext',
+] as const;
+export type ValueType = (typeof VALUE_TYPES)[number];
+
+export const SENSITIVITIES = ['public', 'personal', 'restricted'] as const;
+export type Sensitivity = (typeof SENSITIVITIES)[number];
+
+export const KEY_GROUPS = [
+  'person',
+  'family',
+  'contact',
+  'address',
+  'education',
+  'experience',
+  'projects',
+  'skills',
+  'languages',
+  'links',
+  'preferences',
+  'bio',
+  'professional',
+  'certifications',
+  'custom',
+] as const;
+export type KeyGroup = (typeof KEY_GROUPS)[number];
+
+export interface KeyDef {
+  /** Canonical key; list-group items use `group[].field`. */
+  key: string;
+  label: string;
+  group: KeyGroup;
+  valueType: ValueType;
+  sensitivity: Sensitivity;
+  examples: string[];
+  /** Common ways forms phrase this question (lowercase, used by the mapper). */
+  aliases: string[];
+  /** Allowed values for `enum` keys. */
+  options?: string[];
+}
+
+type Def = Omit<KeyDef, 'group'>;
+
+const pub = 'public' as const;
+const per = 'personal' as const;
+
+const PERSON: Def[] = [
+  {
+    key: 'person.name.full',
+    label: 'Full name',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Priya Sharma'],
+    aliases: ['full name', 'name', 'your name', 'applicant name', 'candidate name'],
+  },
+  {
+    key: 'person.name.first',
+    label: 'First name',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Priya'],
+    aliases: ['first name', 'given name', 'forename'],
+  },
+  {
+    key: 'person.name.middle',
+    label: 'Middle name',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Rajesh'],
+    aliases: ['middle name', 'middle initial'],
+  },
+  {
+    key: 'person.name.last',
+    label: 'Last name',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Sharma'],
+    aliases: ['last name', 'surname', 'family name'],
+  },
+  {
+    key: 'person.name.display',
+    label: 'Display name',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Priya S.'],
+    aliases: ['display name', 'public name', 'username', 'screen name'],
+  },
+  {
+    key: 'person.dob',
+    label: 'Date of birth',
+    valueType: 'date',
+    sensitivity: per,
+    examples: ['2003-05-14'],
+    aliases: ['date of birth', 'dob', 'birth date', 'birthday'],
+  },
+  {
+    key: 'person.gender',
+    label: 'Gender',
+    valueType: 'enum',
+    sensitivity: per,
+    examples: ['Female'],
+    aliases: ['gender', 'sex'],
+    options: ['Female', 'Male', 'Non-binary', 'Prefer not to say'],
+  },
+  {
+    key: 'person.nationality',
+    label: 'Nationality',
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['Indian'],
+    aliases: ['nationality', 'citizenship'],
+  },
+];
+
+const FAMILY: Def[] = [
+  {
+    key: 'family.father_name',
+    label: "Father's name",
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['Rajesh Sharma'],
+    aliases: ["father's name", 'father name', 'name of father'],
+  },
+  {
+    key: 'family.mother_name',
+    label: "Mother's name",
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['Sunita Sharma'],
+    aliases: ["mother's name", 'mother name', 'name of mother'],
+  },
+];
+
+const CONTACT: Def[] = [
+  {
+    key: 'contact.email',
+    label: 'Email',
+    valueType: 'email',
+    sensitivity: per,
+    examples: ['priya@example.com'],
+    aliases: ['email', 'email address', 'e-mail', 'email id', 'mail id'],
+  },
+  {
+    key: 'contact.email_alt',
+    label: 'Alternate email',
+    valueType: 'email',
+    sensitivity: per,
+    examples: ['priya.work@example.com'],
+    aliases: ['alternate email', 'secondary email', 'other email'],
+  },
+  {
+    key: 'contact.phone.mobile',
+    label: 'Mobile number',
+    valueType: 'phone',
+    sensitivity: per,
+    examples: ['+91 98765 43210'],
+    aliases: ['mobile number', 'phone number', 'mobile no', 'contact number', 'phone', 'mobile'],
+  },
+  {
+    key: 'contact.phone.alt',
+    label: 'Alternate phone',
+    valueType: 'phone',
+    sensitivity: per,
+    examples: ['+91 91234 56789'],
+    aliases: ['alternate phone', 'alternate mobile', 'secondary phone', 'landline'],
+  },
+  {
+    key: 'contact.whatsapp',
+    label: 'WhatsApp number',
+    valueType: 'phone',
+    sensitivity: per,
+    examples: ['+91 98765 43210'],
+    aliases: ['whatsapp number', 'whatsapp', 'whatsapp no'],
+  },
+];
+
+const ADDRESS: Def[] = [
+  {
+    key: 'address.line1',
+    label: 'Address line 1',
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['Flat 4B, Sunrise Apartments'],
+    aliases: ['address line 1', 'street address', 'address', 'house no'],
+  },
+  {
+    key: 'address.line2',
+    label: 'Address line 2',
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['MG Road'],
+    aliases: ['address line 2', 'locality', 'area', 'landmark'],
+  },
+  {
+    key: 'address.city',
+    label: 'City',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Pune'],
+    aliases: ['city', 'town', 'city town', 'current city'],
+  },
+  {
+    key: 'address.district',
+    label: 'District',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Pune'],
+    aliases: ['district', 'county'],
+  },
+  {
+    key: 'address.state',
+    label: 'State',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Maharashtra'],
+    aliases: ['state', 'province', 'region', 'state province'],
+  },
+  {
+    key: 'address.postal_code',
+    label: 'Postal code',
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['411001'],
+    aliases: ['pin code', 'pincode', 'postal code', 'zip code', 'zip', 'postcode'],
+  },
+  {
+    key: 'address.country',
+    label: 'Country',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['India'],
+    aliases: ['country', 'country of residence', 'location country'],
+  },
+];
+
+const EDUCATION: Def[] = [
+  {
+    key: 'education[].institution',
+    label: 'Institution',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Savitribai Phule Pune University'],
+    aliases: ['college name', 'university', 'institution', 'school', 'college'],
+  },
+  {
+    key: 'education[].degree',
+    label: 'Degree',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['B.E.'],
+    aliases: ['degree', 'qualification', 'course'],
+  },
+  {
+    key: 'education[].field',
+    label: 'Field of study',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Computer Engineering'],
+    aliases: ['field of study', 'major', 'branch', 'specialization', 'stream'],
+  },
+  {
+    key: 'education[].start',
+    label: 'Start date',
+    valueType: 'date',
+    sensitivity: pub,
+    examples: ['2022-08'],
+    aliases: ['start date', 'from', 'year of joining'],
+  },
+  {
+    key: 'education[].end',
+    label: 'End date',
+    valueType: 'date',
+    sensitivity: pub,
+    examples: ['2026-06'],
+    aliases: ['end date', 'to', 'graduation year', 'year of passing', 'passing year'],
+  },
+  {
+    key: 'education[].grade',
+    label: 'Grade',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['8.7 CGPA'],
+    aliases: ['grade', 'cgpa', 'gpa', 'percentage', 'marks'],
+  },
+];
+
+const EXPERIENCE: Def[] = [
+  {
+    key: 'experience[].company',
+    label: 'Company',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Acme Consulting'],
+    aliases: ['company', 'employer', 'organization', 'company name'],
+  },
+  {
+    key: 'experience[].title',
+    label: 'Job title',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Business Analyst Intern'],
+    aliases: ['job title', 'title', 'designation', 'role', 'position'],
+  },
+  {
+    key: 'experience[].location',
+    label: 'Location',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Pune, India'],
+    aliases: ['location', 'work location', 'job location'],
+  },
+  {
+    key: 'experience[].start',
+    label: 'Start date',
+    valueType: 'date',
+    sensitivity: pub,
+    examples: ['2025-01'],
+    aliases: ['start date', 'from', 'joining date'],
+  },
+  {
+    key: 'experience[].end',
+    label: 'End date',
+    valueType: 'date',
+    sensitivity: pub,
+    examples: ['2025-06'],
+    aliases: ['end date', 'to', 'relieving date'],
+  },
+  {
+    key: 'experience[].description',
+    label: 'Description',
+    valueType: 'longtext',
+    sensitivity: pub,
+    examples: ['Mapped sales processes for 3 SMB clients.'],
+    aliases: ['description', 'responsibilities', 'what did you do', 'job description'],
+  },
+];
+
+const PROJECTS: Def[] = [
+  {
+    key: 'projects[].name',
+    label: 'Project name',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['GST Shield AI'],
+    aliases: ['project name', 'project title', 'title'],
+  },
+  {
+    key: 'projects[].role',
+    label: 'Your role',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Lead developer'],
+    aliases: ['your role', 'role', 'contribution'],
+  },
+  {
+    key: 'projects[].description',
+    label: 'Project description',
+    valueType: 'longtext',
+    sensitivity: pub,
+    examples: ['Fraud-risk dashboard for GST filings.'],
+    aliases: ['project description', 'description', 'about the project'],
+  },
+  {
+    key: 'projects[].tech',
+    label: 'Technologies used',
+    valueType: 'list',
+    sensitivity: pub,
+    examples: ['Python, FastAPI'],
+    aliases: ['technologies used', 'tech stack', 'tools used', 'skills used'],
+  },
+  {
+    key: 'projects[].url',
+    label: 'Project link',
+    valueType: 'url',
+    sensitivity: pub,
+    examples: ['https://github.com/priya/gst-shield'],
+    aliases: ['project link', 'project url', 'demo link'],
+  },
+  {
+    key: 'projects[].outcome',
+    label: 'Outcome',
+    valueType: 'longtext',
+    sensitivity: pub,
+    examples: ['Flagged 92% of seeded fraud cases.'],
+    aliases: ['outcome', 'results', 'impact', 'achievement'],
+  },
+];
+
+const SKILLS: Def[] = [
+  {
+    key: 'skills',
+    label: 'Skills',
+    valueType: 'list',
+    sensitivity: pub,
+    examples: ['Business analysis, Excel, SQL'],
+    aliases: ['skills', 'key skills', 'expertise', 'areas of expertise'],
+  },
+];
+
+const LANGUAGES: Def[] = [
+  {
+    key: 'languages[].language',
+    label: 'Language',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['English'],
+    aliases: ['language', 'languages known', 'spoken language'],
+  },
+  {
+    key: 'languages[].proficiency',
+    label: 'Proficiency',
+    valueType: 'enum',
+    sensitivity: pub,
+    examples: ['Fluent'],
+    aliases: ['proficiency', 'language level', 'fluency'],
+    options: ['Basic', 'Conversational', 'Fluent', 'Native'],
+  },
+];
+
+const LINKS: Def[] = [
+  {
+    key: 'links.linkedin',
+    label: 'LinkedIn',
+    valueType: 'url',
+    sensitivity: pub,
+    examples: ['https://linkedin.com/in/priya'],
+    aliases: ['linkedin', 'linkedin profile', 'linkedin url'],
+  },
+  {
+    key: 'links.github',
+    label: 'GitHub',
+    valueType: 'url',
+    sensitivity: pub,
+    examples: ['https://github.com/priya'],
+    aliases: ['github', 'github profile', 'github url'],
+  },
+  {
+    key: 'links.portfolio',
+    label: 'Portfolio',
+    valueType: 'url',
+    sensitivity: pub,
+    examples: ['https://priya.dev/work'],
+    aliases: ['portfolio', 'portfolio link', 'portfolio url', 'work samples'],
+  },
+  {
+    key: 'links.website',
+    label: 'Website',
+    valueType: 'url',
+    sensitivity: pub,
+    examples: ['https://priya.dev'],
+    aliases: ['website', 'personal website', 'homepage', 'blog'],
+  },
+  {
+    key: 'links.behance',
+    label: 'Behance',
+    valueType: 'url',
+    sensitivity: pub,
+    examples: ['https://behance.net/priya'],
+    aliases: ['behance', 'behance profile'],
+  },
+  {
+    key: 'links.dribbble',
+    label: 'Dribbble',
+    valueType: 'url',
+    sensitivity: pub,
+    examples: ['https://dribbble.com/priya'],
+    aliases: ['dribbble', 'dribbble profile'],
+  },
+];
+
+const PREFERENCES: Def[] = [
+  {
+    key: 'preferences.hourly_rate',
+    label: 'Hourly rate',
+    valueType: 'number',
+    sensitivity: pub,
+    examples: ['25'],
+    aliases: ['hourly rate', 'rate per hour', 'your rate'],
+  },
+  {
+    key: 'preferences.currency',
+    label: 'Currency',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['USD'],
+    aliases: ['currency', 'preferred currency'],
+  },
+  {
+    key: 'preferences.availability_hours',
+    label: 'Availability (hours/week)',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['More than 30 hrs/week'],
+    aliases: ['availability', 'hours per week', 'weekly availability'],
+  },
+  {
+    key: 'preferences.timezone',
+    label: 'Time zone',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Asia/Kolkata'],
+    aliases: ['time zone', 'timezone'],
+  },
+  {
+    key: 'preferences.notice_period',
+    label: 'Notice period',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Immediate'],
+    aliases: ['notice period', 'joining time', 'available to join'],
+  },
+  {
+    key: 'preferences.expected_salary',
+    label: 'Expected salary',
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['6 LPA'],
+    aliases: ['expected salary', 'expected ctc', 'salary expectation'],
+  },
+  {
+    key: 'preferences.current_salary',
+    label: 'Current salary',
+    valueType: 'text',
+    sensitivity: per,
+    examples: ['4 LPA'],
+    aliases: ['current salary', 'current ctc', 'present salary'],
+  },
+];
+
+const BIO: Def[] = [
+  {
+    key: 'bio.headline',
+    label: 'Headline',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Business Consultant for Growing SMBs'],
+    aliases: ['headline', 'professional title', 'tagline', 'profile title'],
+  },
+  {
+    key: 'bio.summary_short',
+    label: 'Short summary',
+    valueType: 'longtext',
+    sensitivity: pub,
+    examples: ['I help small businesses fix their operations.'],
+    aliases: ['short bio', 'short summary', 'about you in one line'],
+  },
+  {
+    key: 'bio.summary_long',
+    label: 'Profile overview',
+    valueType: 'longtext',
+    sensitivity: pub,
+    examples: ['I am a business consultant who...'],
+    aliases: [
+      'overview',
+      'about me',
+      'profile overview',
+      'summary',
+      'bio',
+      'tell us about yourself',
+    ],
+  },
+];
+
+const PROFESSIONAL: Def[] = [
+  {
+    key: 'professional.category',
+    label: 'Professional category',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Business Consulting'],
+    aliases: ['category', 'service category', 'industry'],
+  },
+  {
+    key: 'professional.years_experience',
+    label: 'Years of experience',
+    valueType: 'number',
+    sensitivity: pub,
+    examples: ['2'],
+    aliases: ['years of experience', 'total experience', 'experience in years'],
+  },
+];
+
+const CERTIFICATIONS: Def[] = [
+  {
+    key: 'certifications[].name',
+    label: 'Certification',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Google Data Analytics'],
+    aliases: ['certification', 'certificate name', 'certification name'],
+  },
+  {
+    key: 'certifications[].issuer',
+    label: 'Issuer',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['Coursera'],
+    aliases: ['issuer', 'issuing organization', 'issued by'],
+  },
+  {
+    key: 'certifications[].year',
+    label: 'Year',
+    valueType: 'text',
+    sensitivity: pub,
+    examples: ['2025'],
+    aliases: ['year', 'issue date', 'year obtained'],
+  },
+];
+
+const withGroup = (group: KeyGroup, defs: Def[]): KeyDef[] => defs.map((d) => ({ ...d, group }));
+
+export const KEY_REGISTRY: readonly KeyDef[] = Object.freeze([
+  ...withGroup('person', PERSON),
+  ...withGroup('family', FAMILY),
+  ...withGroup('contact', CONTACT),
+  ...withGroup('address', ADDRESS),
+  ...withGroup('education', EDUCATION),
+  ...withGroup('experience', EXPERIENCE),
+  ...withGroup('projects', PROJECTS),
+  ...withGroup('skills', SKILLS),
+  ...withGroup('languages', LANGUAGES),
+  ...withGroup('links', LINKS),
+  ...withGroup('preferences', PREFERENCES),
+  ...withGroup('bio', BIO),
+  ...withGroup('professional', PROFESSIONAL),
+  ...withGroup('certifications', CERTIFICATIONS),
+]);
+
+/** Repeating sections and the fields each item has. */
+export const LIST_GROUPS = {
+  education: EDUCATION.map((d) => fieldOf(d.key)),
+  experience: EXPERIENCE.map((d) => fieldOf(d.key)),
+  projects: PROJECTS.map((d) => fieldOf(d.key)),
+  languages: LANGUAGES.map((d) => fieldOf(d.key)),
+  certifications: CERTIFICATIONS.map((d) => fieldOf(d.key)),
+} as const satisfies Partial<Record<KeyGroup, string[]>>;
+export type ListGroup = keyof typeof LIST_GROUPS;
+
+function fieldOf(templateKey: string): string {
+  return templateKey.slice(templateKey.indexOf('].') + 2);
+}
+
+const BY_KEY = new Map(KEY_REGISTRY.map((d) => [d.key, d]));
+
+const SEGMENT = '[a-z][a-z0-9_]*';
+const CONCRETE_KEY = new RegExp(`^${SEGMENT}(\\[\\d+\\])?(\\.${SEGMENT})*$`);
+const CUSTOM_KEY = new RegExp(`^custom\\.${SEGMENT}$`);
+
+export interface ParsedKey {
+  /** Registry key with the index removed, e.g. `projects[].name`. */
+  template: string;
+  group: string;
+  /** List index, when the key addresses a list-group item. */
+  index?: number;
+}
+
+/** Parses a concrete key (`projects[2].name`, `contact.email`). Returns null if malformed. */
+export function parseKey(key: string): ParsedKey | null {
+  if (!CONCRETE_KEY.test(key)) return null;
+  const match = /^([a-z][a-z0-9_]*)\[(\d+)\]/.exec(key);
+  if (match) {
+    const [, group = '', index = '0'] = match;
+    return { template: key.replace(/\[\d+\]/, '[]'), group, index: Number(index) };
+  }
+  return { template: key, group: key.split('.')[0] ?? '' };
+}
+
+/** Registry entry for a concrete or template key, if it is canonical. */
+export function getKeyDef(key: string): KeyDef | undefined {
+  const parsed = parseKey(key.replace('[]', '[0]'));
+  return parsed ? BY_KEY.get(parsed.template) : undefined;
+}
+
+export function isCustomKey(key: string): boolean {
+  return CUSTOM_KEY.test(key);
+}
+
+/** True for canonical keys (with a concrete index where required) and `custom.<slug>` keys. */
+export function isValidFactKey(key: string): boolean {
+  if (isCustomKey(key)) return true;
+  const parsed = parseKey(key);
+  if (!parsed || !BY_KEY.has(parsed.template)) return false;
+  const isListTemplate = parsed.template.includes('[]');
+  return isListTemplate === (parsed.index !== undefined);
+}
+
+/** Builds a concrete list-item key, e.g. `listItemKey('projects', 1, 'name')` → `projects[1].name`. */
+export function listItemKey(group: ListGroup, index: number, field: string): string {
+  if (!Number.isInteger(index) || index < 0) throw new Error(`Invalid list index: ${index}`);
+  const key = `${group}[${index}].${field}`;
+  if (!isValidFactKey(key)) throw new Error(`Unknown field "${field}" for list group "${group}"`);
+  return key;
+}
+
+/** Turns a free-text label into a `custom.<slug>` key. */
+export function customKeyFor(label: string): string {
+  const slug = label
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .replace(/^(\d)/, 'n_$1')
+    .slice(0, 48)
+    .replace(/_+$/, '');
+  return `custom.${slug || 'field'}`;
+}

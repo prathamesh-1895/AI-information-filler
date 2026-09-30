@@ -1,0 +1,24 @@
+import { isDynamicIdentifier, normaliseLabel, siteOf } from './normalise';
+
+export interface SignatureInput {
+  label: string;
+  inputType: string;
+  name?: string | undefined;
+}
+
+/** The exact string that is hashed; exported for debugging and tests. */
+export function signatureMaterial(site: string, field: SignatureInput): string {
+  const name = field.name && !isDynamicIdentifier(field.name) ? field.name.toLowerCase() : '';
+  return [siteOf(site), normaliseLabel(field.label), field.inputType.toLowerCase(), name].join('␟');
+}
+
+/**
+ * Stable identity of a field on a site: SHA-256 (hex) of
+ * site + normalised label + input type + name (dynamic names ignored).
+ * Uses WebCrypto, which exists in browsers, service workers, Node ≥ 20 and Deno.
+ */
+export async function fieldSignature(site: string, field: SignatureInput): Promise<string> {
+  const bytes = new TextEncoder().encode(signatureMaterial(site, field));
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
