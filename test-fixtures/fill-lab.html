@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fill lab</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .field { margin: 12px 0; display: grid; grid-template-columns: 200px 1fr; }
+      #city-list { border: 1px solid #ccc; }
+      #city-list[hidden] { display: none; }
+      [role='option'] { padding: 4px; cursor: pointer; }
+      [contenteditable] { border: 1px solid #ccc; min-height: 48px; }
+    </style>
+  </head>
+  <body>
+    <h1>Fill lab</h1>
+    <form id="lab">
+      <!-- Keyboard-only model: the value is committed on keyup and restored from the model on blur,
+           so a plain "set value + input event" is undone. Typing mode must be used. -->
+      <div class="field"><label for="nick">Nickname</label><input id="nick" name="nickname" data-fx="nick" /></div>
+
+      <!-- Digits-only input: rejects anything else, so an invalid value must fail with a reason. -->
+      <div class="field"><label for="pin">Pin code</label><input id="pin" name="pin" inputmode="numeric" data-fx="pin" /></div>
+
+      <div class="field">
+        <label for="langs">Languages known</label>
+        <select id="langs" name="languages" multiple data-fx="langs">
+          <option>English</option><option>Hindi</option><option>Marathi</option><option>Tamil</option>
+        </select>
+      </div>
+
+      <div class="field"><label for="join">Joining date</label><input id="join" type="date" data-fx="join" /></div>
+      <div class="field"><label for="grad">Graduation month</label><input id="grad" type="month" data-fx="grad" /></div>
+      <div class="field"><label for="code">Short code</label><input id="code" name="code" maxlength="6" data-fx="code" /></div>
+
+      <div class="field">
+        <span id="bio-label">Bio</span>
+        <div role="textbox" contenteditable="true" aria-multiline="true" aria-labelledby="bio-label" data-fx="bio"></div>
+      </div>
+
+      <!-- Autocomplete: typing shows suggestions; picking one commits the canonical spelling. -->
+      <div class="field">
+        <label for="city">Current city</label>
+        <div>
+          <input id="city" name="city" role="combobox" aria-autocomplete="list" aria-controls="city-list" aria-expanded="false" data-fx="city" />
+          <div id="city-list" role="listbox" hidden></div>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>Work mode</legend>
+        <label><input type="radio" name="mode" value="remote" data-fx="mode" /> Remote</label>
+        <label><input type="radio" name="mode" value="hybrid" data-fx="mode" /> Hybrid</label>
+        <label><input type="radio" name="mode" value="onsite" data-fx="mode" /> On-site</label>
+      </fieldset>
+
+      <label><input type="checkbox" name="contact_ok" data-fx="contact" /> You may contact me about openings</label>
+
+      <button type="submit">Submit</button>
+    </form>
+    <script>
+      const nick = document.getElementById('nick');
+      let nickModel = '';
+      nick.addEventListener('keyup', () => (nickModel = nick.value));
+      nick.addEventListener('blur', () => (nick.value = nickModel));
+      window.__nickModel = () => nickModel;
+
+      const pin = document.getElementById('pin');
+      pin.addEventListener('input', () => (pin.value = pin.value.replace(/\D/g, '')));
+
+      const city = document.getElementById('city');
+      const list = document.getElementById('city-list');
+      const cities = ['Pune', 'Pimpri', 'Mumbai'];
+      city.addEventListener('input', () => {
+        const q = city.value.trim().toLowerCase();
+        list.replaceChildren(
+          ...cities
+            .filter((c) => q && c.toLowerCase().startsWith(q))
+            .map((c) => {
+              const o = document.createElement('div');
+              o.setAttribute('role', 'option');
+              o.textContent = c;
+              o.addEventListener('click', () => {
+                city.value = c;
+                city.dataset.picked = c;
+                list.hidden = true;
+                city.setAttribute('aria-expanded', 'false');
+              });
+              return o;
+            }),
+        );
+        list.hidden = list.children.length === 0;
+        city.setAttribute('aria-expanded', String(!list.hidden));
+      });
+    </script>
+  </body>
+</html>

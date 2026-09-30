@@ -139,7 +139,8 @@ export function isDisabled(control: Control): boolean {
   );
 }
 
-function rawCurrentValue(control: Control): string | string[] | undefined {
+/** Unredacted current value, for verification inside the page only. Never send it anywhere. */
+export function rawCurrentValue(control: Control): string | string[] | undefined {
   const el = control.element;
   switch (control.inputType) {
     case 'password':

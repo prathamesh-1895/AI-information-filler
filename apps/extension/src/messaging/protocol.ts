@@ -2,7 +2,7 @@
  * Messages between the side panel, the background worker and the page agent.
  * Every message and response is validated with Zod on receipt.
  */
-import { FieldDescriptorSchema } from '@filler/core';
+import { FactValueSchema, FieldDescriptorSchema } from '@filler/core';
 import { z } from 'zod';
 
 const tabId = z.number().int().nonnegative();
@@ -18,11 +18,104 @@ export const ScanRequestSchema = z.object({
   tabId,
 });
 
+/** Page-wide field id: `<frameId>:<frame-local id>`, e.g. `0:f3`. */
+export const FieldIdSchema = z.string().regex(/^\d+:[a-z]\d+$/);
+
+export const FillItemSchema = z.object({
+  fieldId: FieldIdSchema,
+  selector: z.string().max(2_000),
+  signature: z.string().regex(/^[0-9a-f]{64}$/),
+  value: FactValueSchema,
+  mode: z.enum(['auto', 'typing']).optional(),
+});
+export type FillItem = z.infer<typeof FillItemSchema>;
+
+export const FillRequestSchema = z.object({
+  type: z.literal('FILL_REQUEST'),
+  tabId,
+  items: z.array(FillItemSchema).min(1).max(500),
+});
+
+export const FillResultSchema = z.object({
+  fieldId: FieldIdSchema,
+  status: z.enum(['filled', 'failed']),
+  finalValue: z.union([z.string(), z.array(z.string())]).optional(),
+  error: z.string().optional(),
+  method: z.string().optional(),
+});
+export type FillResult = z.infer<typeof FillResultSchema>;
+
+export const HIGHLIGHT_STATES = ['vault', 'ai', 'input', 'denied', 'filled', 'failed'] as const;
+export const HighlightItemSchema = z.object({
+  fieldId: FieldIdSchema,
+  state: z.enum(HIGHLIGHT_STATES),
+  title: z.string().max(200).optional(),
+  preview: z.string().max(300).optional(),
+});
+export type HighlightItem = z.infer<typeof HighlightItemSchema>;
+
+export const HighlightRequestSchema = z.object({
+  type: z.literal('HIGHLIGHT_REQUEST'),
+  tabId,
+  items: z.array(HighlightItemSchema).max(500),
+});
+
+export const ObserveRequestSchema = z.object({ type: z.literal('OBSERVE_REQUEST'), tabId });
+export const EndSessionRequestSchema = z.object({ type: z.literal('END_SESSION_REQUEST'), tabId });
+export const NavListRequestSchema = z.object({ type: z.literal('NAV_LIST_REQUEST'), tabId });
+export const NavClickRequestSchema = z.object({
+  type: z.literal('NAV_CLICK_REQUEST'),
+  tabId,
+  buttonId: z.string().regex(/^\d+:b\d+$/),
+});
+
+export const NavButtonSchema = z.object({
+  buttonId: z.string(),
+  text: z.string(),
+  submitLike: z.boolean(),
+});
+export type NavButton = z.infer<typeof NavButtonSchema>;
+
 export const PanelRequestSchema = z.discriminatedUnion('type', [
   GetTargetTabRequestSchema,
   ScanRequestSchema,
+  FillRequestSchema,
+  HighlightRequestSchema,
+  ObserveRequestSchema,
+  EndSessionRequestSchema,
+  NavListRequestSchema,
+  NavClickRequestSchema,
 ]);
 export type PanelRequest = z.infer<typeof PanelRequestSchema>;
+
+/** Events a page agent sends to the panel (frame-local ids; the panel adds the frame prefix). */
+export const FieldsChangedEventSchema = z.object({
+  type: z.literal('FIELDS_CHANGED'),
+  reason: z.enum(['mutation', 'navigation']),
+  url: z.string(),
+  added: z.array(FieldDescriptorSchema),
+  removed: z.array(z.string()),
+});
+export type FieldsChangedEvent = z.infer<typeof FieldsChangedEventSchema>;
+
+export const FieldFocusedEventSchema = z.object({
+  type: z.literal('FIELD_FOCUSED'),
+  id: z.string(),
+});
+
+export const PageEventSchema = z.discriminatedUnion('type', [
+  FieldsChangedEventSchema,
+  FieldFocusedEventSchema,
+]);
+export type PageEvent = z.infer<typeof PageEventSchema>;
+
+/** Splits `0:f3` into its frame id and frame-local id. */
+export function splitId(id: string): { frameId: number; localId: string } {
+  const at = id.indexOf(':');
+  return { frameId: Number(id.slice(0, at)), localId: id.slice(at + 1) };
+}
+
+export const joinId = (frameId: number, localId: string) => `${frameId}:${localId}`;
 
 export const TargetTabSchema = z.object({
   tabId,
@@ -61,6 +154,8 @@ export const ERROR_CODES = [
   'RESTRICTED_PAGE',
   'INJECTION_FAILED',
   'SCAN_FAILED',
+  /** Filler refused on safety grounds (e.g. a submit-like button). */
+  'REFUSED',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

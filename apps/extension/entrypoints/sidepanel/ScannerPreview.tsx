@@ -1,6 +1,14 @@
 import { classifyRisk, type FieldDescriptor } from '@filler/core';
-import { useCallback, useEffect, useState } from 'react';
-import { getTargetTab, requestSiteAccess, scanTab } from '@/src/messaging/client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  endSession,
+  getTargetTab,
+  highlightFields,
+  onPageEvent,
+  requestSiteAccess,
+  scanTab,
+  startObserving,
+} from '@/src/messaging/client';
 import type { ErrorCode, PageScan, TargetTab } from '@/src/messaging/protocol';
 
 type State =
@@ -9,13 +17,23 @@ type State =
   | { phase: 'done'; scan: PageScan }
   | { phase: 'error'; code: ErrorCode; message: string };
 
+interface ChangeSummary {
+  added: number;
+  removed: number;
+}
+
 /**
- * Temporary developer view (PLAYBOOK Task 3.5) that lists what the scanner
- * found, so the scanner can be checked by eye. The session UI replaces it in Phase 6.
+ * Temporary developer view (PLAYBOOK Tasks 3.5 and 4.3–4.4): lists what the
+ * scanner found, keeps the list live as the page changes, and can outline
+ * the fields on the page. The session UI replaces it in Phase 6.
  */
 export function ScannerPreview() {
   const [target, setTarget] = useState<TargetTab | null>(null);
   const [state, setState] = useState<State>({ phase: 'idle' });
+  const [changes, setChanges] = useState<ChangeSummary | null>(null);
+  const [highlighted, setHighlighted] = useState(false);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const sessionTab = useRef<number | null>(null);
 
   const refreshTarget = useCallback(async () => {
     const result = await getTargetTab();
@@ -31,11 +49,34 @@ export function ScannerPreview() {
     return () => {
       browser.tabs.onActivated.removeListener(refresh);
       browser.tabs.onUpdated.removeListener(refresh);
+      if (sessionTab.current !== null) void endSession(sessionTab.current);
     };
   }, [refreshTarget]);
 
+  // Keep the list in sync with the page while a scan is on screen.
+  const tabId = state.phase === 'done' ? state.scan.tabId : null;
+  useEffect(() => {
+    if (tabId === null) return;
+    return onPageEvent(tabId, (event) => {
+      if (event.type === 'FIELD_FOCUSED') {
+        setFocusedId(event.id);
+        document.getElementById(`row-${event.id}`)?.scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      setChanges({ added: event.added.length, removed: event.removed.length });
+      setState((prev) => {
+        if (prev.phase !== 'done') return prev;
+        const gone = new Set(event.removed);
+        const fields = [...prev.scan.fields.filter((f) => !gone.has(f.id)), ...event.added];
+        return { phase: 'done', scan: { ...prev.scan, url: event.url, fields } };
+      });
+    });
+  }, [tabId]);
+
   const scan = async () => {
     setState({ phase: 'scanning' });
+    setChanges(null);
+    setHighlighted(false);
     const tab = (await refreshTarget()) ?? target;
     if (!tab) {
       setState({
@@ -45,14 +86,32 @@ export function ScannerPreview() {
       });
       return;
     }
+    if (sessionTab.current !== null) await endSession(sessionTab.current);
     const result = await scanTab(tab.tabId);
-    setState(
-      result.ok ? { phase: 'done', scan: result.data } : { phase: 'error', ...result.error },
-    );
+    if (!result.ok) {
+      setState({ phase: 'error', ...result.error });
+      return;
+    }
+    sessionTab.current = tab.tabId;
+    setState({ phase: 'done', scan: result.data });
+    await startObserving(tab.tabId);
   };
 
   const allowAndScan = async () => {
     if (await requestSiteAccess()) await scan();
+  };
+
+  const toggleHighlights = async () => {
+    if (state.phase !== 'done') return;
+    const items = highlighted
+      ? []
+      : state.scan.fields.map((f) => ({
+          fieldId: f.id,
+          state: classifyRisk(f).allowed ? ('input' as const) : ('denied' as const),
+          title: f.label.slice(0, 200),
+        }));
+    const result = await highlightFields(state.scan.tabId, items);
+    if (result.ok) setHighlighted(!highlighted);
   };
 
   return (
@@ -70,14 +129,26 @@ export function ScannerPreview() {
           ? `Page: ${target.title ?? target.url ?? `tab ${target.tabId}`}`
           : 'No page selected'}
       </p>
-      <button
-        type="button"
-        onClick={() => void scan()}
-        disabled={state.phase === 'scanning'}
-        className="w-full rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-60"
-      >
-        {state.phase === 'scanning' ? 'Scanning…' : 'Scan this page'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => void scan()}
+          disabled={state.phase === 'scanning'}
+          className="flex-1 rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-60"
+        >
+          {state.phase === 'scanning' ? 'Scanning…' : 'Scan this page'}
+        </button>
+        {state.phase === 'done' && (
+          <button
+            type="button"
+            onClick={() => void toggleHighlights()}
+            aria-pressed={highlighted}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-900"
+          >
+            {highlighted ? 'Clear highlights' : 'Highlight fields'}
+          </button>
+        )}
+      </div>
 
       {state.phase === 'error' && (
         <div
@@ -97,12 +168,23 @@ export function ScannerPreview() {
         </div>
       )}
 
-      {state.phase === 'done' && <ScanResults scan={state.scan} />}
+      {changes && (
+        <p
+          role="status"
+          data-testid="changes"
+          className="rounded-md bg-sky-50 px-2 py-1.5 text-xs text-sky-900 dark:bg-sky-950 dark:text-sky-200"
+        >
+          The page changed: {changes.added} new {changes.added === 1 ? 'field' : 'fields'},{' '}
+          {changes.removed} went away.
+        </p>
+      )}
+
+      {state.phase === 'done' && <ScanResults scan={state.scan} focusedId={focusedId} />}
     </section>
   );
 }
 
-function ScanResults({ scan }: { scan: PageScan }) {
+function ScanResults({ scan, focusedId }: { scan: PageScan; focusedId: string | null }) {
   return (
     <div className="space-y-2">
       <p className="text-xs text-slate-600 dark:text-slate-300" data-testid="field-count">
@@ -116,17 +198,22 @@ function ScanResults({ scan }: { scan: PageScan }) {
       )}
       <ul className="divide-y divide-slate-200 rounded-md border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {scan.fields.map((field) => (
-          <FieldRow key={field.id} field={field} />
+          <FieldRow key={field.id} field={field} focused={field.id === focusedId} />
         ))}
       </ul>
     </div>
   );
 }
 
-function FieldRow({ field }: { field: FieldDescriptor }) {
+function FieldRow({ field, focused }: { field: FieldDescriptor; focused: boolean }) {
   const risk = classifyRisk(field);
   return (
-    <li className="px-2 py-1.5 text-xs" data-testid="field-row">
+    <li
+      id={`row-${field.id}`}
+      className={`px-2 py-1.5 text-xs ${focused ? 'bg-emerald-50 ring-2 ring-emerald-600 ring-inset dark:bg-emerald-950' : ''}`}
+      data-testid="field-row"
+      aria-current={focused || undefined}
+    >
       <div className="flex items-start justify-between gap-2">
         <span className="break-words font-medium" data-testid="field-label">
           {field.label}

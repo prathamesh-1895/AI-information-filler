@@ -42,6 +42,7 @@ const FIXTURES = [
   'react-controlled',
   'tricky',
   'job-application-like',
+  'fill-lab',
 ];
 
 const agentPath = fileURLToPath(

@@ -122,3 +122,88 @@ describe('errors and restricted pages', () => {
     expect(classifyInjectionError(new Error(message)).code).toBe(code),
   );
 });
+
+describe('Phase 4 messages', () => {
+  const sig = 'b'.repeat(64);
+
+  it('groups fill items by frame and swaps in frame-local ids', async () => {
+    const { groupByFrame } = await import('./scan-merge');
+    const groups = groupByFrame([
+      { fieldId: '0:f1', value: 'a' },
+      { fieldId: '12:f0', value: 'b' },
+      { fieldId: '0:f7', value: 'c' },
+    ]);
+    expect([...groups.keys()]).toEqual([0, 12]);
+    expect(groups.get(0)).toEqual([
+      { id: 'f1', value: 'a' },
+      { id: 'f7', value: 'c' },
+    ]);
+    expect(groups.get(12)).toEqual([{ id: 'f0', value: 'b' }]);
+  });
+
+  it('validates fill, highlight and navigation requests', async () => {
+    const { PanelRequestSchema, splitId, joinId } = await import('./protocol');
+    const fill = {
+      type: 'FILL_REQUEST',
+      tabId: 1,
+      items: [{ fieldId: '0:f1', selector: '#a', signature: sig, value: ['x', 'y'] }],
+    };
+    expect(PanelRequestSchema.safeParse(fill).success).toBe(true);
+    expect(PanelRequestSchema.safeParse({ ...fill, items: [] }).success).toBe(false);
+    expect(
+      PanelRequestSchema.safeParse({ ...fill, items: [{ ...fill.items[0], fieldId: 'f1' }] })
+        .success,
+    ).toBe(false);
+    expect(
+      PanelRequestSchema.safeParse({ ...fill, items: [{ ...fill.items[0], signature: 'nope' }] })
+        .success,
+    ).toBe(false);
+    expect(
+      PanelRequestSchema.safeParse({
+        type: 'HIGHLIGHT_REQUEST',
+        tabId: 1,
+        items: [{ fieldId: '3:f2', state: 'vault' }],
+      }).success,
+    ).toBe(true);
+    expect(
+      PanelRequestSchema.safeParse({
+        type: 'HIGHLIGHT_REQUEST',
+        tabId: 1,
+        items: [{ fieldId: '3:f2', state: 'purple' }],
+      }).success,
+    ).toBe(false);
+    expect(
+      PanelRequestSchema.safeParse({ type: 'NAV_CLICK_REQUEST', tabId: 1, buttonId: '0:b4' })
+        .success,
+    ).toBe(true);
+    expect(
+      PanelRequestSchema.safeParse({ type: 'NAV_CLICK_REQUEST', tabId: 1, buttonId: '0:f4' })
+        .success,
+    ).toBe(false);
+    expect(splitId('12:f0')).toEqual({ frameId: 12, localId: 'f0' });
+    expect(joinId(3, 'b1')).toBe('3:b1');
+  });
+
+  it('validates page events', async () => {
+    const { PageEventSchema } = await import('./protocol');
+    expect(PageEventSchema.safeParse({ type: 'FIELD_FOCUSED', id: 'f2' }).success).toBe(true);
+    expect(
+      PageEventSchema.safeParse({
+        type: 'FIELDS_CHANGED',
+        reason: 'mutation',
+        url: 'https://x.test',
+        added: [],
+        removed: ['f1'],
+      }).success,
+    ).toBe(true);
+    expect(
+      PageEventSchema.safeParse({
+        type: 'FIELDS_CHANGED',
+        reason: 'reload',
+        url: 'x',
+        added: [],
+        removed: [],
+      }).success,
+    ).toBe(false);
+  });
+});

@@ -1,5 +1,6 @@
 /**
- * Page scan: every visible control → a validated FieldDescriptor.
+ * Page scan: every visible control → a validated FieldDescriptor, plus the
+ * frame-local registry that fill, observe and highlight look fields up in.
  * Runs inside each frame; the background worker merges frames.
  */
 import { FieldDescriptorSchema, fieldSignature, type FieldDescriptor } from '@filler/core';
@@ -33,9 +34,9 @@ export interface ScanResult {
 const HONEYPOT =
   /honey ?pot|\bhp\b|leave (?:this )?(?:field )?(?:blank|empty)|do not (?:fill|enter|change)|bot ?trap|anti ?spam/i;
 
-interface Entry {
+export interface Entry {
   control: Control;
-  signature: string;
+  descriptor: FieldDescriptor;
   /** Position among fields with the same signature, for re-finding duplicates. */
   ordinal: number;
 }
@@ -43,10 +44,11 @@ interface Entry {
 const registry = new Map<string, Entry>();
 let nextId = 0;
 
-const isNativeGroup = (c: Control) => c.inputType === 'radio' || c.inputType === 'checkbox-group';
+export const isNativeGroup = (c: Control) =>
+  c.inputType === 'radio' || c.inputType === 'checkbox-group';
 
 /** The element other code acts on: the first radio/checkbox of a native group, else the control. */
-const primary = (c: Control) => (isNativeGroup(c) ? (c.members[0] ?? c.element) : c.element);
+export const primary = (c: Control) => (isNativeGroup(c) ? (c.members[0] ?? c.element) : c.element);
 
 const clip = (value: string | undefined, max: number) =>
   value === undefined ? undefined : value.slice(0, max);
@@ -107,16 +109,20 @@ async function describe(control: Control, index: ControlIndex, id: string) {
   return FieldDescriptorSchema.safeParse(descriptor);
 }
 
-/** Scans this frame's document. */
-export async function scan(): Promise<ScanResult> {
+/**
+ * Describes `targets` (a subset of `all`, which gives label resolution its
+ * context), registers them and returns their descriptors.
+ */
+export async function describeControls(
+  targets: Control[],
+  all: Control[],
+): Promise<{ fields: FieldDescriptor[]; errors: string[] }> {
   resetHeadingCache();
-  const controls = discoverControls(document).filter(isVisibleControl);
-  const index = new ControlIndex(controls);
+  const index = new ControlIndex(all);
   const fields: FieldDescriptor[] = [];
   const errors: string[] = [];
   const seenSignatures = new Map<string, number>();
-
-  for (const control of controls) {
+  for (const control of targets) {
     const id = `f${nextId++}`;
     const result = await describe(control, index, id);
     if (result === null) continue;
@@ -128,9 +134,16 @@ export async function scan(): Promise<ScanResult> {
     }
     const ordinal = seenSignatures.get(result.data.signature) ?? 0;
     seenSignatures.set(result.data.signature, ordinal + 1);
-    registry.set(id, { control, signature: result.data.signature, ordinal });
+    registry.set(id, { control, descriptor: result.data, ordinal });
     fields.push(result.data);
   }
+  return { fields, errors };
+}
+
+/** Scans this frame's document. */
+export async function scan(): Promise<ScanResult> {
+  const controls = discoverControls(document).filter(isVisibleControl);
+  const { fields, errors } = await describeControls(controls, controls);
   return {
     url: location.href,
     title: document.title,
@@ -140,21 +153,41 @@ export async function scan(): Promise<ScanResult> {
   };
 }
 
-/**
- * Finds a scanned field's element again, even after the page re-rendered it:
- * live element → selector → same signature (and position) in a fresh scan.
- */
-export async function resolve(
-  descriptor: Pick<FieldDescriptor, 'id' | 'selector' | 'signature'>,
-): Promise<Element | null> {
-  const entry = registry.get(descriptor.id);
-  if (entry && primary(entry.control).isConnected) return primary(entry.control);
+export function getEntry(id: string): Entry | undefined {
+  return registry.get(id);
+}
 
+export function entries(): Array<[string, Entry]> {
+  return Array.from(registry.entries());
+}
+
+export function forget(id: string): void {
+  registry.delete(id);
+}
+
+const isLive = (c: Control) => primary(c).isConnected && c.members.every((m) => m.isConnected);
+
+/**
+ * Finds a scanned field's control again, even after the page re-rendered it:
+ * live control → selector → same signature (and position) in a fresh discovery.
+ */
+export async function resolveControl(
+  descriptor: Pick<FieldDescriptor, 'id' | 'selector' | 'signature'>,
+): Promise<Control | null> {
+  const entry = registry.get(descriptor.id);
+  if (entry && isLive(entry.control)) return entry.control;
+
+  const controls = discoverControls(document).filter(isVisibleControl);
   const bySelector = resolveSelector(descriptor.selector);
-  if (bySelector) return bySelector;
+  if (bySelector) {
+    const found = controls.find((c) => c.element === bySelector || c.members.includes(bySelector));
+    if (found) {
+      if (entry) entry.control = found;
+      return found;
+    }
+  }
 
   const wanted = entry?.ordinal ?? 0;
-  const controls = discoverControls(document).filter(isVisibleControl);
   const index = new ControlIndex(controls);
   let seen = 0;
   for (const control of controls) {
@@ -168,8 +201,15 @@ export async function resolve(
     if (signature !== descriptor.signature) continue;
     if (seen++ === wanted) {
       if (entry) entry.control = control;
-      return primary(control);
+      return control;
     }
   }
   return null;
+}
+
+export async function resolve(
+  descriptor: Pick<FieldDescriptor, 'id' | 'selector' | 'signature'>,
+): Promise<Element | null> {
+  const control = await resolveControl(descriptor);
+  return control ? primary(control) : null;
 }

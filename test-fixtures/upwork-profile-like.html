@@ -119,6 +119,17 @@
       );
       document.getElementById('add-exp').addEventListener('click', () => (document.querySelector('.modal').hidden = false));
       document.querySelector('.close-modal').addEventListener('click', () => (document.querySelector('.modal').hidden = true));
+      // Tag input: Enter commits the typed skill as a chip.
+      const skills = document.getElementById('skills-input');
+      skills.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' || !skills.value.trim()) return;
+        e.preventDefault();
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = skills.value.trim();
+        skills.before(chip);
+        skills.value = '';
+      });
       // Live character counters, like the real site.
       for (const [id, max] of [['title', 70], ['overview', 5000]]) {
         const el = document.getElementById(id);

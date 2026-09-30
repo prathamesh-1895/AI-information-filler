@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 3 — Page Agent: scanner (2026-10-01)
+**Last completed phase:** Phase 4 — Page Agent: filler, observer, highlighter (2026-10-01)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -12,7 +12,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 1 | Core domain model & policy | ✅ COMPLETE (2026-10-01) | 64-key canonical registry (5 list groups), Zod schemas for all records, deny-list + submit-button policy with checksum value detection, label normalisation and SHA-256 field signatures |
 | 2 | Encrypted vault | ✅ COMPLETE (2026-10-01) | PBKDF2 (600k) + AES-256-GCM with per-record IV and AAD, Dexie store, Fact/Document/FieldMemory/Answer repos, lock/unlock/auto-lock/session resume, atomic passphrase change, encrypted backup/import, wipe |
 | 3 | Page Agent: scanner | ✅ COMPLETE (2026-10-01) | 7 fixtures (74 fields), scanner with shadow DOM/iframes/ARIA widgets, 8-step label resolution (74/74 labels), constraints/options/counters, robust selectors + re-find, typed panel↔background↔page messaging, scanner preview in the side panel |
-| 4 | Page Agent: filler, observer, highlighter | ⬜ NOT STARTED | |
+| 4 | Page Agent: filler, observer, highlighter | ✅ COMPLETE (2026-10-01) | Framework-safe fill for every control type with read-back verification and typing retry, option/date matching in core, code-enforced refusal of denied fields and submit-like buttons, debounced field-diff observer, shadow-DOM highlighter, frame-routed fill/highlight/navigation messaging |
 | 5 | Rule mapper & orchestrator | ⬜ NOT STARTED | |
 | 6 | Side panel UI | ⬜ NOT STARTED | |
 | 7 | Supabase: auth, database, encrypted sync | ⬜ NOT STARTED | |
@@ -31,8 +31,8 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 4, Task 4.1** (fill primitives). Model: **Sonnet 5.5**.
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet).
+- Next: **Phase 5, Task 5.1** (keyword dictionary). Model: **Opus 5.5**.
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5.
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -182,3 +182,48 @@ Tests: 300 unit (core 223, vault 54, extension 21, other 2) + 15 e2e. **Scanner 
 - Closed shadow roots are invisible to any extension. Vision mode (Phase 10) is the fallback.
 - Tag-input detection is based on class names. Phase 11 platform profiles can add explicit selectors for sites it misses.
 - The live-verification walk used Playwright screenshots of the panel at 320px (zero console errors, no horizontal overflow). The user can load the unpacked build by hand in Chrome as described in the phase summary.
+
+---
+
+## Phase 4 — files
+
+Created:
+- `apps/extension/src/page-agent/events.ts`: native value setter, input/change/focus events, key-by-key typing, full pointer/mouse click sequence, `waitFor`
+- `apps/extension/src/page-agent/fill.ts`: `fill()`/`fillOne()` with per-kind primitives and read-back verification
+- `apps/extension/src/page-agent/observer.ts`: `observe()`/`stopObserving()` (MutationObserver + URL polling, debounced diffs)
+- `apps/extension/src/page-agent/navigation.ts`: `listNavigation()`/`clickNavigation()` with code-enforced submit refusal
+- `apps/extension/src/page-agent/highlight.ts`: `highlight()`/`clearHighlights()` shadow-DOM overlay
+- `packages/core/src/text/match.ts` (+ `match.test.ts`): `editDistance`, `similarity`, `matchOption`, `parseLooseDate`, `formatIsoDate`
+- `test-fixtures/fill-lab.html` (+ `.expected.json`): keyboard-only input, digits-only input, multi-select, date and month inputs, maxlength, rich-text editor, autocomplete, radio, checkbox
+- `e2e/agent.ts` (helpers), `e2e/fill.spec.ts` (9 tests), `e2e/observe-nav-highlight.spec.ts` (6 tests)
+
+Modified:
+- `apps/extension/src/page-agent/scan.ts`: registry keeps each field's descriptor; `describeControls`, `resolveControl`, `getEntry`, `entries`, `forget`
+- `apps/extension/src/page-agent/constraints.ts`: exports `rawCurrentValue` (page-internal only)
+- `apps/extension/entrypoints/page-agent.ts`: agent API adds fill/observe/navigation/highlight/stop
+- `apps/extension/src/messaging/protocol.ts`: new request types `FILL`, `HIGHLIGHT`, `OBSERVE`, `END_SESSION`, `NAV_LIST`, `NAV_CLICK`; page events `FIELDS_CHANGED`/`FIELD_FOCUSED`; `FieldIdSchema`, `splitId`/`joinId`; `REFUSED` error code
+- `apps/extension/src/messaging/background-handler.ts`, `client.ts`, `scan-merge.ts` (`groupByFrame`), `messaging.test.ts`
+- `apps/extension/entrypoints/sidepanel/ScannerPreview.tsx`: observes after a scan, live field list, change banner, highlight toggle, focused-row sync
+- `test-fixtures/upwork-profile-like.html` (tag input commits on Enter), `fiverr-seller-like.html` (occupation dropdown renders its options only when open)
+- `e2e/panel.spec.ts` (+4 tests), `e2e/scanner.spec.ts` (fill-lab added)
+
+Tests: 335 unit (core 255, vault 54, extension 24, other 2) + 35 e2e. Scanner labels 84/84.
+
+## Phase 4 — design notes
+
+- **Safety lives in the page agent, not only in the caller.** `fillOne` re-runs `classifyRisk` on the live field (with its current, redacted value) and refuses password, file, disabled and read-only fields, whatever the panel asked for. `clickNavigation` re-reads and re-classifies the button's *current* text at click time, so a "Next" that turned into "Submit" is refused. The e2e suite asks Filler to fill Password, Card number, Passport and a prefilled-card field: all four stay empty with readable reasons, and every fixture's submit log stays empty.
+- **Text:** paste first (prototype `value` setter + `input` + `change` + `blur`). If the read-back differs, retry once with key-by-key typing (`keydown`/`keypress`/set/`input`/`keyup`). Otherwise fail with what the site shows now. **No silent truncation:** text longer than `maxLength` fails before touching the field ("The text is 5001 characters but this field allows 5000").
+- **Choices** use `matchOption` (value → text → unique whole-word prefix either way → fuzzy ≥ 0.85 with a clear margin), otherwise "Option not found: "X". Available: …". Radios and checkboxes are clicked (full pointer/mouse sequence), never just `.checked =`. Checkbox groups untick options that are not wanted. A single checkbox only accepts yes/no-style values.
+- **Custom widgets:** an ARIA listbox opens, then the option is clicked. An ARIA combobox opens, waits up to 1.5 s for its popup (`aria-controls`/`aria-owns` or a nested listbox), falls back to typing into its search box, and closes with Escape on failure. A native input with `role=combobox` (autocomplete) is filled, then the exact matching suggestion is clicked if one appears.
+- **Dates:** `parseLooseDate` reads ISO, d/m/y (day-first, falling back to m/d/y only when the first number can't be a day), "14 May 2003", "May 14, 2003" and "Aug 2022". `date` inputs need a full date; `month` inputs get `yyyy-mm`. Split day/month/year selects are just three selects.
+- **Tags:** each missing item is typed then committed with Enter (comma as a fallback); existing chips are kept.
+- **Rich editors:** `innerText` + input event; `execCommand('insertText')` only as the last fallback (deprecated, but the only path some editors honour).
+- **Observer:** a MutationObserver (childList, subtree, and visibility-related attributes) plus a 500 ms URL poll (SPA history changes in the page's own world aren't visible to an isolated-world patch). Debounced 250 ms, it reports **only the diff**: newly visible controls get fresh ids, hidden or removed ones are listed in `removed` and dropped from the registry. The overlay's own DOM changes are ignored. *Bug found by the tests and fixed:* attribute mutations have no added/removed nodes, and `[].every()` is `true`, so every attribute change had been classed as "own".
+- **Highlighter:** one host element marked `data-filler-overlay` (the scanner skips it) with an open shadow root and `pointer-events: none` throughout, positioned in document coordinates. It repositions on scroll (capture), resize and every 500 ms for layout shifts. Each state has a colour *and* a text badge ("Vault", "AI draft", "Needs you", "✓ Filled", "! Failed", "Never filled"). Badges sit top-right because the first screenshot showed top-left badges covering field labels. Tooltips show the caller-supplied title and an already-masked preview. `focusin`/`click` on a highlighted field emits `FIELD_FOCUSED`, and the panel rings and scrolls to that row.
+- **Messaging:** field ids are page-wide `frameId:localId`. The background groups fill items by frame and calls each frame's agent with `executeScript({frameIds:[id]})`, so iframe fields are routed correctly (e2e: the referral code inside the iframe gets filled). Page agents report to the panel with `runtime.sendMessage`; the panel keeps only events from its own tab, validates them and adds the frame prefix. **The background answers only Filler's own extension pages:** the e2e suite proves a script in the page's isolated world gets no reply.
+
+### Open items surfaced in Phase 4
+- The wizard's "Next: add your rate"-style buttons (text beyond the navigation words) count as submit-like and are refused. That is safe but conservative; Phase 11 platform profiles can whitelist known navigation texts per site family.
+- The observer diff is per frame. A brand-new iframe added mid-session needs the agent injected into it (the panel can rescan). Automatic injection into new frames is left for Phase 6/11.
+- Highlights for fields that appear later are not added automatically in the dev preview; the Phase 6 session UI will re-highlight after every plan update.
+- Checkbox groups are cleared to exactly the wanted set. That is right for a plan the user approved, but Phase 5/6 must show unticks in the review list.

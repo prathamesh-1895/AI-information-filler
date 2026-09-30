@@ -4,3 +4,4 @@ export * from './schema/records';
 export * from './policy';
 export * from './text/normalise';
 export * from './text/signature';
+export * from './text/match';

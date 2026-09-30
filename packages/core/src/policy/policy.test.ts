@@ -242,7 +242,13 @@ describe('isSubmitLike', () => {
 describe('redacted page values', () => {
   it('round-trips through redactedValue and still denies the field', () => {
     expect(detectSensitiveValue(redactedValue('card_number'))).toBe('card_number');
-    expect(classifyRisk({ inputType: 'text', label: 'Reference', currentValue: redactedValue('aadhaar') })).toMatchObject({
+    expect(
+      classifyRisk({
+        inputType: 'text',
+        label: 'Reference',
+        currentValue: redactedValue('aadhaar'),
+      }),
+    ).toMatchObject({
       allowed: false,
       category: 'aadhaar',
     });

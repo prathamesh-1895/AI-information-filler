@@ -1,0 +1,79 @@
+{
+  "fixture": "fill-lab.html",
+  "$comment": "Awkward controls for the Phase 4 filler; e2e/fill.spec.ts drives the fill cases.",
+  "fields": [
+    {
+      "ref": "nick",
+      "label": "Nickname",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "person.name.display"
+    },
+    {
+      "ref": "pin",
+      "label": "Pin code",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.postal_code"
+    },
+    {
+      "ref": "langs",
+      "label": "Languages known",
+      "inputType": "select-multiple",
+      "options": ["English", "Hindi", "Marathi", "Tamil"],
+      "kind": "fact",
+      "canonicalKey": "languages[0].language"
+    },
+    {
+      "ref": "join",
+      "label": "Joining date",
+      "inputType": "date",
+      "kind": "fact",
+      "canonicalKey": null
+    },
+    {
+      "ref": "grad",
+      "label": "Graduation month",
+      "inputType": "month",
+      "kind": "fact",
+      "canonicalKey": "education[0].end"
+    },
+    {
+      "ref": "code",
+      "label": "Short code",
+      "inputType": "text",
+      "maxLength": 6,
+      "kind": "skip",
+      "canonicalKey": null
+    },
+    {
+      "ref": "bio",
+      "label": "Bio",
+      "inputType": "contenteditable",
+      "kind": "open_ended",
+      "canonicalKey": "bio.summary_short"
+    },
+    {
+      "ref": "city",
+      "label": "Current city",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.city"
+    },
+    {
+      "ref": "mode",
+      "label": "Work mode",
+      "inputType": "radio",
+      "options": ["Remote", "Hybrid", "On-site"],
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "contact",
+      "label": "You may contact me about openings",
+      "inputType": "checkbox",
+      "kind": "skip",
+      "canonicalKey": null
+    }
+  ]
+}

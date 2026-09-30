@@ -86,5 +86,32 @@
 
       <button type="button">Continue</button>
     </form>
+    <script>
+      // Occupation dropdown: the option list only exists while it is open (like many React selects).
+      const occ = document.querySelector('[role="combobox"]');
+      occ.setAttribute('aria-controls', 'occ-list');
+      occ.addEventListener('click', () => {
+        if (document.getElementById('occ-list')) return;
+        const list = document.createElement('div');
+        list.id = 'occ-list';
+        list.setAttribute('role', 'listbox');
+        list.style.cssText = 'position:absolute;background:#fff;border:1px solid #ccc;';
+        for (const name of ['Business Consultant', 'Data Analyst', 'Web Developer']) {
+          const o = document.createElement('div');
+          o.setAttribute('role', 'option');
+          o.textContent = name;
+          o.style.padding = '6px';
+          o.addEventListener('click', (e) => {
+            e.stopPropagation();
+            occ.textContent = name;
+            occ.setAttribute('aria-expanded', 'false');
+            list.remove();
+          });
+          list.append(o);
+        }
+        occ.after(list);
+        occ.setAttribute('aria-expanded', 'true');
+      });
+    </script>
   </body>
 </html>

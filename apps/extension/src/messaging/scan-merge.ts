@@ -84,3 +84,21 @@ export function classifyInjectionError(error: unknown): { code: ErrorCode; messa
   }
   return { code: 'INJECTION_FAILED', message: `Filler could not read this page (${text}).` };
 }
+
+/**
+ * Groups page-wide items (`fieldId: "12:f0"`) by frame and swaps in the
+ * frame-local id, ready to hand to that frame's page agent.
+ */
+export function groupByFrame<T extends { fieldId: string }>(
+  items: T[],
+): Map<number, Array<Omit<T, 'fieldId'> & { id: string }>> {
+  const groups = new Map<number, Array<Omit<T, 'fieldId'> & { id: string }>>();
+  for (const { fieldId, ...rest } of items) {
+    const at = fieldId.indexOf(':');
+    const frameId = Number(fieldId.slice(0, at));
+    const list = groups.get(frameId) ?? [];
+    list.push({ ...rest, id: fieldId.slice(at + 1) });
+    groups.set(frameId, list);
+  }
+  return groups;
+}
