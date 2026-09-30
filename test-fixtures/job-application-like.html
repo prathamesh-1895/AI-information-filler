@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Apply: Business Analyst Intern</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { font-family: sans-serif; max-width: 760px; margin: 24px auto; }
+      fieldset { margin: 16px 0; }
+      .field { margin: 8px 0; display: grid; grid-template-columns: 200px 1fr; }
+      .dob { display: flex; gap: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>Business Analyst Intern: Application</h1>
+    <form id="apply">
+      <h2>Personal details</h2>
+      <div class="field"><label for="fn">First name *</label><input id="fn" name="first_name" required data-fx="first" /></div>
+      <div class="field"><label for="ln">Last name *</label><input id="ln" name="last_name" required data-fx="last" /></div>
+      <div class="field"><label for="em">Email *</label><input id="em" name="email" type="email" required data-fx="email" /></div>
+      <div class="field">
+        <label for="ph">Phone *</label>
+        <input id="ph" name="phone" type="tel" required pattern="[0-9]{10}" maxlength="10" data-fx="phone" />
+      </div>
+      <fieldset>
+        <legend>Date of birth</legend>
+        <div class="dob">
+          <select name="dob_day" aria-label="Day" data-fx="dob-day"><option value="">DD</option><option>1</option><option>2</option><option>3</option></select>
+          <select name="dob_month" aria-label="Month" data-fx="dob-month"><option value="">MM</option><option value="1">January</option><option value="2">February</option></select>
+          <select name="dob_year" aria-label="Year" data-fx="dob-year"><option value="">YYYY</option><option>2003</option><option>2004</option></select>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Education 1</legend>
+        <div class="field"><label for="e1-inst">Institution</label><input id="e1-inst" name="education[0][institution]" data-fx="edu1-inst" /></div>
+        <div class="field"><label for="e1-deg">Degree</label><input id="e1-deg" name="education[0][degree]" data-fx="edu1-degree" /></div>
+        <div class="field"><label for="e1-field">Field of study</label><input id="e1-field" name="education[0][field]" data-fx="edu1-field" /></div>
+        <div class="field"><label for="e1-start">Start</label><input id="e1-start" name="education[0][start]" type="month" min="2000-01" max="2030-12" data-fx="edu1-start" /></div>
+        <div class="field"><label for="e1-end">End</label><input id="e1-end" name="education[0][end]" type="month" data-fx="edu1-end" /></div>
+        <div class="field"><label for="e1-grade">CGPA / Percentage</label><input id="e1-grade" name="education[0][grade]" data-fx="edu1-grade" /></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Education 2</legend>
+        <div class="field"><label for="e2-inst">Institution</label><input id="e2-inst" name="education[1][institution]" data-fx="edu2-inst" /></div>
+        <div class="field"><label for="e2-deg">Degree</label><input id="e2-deg" name="education[1][degree]" data-fx="edu2-degree" /></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Work experience</legend>
+        <div class="field"><label for="x-co">Company</label><input id="x-co" name="experience[0][company]" data-fx="exp-company" /></div>
+        <div class="field"><label for="x-title">Job title</label><input id="x-title" name="experience[0][title]" data-fx="exp-title" /></div>
+        <div class="field"><label for="x-start">Start date</label><input id="x-start" name="experience[0][start]" type="date" data-fx="exp-start" /></div>
+      </fieldset>
+
+      <h2>Your application</h2>
+      <div class="field"><label for="cv">Resume / CV</label><input id="cv" name="resume" type="file" accept=".pdf,.docx" data-fx="resume" /></div>
+      <div class="field"><label for="cl">Cover letter</label><textarea id="cl" name="cover_letter" maxlength="2000" data-fx="cover" ></textarea></div>
+      <div class="field">
+        <label for="np">Notice period</label>
+        <select id="np" name="notice" data-fx="notice"><option value="">Select</option><option>Immediate</option><option>15 days</option><option>30 days</option></select>
+      </div>
+      <div class="field"><label for="ctc">Expected CTC (LPA)</label><input id="ctc" name="expected_ctc" type="number" min="0" step="0.5" data-fx="ctc" /></div>
+      <div class="field"><label for="li">LinkedIn profile</label><input id="li" name="linkedin" type="url" data-fx="linkedin" /></div>
+      <fieldset>
+        <legend>How did you hear about us?</legend>
+        <label><input type="radio" name="source" value="linkedin" data-fx="source" /> LinkedIn</label>
+        <label><input type="radio" name="source" value="friend" data-fx="source" /> A friend</label>
+        <label><input type="radio" name="source" value="college" data-fx="source" /> College placement cell</label>
+      </fieldset>
+      <label><input type="checkbox" name="confirm" required data-fx="confirm" /> I confirm the information above is correct</label>
+      <div><button type="submit">Submit application</button></div>
+    </form>
+  </body>
+</html>

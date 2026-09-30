@@ -11,6 +11,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.11.0(jiti@2.7.0))
+      '@filler/core':
+        specifier: workspace:^
+        version: link:packages/core
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -41,12 +44,18 @@ importers:
 
   apps/extension:
     dependencies:
+      '@filler/core':
+        specifier: workspace:^
+        version: link:../../packages/core
       react:
         specifier: ^19.3.0
         version: 19.3.0
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3

@@ -300,7 +300,7 @@ Developer mode → Load unpacked → `apps/extension/.output/chrome-mv3`.
 | 8 | AI gateway & field understanding | Free-LLM gateway, safety envelope, `classify`, 🔑 key checkpoint |
 | 9 | AI answer generation & goal context | Goal-aware drafts for open-ended fields, consistency, reuse |
 | 10 | Screen Share & vision mode | Share tab/screen, AI reads it, suggests what to fill anywhere |
-| 11 | Résumé import & platform profiles | One-upload onboarding; Upwork, Fiverr, Google Forms, generic flows |
+| 11 | Résumé import & platform profiles | One-upload onboarding; site-agnostic by default, plus tuned profiles per site family (freelance, jobs, online forms, hackathons/events, college/govt-style) |
 | 12 | Hardening, docs & release | Security audit, full docs, demo script, packaged build, GitHub + CI |
 
 Future (separate playbook): Android client (AccessibilityService +
@@ -1011,8 +1011,22 @@ DONE: e2e on tricky fixture fields; each explanation is shown with its source.
 
 ## PHASE 11 — RÉSUMÉ IMPORT & PLATFORM PROFILES
 
-**Why:** "type once" becomes "upload once", and the three platforms the
-user named get first-class flows.
+**Why:** "type once" becomes "upload once", and common kinds of sites get
+tuned flows.
+
+**Generic first (user requirement, 2026-10-01):** Upwork and Fiverr were
+*examples*. Filler must work on **any** site where the user signs in and
+builds a profile or fills in details: freelancing (Upwork, Fiverr,
+Freelancer, Toptal, PeoplePerHour, Contra), jobs and internships (LinkedIn,
+Naukri, Internshala, Indeed, Wellfound, company career pages on Workday /
+Greenhouse / Lever), hackathons and competitions (Devfolio, Unstop), college
+and scholarship forms, e-commerce seller onboarding, marketplaces, community
+and social profiles, event registrations and Google/Microsoft Forms. The
+scanner, mapper, AI classify/generate and review flow are site-agnostic and
+must reach the Phase 5/8 accuracy targets on sites with **no** profile at
+all. Platform profiles only *add* confidence, length windows and tips; they
+never gate whether Filler works. Logging in stays the user's job: the user
+signs in, then starts a Filler session on the profile pages.
 **Model:** Sonnet 5.5.
 **Use:** `pdfjs-dist`, `mammoth` (client side), `ai-generate` in an `extract` mode, `config/platforms/*.json`.
 **Avoid:** uploading the raw résumé file anywhere; site-specific code outside `src/platforms/`.
@@ -1036,15 +1050,21 @@ platform tips shown in the side panel. Loader + schema validation in core.
 
 DONE: schema tests; profile overrides mapper results only where it has higher confidence.
 
-### Task 11.3 — Upwork, Fiverr, Google Forms, generic profiles
-Author profiles for **Upwork freelancer profile**, **Fiverr seller
-onboarding + gig description**, **Google Forms** (including required
-questions, grids, "Other" text, multiple sections), and a **generic
-job-application** profile. Built against the fixtures and verified
-manually by the user on the live site **without submitting** (give the
-user a short checklist to run and report back; record results in PROGRESS.md).
+### Task 11.3 — Platform-family profiles (generic first)
+Author profiles by **family**, each covering many sites through shared
+patterns, plus a few site-specific ones:
+- **Freelance marketplace profile** (Upwork, Fiverr, Freelancer, PeoplePerHour, Contra): title, overview, rate, skills, portfolio, employment/education modals, gig description.
+- **Job / internship application** (LinkedIn Easy Apply, Naukri, Internshala, Indeed, Workday/Greenhouse/Lever career pages): repeating education/experience, notice period, CTC, résumé upload prompt.
+- **Online forms** (Google Forms, Microsoft Forms, Typeform-style one-question-per-page): required questions, grids, "Other" text, sections.
+- **Hackathon / event / community registration** (Devfolio, Unstop, Meetup-style): team, college, links, "why do you want to join".
+- **College, scholarship and government-style personal-details forms**: parent names, address blocks, categories, split date-of-birth selects. The deny-list matters most here (Aadhaar/PAN are never filled).
+- **Generic fallback** (no profile): must work on any site.
+Add a fixture per family (reuse Phase 3 fixtures where they fit). Verify
+manually with the user on at least one live site per family **without
+submitting** (give the user a short checklist to run and report back;
+record results in PROGRESS.md).
 
-DONE: fixture e2e for each profile passes; user's manual check results recorded (or "pending user check").
+DONE: fixture e2e for each family passes; the generic fallback alone (profiles disabled) still meets the Phase 5/8 accuracy targets on every fixture; the user's manual check results are recorded (or "pending user check").
 
 ### Task 11.4 — Goal templates & session history
 Goal templates ("Upwork profile: <role>", "Fiverr gig: <service>", "Job

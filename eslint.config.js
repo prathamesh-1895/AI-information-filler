@@ -7,6 +7,7 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/.output/**',
+      '**/.output-e2e/**',
       '**/.wxt/**',
       '**/.turbo/**',
       '**/dist/**',

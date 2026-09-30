@@ -1,0 +1,110 @@
+{
+  "fixture": "upwork-profile-like.html",
+  "$comment": "Only step 1 is visible at load. Steps 2-3 and the employment modal are hidden, so the Phase 3 scanner must NOT report them; Phase 4's observer picks them up when they appear (see 'laterSteps').",
+  "fields": [
+    {
+      "ref": "title",
+      "label": "Your professional role",
+      "inputType": "text",
+      "maxLength": 70,
+      "helpText": "e.g. Business Consultant for small businesses",
+      "kind": "fact",
+      "canonicalKey": "bio.headline"
+    },
+    {
+      "ref": "rate",
+      "label": "Hourly rate",
+      "inputType": "text",
+      "helpText": "Total amount the client will see.",
+      "kind": "fact",
+      "canonicalKey": "preferences.hourly_rate"
+    },
+    {
+      "ref": "skills",
+      "label": "Skills",
+      "inputType": "tags",
+      "currentValue": ["Excel"],
+      "kind": "fact",
+      "canonicalKey": "skills"
+    },
+    {
+      "ref": "overview",
+      "label": "Profile overview",
+      "inputType": "textarea",
+      "maxLength": 5000,
+      "kind": "open_ended",
+      "canonicalKey": "bio.summary_long"
+    },
+    {
+      "ref": "level",
+      "label": "Experience level",
+      "inputType": "radio",
+      "options": ["Entry level", "Intermediate", "Expert"],
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "english",
+      "label": "English proficiency",
+      "inputType": "select-one",
+      "options": ["Basic", "Conversational", "Fluent", "Native or bilingual"],
+      "kind": "fact",
+      "canonicalKey": "languages[0].proficiency"
+    }
+  ],
+  "laterSteps": {
+    "2": [
+      {
+        "ref": "street",
+        "label": "Street address",
+        "inputType": "text",
+        "kind": "fact",
+        "canonicalKey": "address.line1"
+      },
+      {
+        "ref": "city",
+        "label": "City",
+        "inputType": "text",
+        "kind": "fact",
+        "canonicalKey": "address.city"
+      },
+      {
+        "ref": "zip",
+        "label": "ZIP/Postal code",
+        "inputType": "text",
+        "kind": "fact",
+        "canonicalKey": "address.postal_code"
+      },
+      {
+        "ref": "phone2",
+        "label": "Phone",
+        "inputType": "tel",
+        "kind": "fact",
+        "canonicalKey": "contact.phone.mobile"
+      }
+    ],
+    "modal": [
+      {
+        "ref": "exp-company",
+        "label": "Company",
+        "inputType": "text",
+        "kind": "fact",
+        "canonicalKey": "experience[0].company"
+      },
+      {
+        "ref": "exp-title",
+        "label": "Title",
+        "inputType": "text",
+        "kind": "fact",
+        "canonicalKey": "experience[0].title"
+      },
+      {
+        "ref": "exp-desc",
+        "label": "Description",
+        "inputType": "textarea",
+        "kind": "fact",
+        "canonicalKey": "experience[0].description"
+      }
+    ]
+  }
+}

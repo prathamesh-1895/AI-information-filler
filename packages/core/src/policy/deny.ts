@@ -158,12 +158,26 @@ export function passesVerhoeff(digits: string): boolean {
   return c === 0;
 }
 
+const REDACTED_PATTERN = /^\[filler:redacted:([a-z_]+)\]$/;
+
+/**
+ * Placeholder the page agent puts in place of a sensitive page value, so the
+ * value itself never leaves the page while the policy still sees what it was.
+ */
+export function redactedValue(category: DeniedCategory): string {
+  return `[filler:redacted:${category}]`;
+}
+
 /**
  * Recognises values that are themselves sensitive (used on page values and
  * vault writes). Checksums keep ordinary numbers, such as phone numbers, from
  * being mistaken for IDs.
  */
 export function detectSensitiveValue(value: string): DeniedCategory | null {
+  const redacted = REDACTED_PATTERN.exec(value);
+  if (redacted && (DENIED_CATEGORIES as readonly string[]).includes(redacted[1] ?? '')) {
+    return redacted[1] as DeniedCategory;
+  }
   const trimmed = value.trim();
   const compact = trimmed.replace(/[\s-]/g, '');
   if (/^\d{13,19}$/.test(compact) && passesLuhn(compact)) return 'card_number';

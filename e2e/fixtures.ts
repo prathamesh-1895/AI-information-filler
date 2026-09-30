@@ -2,7 +2,7 @@ import { test as base, chromium, type BrowserContext } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 
 const extensionPath = fileURLToPath(
-  new URL('../apps/extension/.output/chrome-mv3', import.meta.url),
+  new URL('../apps/extension/.output-e2e/chrome-mv3', import.meta.url),
 );
 
 /** Playwright fixtures: a persistent Chromium context with the built extension loaded. */

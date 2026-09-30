@@ -1,0 +1,207 @@
+{
+  "fixture": "job-application-like.html",
+  "fields": [
+    {
+      "ref": "first",
+      "label": "First name",
+      "inputType": "text",
+      "required": true,
+      "kind": "fact",
+      "canonicalKey": "person.name.first"
+    },
+    {
+      "ref": "last",
+      "label": "Last name",
+      "inputType": "text",
+      "required": true,
+      "kind": "fact",
+      "canonicalKey": "person.name.last"
+    },
+    {
+      "ref": "email",
+      "label": "Email",
+      "inputType": "email",
+      "required": true,
+      "kind": "fact",
+      "canonicalKey": "contact.email"
+    },
+    {
+      "ref": "phone",
+      "label": "Phone",
+      "inputType": "tel",
+      "required": true,
+      "maxLength": 10,
+      "pattern": "[0-9]{10}",
+      "kind": "fact",
+      "canonicalKey": "contact.phone.mobile"
+    },
+    {
+      "ref": "dob-day",
+      "label": "Day",
+      "sectionHeading": "Date of birth",
+      "inputType": "select-one",
+      "kind": "fact",
+      "canonicalKey": "person.dob"
+    },
+    {
+      "ref": "dob-month",
+      "label": "Month",
+      "sectionHeading": "Date of birth",
+      "inputType": "select-one",
+      "kind": "fact",
+      "canonicalKey": "person.dob"
+    },
+    {
+      "ref": "dob-year",
+      "label": "Year",
+      "sectionHeading": "Date of birth",
+      "inputType": "select-one",
+      "kind": "fact",
+      "canonicalKey": "person.dob"
+    },
+    {
+      "ref": "edu1-inst",
+      "label": "Institution",
+      "sectionHeading": "Education 1",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "education[0].institution"
+    },
+    {
+      "ref": "edu1-degree",
+      "label": "Degree",
+      "sectionHeading": "Education 1",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "education[0].degree"
+    },
+    {
+      "ref": "edu1-field",
+      "label": "Field of study",
+      "sectionHeading": "Education 1",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "education[0].field"
+    },
+    {
+      "ref": "edu1-start",
+      "label": "Start",
+      "sectionHeading": "Education 1",
+      "inputType": "month",
+      "min": "2000-01",
+      "max": "2030-12",
+      "kind": "fact",
+      "canonicalKey": "education[0].start"
+    },
+    {
+      "ref": "edu1-end",
+      "label": "End",
+      "sectionHeading": "Education 1",
+      "inputType": "month",
+      "kind": "fact",
+      "canonicalKey": "education[0].end"
+    },
+    {
+      "ref": "edu1-grade",
+      "label": "CGPA / Percentage",
+      "sectionHeading": "Education 1",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "education[0].grade"
+    },
+    {
+      "ref": "edu2-inst",
+      "label": "Institution",
+      "sectionHeading": "Education 2",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "education[1].institution"
+    },
+    {
+      "ref": "edu2-degree",
+      "label": "Degree",
+      "sectionHeading": "Education 2",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "education[1].degree"
+    },
+    {
+      "ref": "exp-company",
+      "label": "Company",
+      "sectionHeading": "Work experience",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "experience[0].company"
+    },
+    {
+      "ref": "exp-title",
+      "label": "Job title",
+      "sectionHeading": "Work experience",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "experience[0].title"
+    },
+    {
+      "ref": "exp-start",
+      "label": "Start date",
+      "sectionHeading": "Work experience",
+      "inputType": "date",
+      "kind": "fact",
+      "canonicalKey": "experience[0].start"
+    },
+    {
+      "ref": "resume",
+      "label": "Resume / CV",
+      "inputType": "file",
+      "kind": "skip",
+      "canonicalKey": null
+    },
+    {
+      "ref": "cover",
+      "label": "Cover letter",
+      "inputType": "textarea",
+      "maxLength": 2000,
+      "kind": "open_ended",
+      "canonicalKey": null
+    },
+    {
+      "ref": "notice",
+      "label": "Notice period",
+      "inputType": "select-one",
+      "options": ["Immediate", "15 days", "30 days"],
+      "kind": "fact",
+      "canonicalKey": "preferences.notice_period"
+    },
+    {
+      "ref": "ctc",
+      "label": "Expected CTC (LPA)",
+      "inputType": "number",
+      "min": "0",
+      "kind": "fact",
+      "canonicalKey": "preferences.expected_salary"
+    },
+    {
+      "ref": "linkedin",
+      "label": "LinkedIn profile",
+      "inputType": "url",
+      "kind": "fact",
+      "canonicalKey": "links.linkedin"
+    },
+    {
+      "ref": "source",
+      "label": "How did you hear about us?",
+      "inputType": "radio",
+      "options": ["LinkedIn", "A friend", "College placement cell"],
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "confirm",
+      "label": "I confirm the information above is correct",
+      "inputType": "checkbox",
+      "required": true,
+      "kind": "skip",
+      "canonicalKey": null
+    }
+  ]
+}

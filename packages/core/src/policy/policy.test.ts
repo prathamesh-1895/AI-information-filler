@@ -5,6 +5,7 @@ import {
   detectSensitiveValue,
   passesLuhn,
   passesVerhoeff,
+  redactedValue,
   type DeniedCategory,
   type PolicyField,
 } from './deny';
@@ -235,5 +236,16 @@ describe('isSubmitLike', () => {
 
   it('decides on text, not type=submit (wizards use submit-typed Next buttons)', () => {
     expect(isSubmitLike({ text: 'Next', type: 'submit' })).toBe(false);
+  });
+});
+
+describe('redacted page values', () => {
+  it('round-trips through redactedValue and still denies the field', () => {
+    expect(detectSensitiveValue(redactedValue('card_number'))).toBe('card_number');
+    expect(classifyRisk({ inputType: 'text', label: 'Reference', currentValue: redactedValue('aadhaar') })).toMatchObject({
+      allowed: false,
+      category: 'aadhaar',
+    });
+    expect(detectSensitiveValue('[filler:redacted:not_a_category]')).toBeNull();
   });
 });

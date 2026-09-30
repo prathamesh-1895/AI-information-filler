@@ -1,0 +1,42 @@
+{
+  "fixture": "react-controlled.html",
+  "$comment": "Ids are regenerated on every render (window.__rerender()). Email has no name attribute, so re-finding it after a re-render must not rely on id or name.",
+  "fields": [
+    {
+      "ref": "first",
+      "label": "First name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "person.name.first"
+    },
+    {
+      "ref": "last",
+      "label": "Last name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "person.name.last"
+    },
+    {
+      "ref": "email",
+      "label": "Email",
+      "inputType": "email",
+      "kind": "fact",
+      "canonicalKey": "contact.email"
+    },
+    {
+      "ref": "country",
+      "label": "Country",
+      "inputType": "select-one",
+      "options": ["India", "United States", "United Kingdom"],
+      "kind": "fact",
+      "canonicalKey": "address.country"
+    },
+    {
+      "ref": "newsletter",
+      "label": "Send me the newsletter",
+      "inputType": "checkbox",
+      "kind": "skip",
+      "canonicalKey": null
+    }
+  ]
+}

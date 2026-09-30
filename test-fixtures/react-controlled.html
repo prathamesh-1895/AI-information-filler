@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Controlled form (React-style)</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { font-family: sans-serif; max-width: 600px; margin: 24px auto; }
+      .field { margin: 12px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Sign up for updates</h1>
+    <div id="app"></div>
+    <script>
+      // A tiny React-like controlled form, written without any external library
+      // so tests stay offline:
+      //  - the DOM is re-rendered from `state`, creating brand-new elements with
+      //    fresh random ids each time (like frameworks that generate ids);
+      //  - state only changes on real `input`/`change` events. Setting
+      //    `.value` without an event is lost on the next render, exactly like
+      //    a React controlled input.
+      const state = { firstName: '', lastName: '', email: '', country: '', newsletter: false };
+      window.__state = state;
+      let renders = 0;
+      const rid = () => 'input_' + Math.floor(Math.random() * 90000 + 10000);
+
+      function render() {
+        renders += 1;
+        const ids = { first: rid(), last: rid(), email: rid(), country: rid(), news: rid() };
+        const app = document.getElementById('app');
+        app.innerHTML = `
+          <form id="signup">
+            <div class="field"><label for="${ids.first}">First name</label><input id="${ids.first}" name="firstName" data-fx="first"></div>
+            <div class="field"><label for="${ids.last}">Last name</label><input id="${ids.last}" name="lastName" data-fx="last"></div>
+            <div class="field"><label for="${ids.email}">Email</label><input id="${ids.email}" type="email" data-fx="email"></div>
+            <div class="field"><label for="${ids.country}">Country</label>
+              <select id="${ids.country}" name="country" data-fx="country">
+                <option value="">Select a country</option>
+                <option value="IN">India</option><option value="US">United States</option><option value="GB">United Kingdom</option>
+              </select></div>
+            <div class="field"><label><input type="checkbox" id="${ids.news}" data-fx="newsletter"> Send me the newsletter</label></div>
+            <button type="submit">Sign up</button>
+          </form>`;
+        const form = app.querySelector('form');
+        const [first, last, email] = form.querySelectorAll('input:not([type=checkbox])');
+        const country = form.querySelector('select');
+        const news = form.querySelector('input[type=checkbox]');
+        first.value = state.firstName;
+        last.value = state.lastName;
+        email.value = state.email;
+        country.value = state.country;
+        news.checked = state.newsletter;
+        first.addEventListener('input', (e) => (state.firstName = e.target.value));
+        last.addEventListener('input', (e) => (state.lastName = e.target.value));
+        email.addEventListener('input', (e) => (state.email = e.target.value));
+        country.addEventListener('change', (e) => (state.country = e.target.value));
+        news.addEventListener('change', (e) => (state.newsletter = e.target.checked));
+      }
+      window.__rerender = render;
+      window.__renders = () => renders;
+      render();
+    </script>
+  </body>
+</html>

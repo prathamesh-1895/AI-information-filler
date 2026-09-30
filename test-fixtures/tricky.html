@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tricky form</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { font-family: sans-serif; max-width: 720px; margin: 24px auto; }
+      .row { display: flex; gap: 12px; align-items: center; margin: 12px 0; }
+      .lbl { width: 160px; }
+      .hp { position: absolute; left: -9999px; top: -9999px; }
+      .fancy-check input { opacity: 0; position: absolute; }
+      .fancy-check span::before { content: '☐ '; }
+      [contenteditable] { border: 1px solid #ccc; min-height: 60px; padding: 6px; }
+      iframe { width: 100%; height: 120px; border: 1px dashed #aaa; }
+    </style>
+  </head>
+  <body>
+    <h1>Registration</h1>
+    <form id="tricky">
+      <h2>About you</h2>
+
+      <!-- Label in a preceding sibling div, not a <label> -->
+      <div class="row">
+        <div class="lbl">Alternate phone</div>
+        <div><input type="tel" name="alt" data-fx="alt-phone" /></div>
+      </div>
+
+      <!-- Placeholder only -->
+      <div class="row"><input type="text" placeholder="Pin code" data-fx="pincode" /></div>
+
+      <!-- Nothing but a name attribute -->
+      <div class="row"><input type="url" name="linkedin_url" data-fx="linkedin" /></div>
+
+      <!-- Custom element with an open shadow root -->
+      <fx-field data-fx-host="company"></fx-field>
+
+      <!-- Rich text editor -->
+      <div class="row">
+        <div role="textbox" contenteditable="true" aria-multiline="true" aria-label="Cover letter" data-fx="cover"></div>
+      </div>
+
+      <!-- State select with optgroups -->
+      <div class="row">
+        <label for="state">State</label>
+        <select id="state" name="state" data-fx="state">
+          <option value="">-- Select --</option>
+          <optgroup label="West"><option>Maharashtra</option><option>Gujarat</option></optgroup>
+          <optgroup label="South"><option>Karnataka</option></optgroup>
+        </select>
+      </div>
+
+      <h2>Account security</h2>
+      <div class="row"><label for="pw">Password</label><input id="pw" type="password" name="password" data-fx="password" /></div>
+      <div class="row"><label for="card">Card number</label><input id="card" name="cc" inputmode="numeric" data-fx="card" /></div>
+      <div class="row"><label for="passport">Passport number</label><input id="passport" name="passport" data-fx="passport" /></div>
+      <div class="row"><label for="ref">Reference code</label><input id="ref" name="ref" value="4111 1111 1111 1111" data-fx="prefilled-card" /></div>
+
+      <!-- Custom-styled checkbox: the native input is invisible, its label is not -->
+      <label class="fancy-check"><input type="checkbox" name="terms" data-fx="terms" /><span>I agree to the terms</span></label>
+
+      <!-- Must NOT be discovered -->
+      <div class="hp"><label for="hp">Leave this field empty</label><input id="hp" name="website_hp" tabindex="-1" autocomplete="off" data-fx="honeypot" /></div>
+      <input type="hidden" name="csrf" value="abc123" data-fx="hidden-input" />
+      <div style="display: none"><label>Hidden by display<input name="gone1" data-fx="display-none" /></label></div>
+      <div style="visibility: hidden"><label>Hidden by visibility<input name="gone2" data-fx="visibility-hidden" /></label></div>
+      <div aria-hidden="true"><label>Aria hidden<input name="gone3" data-fx="aria-hidden" /></label></div>
+      <input type="text" name="zero" style="width: 0; height: 0; border: 0; padding: 0" data-fx="zero-size" />
+
+      <!-- Same-origin iframe with its own field -->
+      <iframe src="tricky-frame.html" title="Referral"></iframe>
+
+      <button type="submit">Create account</button>
+    </form>
+
+    <script>
+      customElements.define(
+        'fx-field',
+        class extends HTMLElement {
+          connectedCallback() {
+            const root = this.attachShadow({ mode: 'open' });
+            root.innerHTML =
+              '<div class="row"><label for="company">Company name</label><input id="company" name="company" data-fx="company" /></div>';
+          }
+        },
+      );
+    </script>
+  </body>
+</html>

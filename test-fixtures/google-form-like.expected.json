@@ -1,0 +1,92 @@
+{
+  "fixture": "google-form-like.html",
+  "fields": [
+    {
+      "ref": "name",
+      "label": "Full name",
+      "inputType": "text",
+      "required": true,
+      "kind": "fact",
+      "canonicalKey": "person.name.full"
+    },
+    {
+      "ref": "email",
+      "label": "Email address",
+      "inputType": "email",
+      "required": true,
+      "kind": "fact",
+      "canonicalKey": "contact.email"
+    },
+    {
+      "ref": "phone",
+      "label": "Phone number",
+      "inputType": "text",
+      "helpText": "We'll only call you about this application.",
+      "kind": "fact",
+      "canonicalKey": "contact.phone.mobile"
+    },
+    {
+      "ref": "year",
+      "label": "Which year are you in?",
+      "inputType": "aria-radiogroup",
+      "required": true,
+      "options": ["First year", "Second year", "Third year", "Final year", "Other:"],
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "year-other",
+      "label": "Other response",
+      "inputType": "text",
+      "kind": "skip",
+      "canonicalKey": null
+    },
+    {
+      "ref": "skills",
+      "label": "Skills you have",
+      "inputType": "aria-checkbox-group",
+      "options": ["Excel", "SQL", "Python", "Public speaking"],
+      "currentValue": ["SQL"],
+      "kind": "choice",
+      "canonicalKey": "skills"
+    },
+    {
+      "ref": "city",
+      "label": "Preferred city",
+      "inputType": "aria-listbox",
+      "options": ["Pune", "Mumbai", "Bengaluru"],
+      "kind": "fact",
+      "canonicalKey": "address.city"
+    },
+    {
+      "ref": "grid-communication",
+      "label": "Rate yourself: Communication",
+      "inputType": "aria-radiogroup",
+      "options": ["Poor", "Good", "Excellent"],
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "grid-teamwork",
+      "label": "Rate yourself: Teamwork",
+      "inputType": "aria-radiogroup",
+      "options": ["Poor", "Good", "Excellent"],
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "dob",
+      "label": "Date of birth",
+      "inputType": "date",
+      "kind": "fact",
+      "canonicalKey": "person.dob"
+    },
+    {
+      "ref": "why",
+      "label": "Why do you want to be a campus ambassador?",
+      "inputType": "textarea",
+      "kind": "open_ended",
+      "canonicalKey": null
+    }
+  ]
+}

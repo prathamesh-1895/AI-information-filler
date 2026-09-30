@@ -1,0 +1,79 @@
+{
+  "fixture": "fiverr-seller-like.html",
+  "fields": [
+    {
+      "ref": "first",
+      "label": "First Name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "person.name.first"
+    },
+    {
+      "ref": "last",
+      "label": "Last Name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "person.name.last"
+    },
+    {
+      "ref": "display",
+      "label": "Display Name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "person.name.display"
+    },
+    {
+      "ref": "avatar",
+      "label": "Profile Picture",
+      "inputType": "file",
+      "kind": "skip",
+      "canonicalKey": null
+    },
+    {
+      "ref": "description",
+      "label": "Description",
+      "inputType": "textarea",
+      "maxLength": 600,
+      "kind": "open_ended",
+      "canonicalKey": "bio.summary_long"
+    },
+    {
+      "ref": "language",
+      "label": "Language",
+      "inputType": "select-one",
+      "options": ["English", "Hindi", "Marathi"],
+      "kind": "fact",
+      "canonicalKey": "languages[0].language"
+    },
+    {
+      "ref": "language-level",
+      "label": "Language Level",
+      "inputType": "select-one",
+      "options": ["Basic", "Conversational", "Fluent", "Native/Bilingual"],
+      "kind": "fact",
+      "canonicalKey": "languages[0].proficiency"
+    },
+    {
+      "ref": "occupation",
+      "label": "Your Occupation",
+      "inputType": "aria-combobox",
+      "kind": "fact",
+      "canonicalKey": "professional.category"
+    },
+    {
+      "ref": "website",
+      "label": "Personal Website",
+      "inputType": "url",
+      "kind": "fact",
+      "canonicalKey": "links.website"
+    },
+    {
+      "ref": "email",
+      "label": "Email",
+      "inputType": "email",
+      "isDisabled": true,
+      "kind": "skip",
+      "canonicalKey": "contact.email"
+    }
+  ]
+}

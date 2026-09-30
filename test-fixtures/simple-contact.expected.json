@@ -2,24 +2,42 @@
   "fixture": "simple-contact.html",
   "fields": [
     {
-      "selector": "#full-name",
+      "ref": "name",
       "label": "Full name",
+      "inputType": "text",
+      "required": true,
       "kind": "fact",
       "canonicalKey": "person.name.full"
     },
     {
-      "selector": "#email",
+      "ref": "email",
       "label": "Email address",
+      "inputType": "email",
+      "required": true,
       "kind": "fact",
       "canonicalKey": "contact.email"
     },
     {
-      "selector": "#phone",
+      "ref": "phone",
       "label": "Mobile number",
+      "inputType": "tel",
       "kind": "fact",
       "canonicalKey": "contact.phone.mobile"
     },
-    { "selector": "#city", "label": "City", "kind": "fact", "canonicalKey": "address.city" },
-    { "selector": "#message", "label": "Message", "kind": "open_ended", "canonicalKey": null }
+    {
+      "ref": "city",
+      "label": "City",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.city"
+    },
+    {
+      "ref": "message",
+      "label": "Message",
+      "inputType": "textarea",
+      "maxLength": 500,
+      "kind": "open_ended",
+      "canonicalKey": null
+    }
   ]
 }

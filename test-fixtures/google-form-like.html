@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Campus Ambassador Application</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { font-family: sans-serif; background: #f0ebf8; }
+      .card { background: #fff; border-radius: 8px; padding: 16px 24px; margin: 12px auto; max-width: 640px; }
+      .req { color: #d93025; }
+      [role='radio'], [role='checkbox'], [role='option'] { display: block; padding: 6px; cursor: pointer; }
+      [role='listbox'][aria-expanded='false'] [role='option'][aria-selected='false'] { display: none; }
+      .grid-row { display: flex; gap: 12px; }
+      .help { color: #5f6368; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <form id="gform">
+      <div class="card"><h1>Campus Ambassador Application</h1><div>Tell us a bit about yourself.</div></div>
+      <div role="list">
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3" id="q1h">Full name <span class="req" aria-label="Required question">*</span></div>
+          <input type="text" aria-labelledby="q1h" aria-required="true" data-fx="name" />
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3">Email address <span class="req">*</span></div>
+          <input type="email" data-fx="email" />
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3">Phone number</div>
+          <div class="help">We'll only call you about this application.</div>
+          <input type="text" data-fx="phone" />
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3" id="q3h">Which year are you in? <span class="req">*</span></div>
+          <div role="radiogroup" aria-labelledby="q3h" aria-required="true" data-fx="year">
+            <div role="radio" aria-checked="false" data-value="First year" aria-label="First year">First year</div>
+            <div role="radio" aria-checked="false" data-value="Second year" aria-label="Second year">Second year</div>
+            <div role="radio" aria-checked="false" data-value="Third year" aria-label="Third year">Third year</div>
+            <div role="radio" aria-checked="false" data-value="Final year" aria-label="Final year">Final year</div>
+            <div role="radio" aria-checked="false" data-value="__other_option__" aria-label="Other:">Other:</div>
+            <input type="text" aria-label="Other response" data-fx="year-other" />
+          </div>
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3" id="q4h">Skills you have</div>
+          <div role="list" aria-labelledby="q4h" data-fx="skills">
+            <div role="checkbox" aria-checked="false" aria-label="Excel">Excel</div>
+            <div role="checkbox" aria-checked="true" aria-label="SQL">SQL</div>
+            <div role="checkbox" aria-checked="false" aria-label="Python">Python</div>
+            <div role="checkbox" aria-checked="false" aria-label="Public speaking">Public speaking</div>
+          </div>
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3" id="q5h">Preferred city</div>
+          <div role="listbox" aria-labelledby="q5h" aria-expanded="false" tabindex="0" data-fx="city">
+            <div role="option" aria-selected="true" data-value="">Choose</div>
+            <div role="option" aria-selected="false" data-value="Pune">Pune</div>
+            <div role="option" aria-selected="false" data-value="Mumbai">Mumbai</div>
+            <div role="option" aria-selected="false" data-value="Bengaluru">Bengaluru</div>
+          </div>
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3">Rate yourself</div>
+          <div class="grid-row">
+            <span>Communication</span>
+            <div role="radiogroup" aria-label="Communication" data-fx="grid-communication">
+              <div role="radio" aria-checked="false" data-value="Poor" aria-label="Poor">Poor</div>
+              <div role="radio" aria-checked="false" data-value="Good" aria-label="Good">Good</div>
+              <div role="radio" aria-checked="false" data-value="Excellent" aria-label="Excellent">Excellent</div>
+            </div>
+          </div>
+          <div class="grid-row">
+            <span>Teamwork</span>
+            <div role="radiogroup" aria-label="Teamwork" data-fx="grid-teamwork">
+              <div role="radio" aria-checked="false" data-value="Poor" aria-label="Poor">Poor</div>
+              <div role="radio" aria-checked="false" data-value="Good" aria-label="Good">Good</div>
+              <div role="radio" aria-checked="false" data-value="Excellent" aria-label="Excellent">Excellent</div>
+            </div>
+          </div>
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3">Date of birth</div>
+          <input type="date" data-fx="dob" />
+        </div>
+
+        <div role="listitem" class="card">
+          <div role="heading" aria-level="3">Why do you want to be a campus ambassador?</div>
+          <textarea data-fx="why"></textarea>
+        </div>
+      </div>
+      <button type="submit">Submit</button>
+    </form>
+    <script>
+      // Minimal Google-Forms-like behaviour: clicking ARIA radios, checkboxes and options toggles them.
+      document.addEventListener('click', (e) => {
+        const radio = e.target.closest('[role="radio"]');
+        if (radio) {
+          radio
+            .closest('[role="radiogroup"]')
+            .querySelectorAll('[role="radio"]')
+            .forEach((r) => r.setAttribute('aria-checked', String(r === radio)));
+        }
+        const box = e.target.closest('[role="checkbox"]');
+        if (box) box.setAttribute('aria-checked', String(box.getAttribute('aria-checked') !== 'true'));
+        const listbox = e.target.closest('[role="listbox"]');
+        if (listbox) {
+          const option = e.target.closest('[role="option"]');
+          if (listbox.getAttribute('aria-expanded') === 'true' && option) {
+            listbox.querySelectorAll('[role="option"]').forEach((o) => o.setAttribute('aria-selected', String(o === option)));
+            listbox.setAttribute('aria-expanded', 'false');
+          } else {
+            listbox.setAttribute('aria-expanded', 'true');
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

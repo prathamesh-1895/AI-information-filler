@@ -114,6 +114,10 @@ export const FieldDescriptorSchema = z.object({
   required: z.boolean(),
   maxLength: z.number().int().positive().optional(),
   pattern: z.string().max(1_000).optional(),
+  /** `min`/`max` attributes as written on the page (numbers or dates). */
+  min: z.string().max(64).optional(),
+  max: z.string().max(64).optional(),
+  /** Page value at scan time. Sensitive values arrive already redacted (see `redactedValue`). */
   currentValue: z.union([z.string(), z.array(z.string())]).optional(),
   isVisible: z.boolean(),
   isDisabled: z.boolean(),

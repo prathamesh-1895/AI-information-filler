@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Personal Info – Become a Seller</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { font-family: sans-serif; max-width: 900px; margin: 24px auto; }
+      .row { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 16px 0; border-bottom: 1px solid #eee; }
+      .label { font-weight: 600; }
+      .label small { display: block; font-weight: 400; color: #74767e; }
+      .inputs { display: flex; gap: 8px; flex-wrap: wrap; }
+      .select-like { border: 1px solid #ccc; padding: 8px; min-width: 240px; cursor: pointer; }
+      .char-count { color: #74767e; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Personal Info</h1>
+    <p>Tell us a bit about yourself. This information will appear on your public profile.</p>
+    <form id="seller">
+      <div class="row">
+        <div class="label">Full Name <small>Private</small></div>
+        <div class="inputs">
+          <input type="text" name="first_name" placeholder="First Name" data-fx="first" />
+          <input type="text" name="last_name" placeholder="Last Name" data-fx="last" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="label">Display Name</div>
+        <div>
+          <input type="text" name="display_name" data-fx="display" />
+          <div class="char-count">To help build credibility, we recommend using your real name.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="label">Profile Picture</div>
+        <div><input type="file" accept="image/*" name="avatar" data-fx="avatar" /></div>
+      </div>
+
+      <div class="row">
+        <div class="label">Description</div>
+        <div>
+          <textarea name="description" placeholder="Share a bit about your work experience, cool projects you've completed, and your area of expertise." data-fx="description"></textarea>
+          <div class="char-count">min. 150 characters · 0/600</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="label">Languages</div>
+        <div class="inputs">
+          <select name="language" aria-label="Language" data-fx="language">
+            <option value="">Language</option>
+            <option>English</option>
+            <option>Hindi</option>
+            <option>Marathi</option>
+          </select>
+          <select name="language_level" aria-label="Language Level" data-fx="language-level">
+            <option value="">Language Level</option>
+            <option value="basic">Basic</option>
+            <option value="conversational">Conversational</option>
+            <option value="fluent">Fluent</option>
+            <option value="native">Native/Bilingual</option>
+          </select>
+          <button type="button">Add New</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="label" id="occ-label">Your Occupation</div>
+        <div>
+          <div class="select-like" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="occ-label" tabindex="0" data-fx="occupation">Select Occupation</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="label">Personal Website</div>
+        <div><input type="url" name="website" placeholder="Provide a link to your own professional website" data-fx="website" /></div>
+      </div>
+
+      <div class="row">
+        <div class="label">Email <small>Private</small></div>
+        <div><input type="email" name="email" value="priya@example.com" disabled data-fx="email" /></div>
+      </div>
+
+      <button type="button">Continue</button>
+    </form>
+  </body>
+</html>

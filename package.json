@@ -14,12 +14,13 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "fixtures": "node scripts/serve-fixtures.mjs",
-    "e2e": "pnpm --filter @filler/extension build && node scripts/playwright.mjs test",
+    "e2e": "node scripts/e2e.mjs",
     "e2e:install": "node scripts/playwright.mjs install chromium",
-    "e2e:headed": "pnpm --filter @filler/extension build && node scripts/playwright.mjs test --headed"
+    "e2e:headed": "node scripts/e2e.mjs --headed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@filler/core": "workspace:^",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.3",
     "eslint": "^10.11.0",

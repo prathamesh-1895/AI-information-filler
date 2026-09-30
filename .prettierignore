@@ -4,3 +4,4 @@ node_modules
 .turbo
 pnpm-lock.yaml
 docs
+.output-e2e

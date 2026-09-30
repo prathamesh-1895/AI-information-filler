@@ -1,0 +1,104 @@
+{
+  "fixture": "tricky.html",
+  "$comment": "notDiscovered lists data-fx refs the scanner must skip. The referral field lives in tricky-frame.html (same-origin iframe) and is found by the frame's own agent.",
+  "fields": [
+    {
+      "ref": "alt-phone",
+      "label": "Alternate phone",
+      "labelSource": "container",
+      "inputType": "tel",
+      "kind": "fact",
+      "canonicalKey": "contact.phone.alt"
+    },
+    {
+      "ref": "pincode",
+      "label": "Pin code",
+      "labelSource": "placeholder",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.postal_code"
+    },
+    {
+      "ref": "linkedin",
+      "label": "linkedin url",
+      "labelSource": "name",
+      "inputType": "url",
+      "kind": "fact",
+      "canonicalKey": "links.linkedin"
+    },
+    {
+      "ref": "company",
+      "label": "Company name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "experience[0].company"
+    },
+    {
+      "ref": "cover",
+      "label": "Cover letter",
+      "inputType": "contenteditable",
+      "kind": "open_ended",
+      "canonicalKey": null
+    },
+    {
+      "ref": "state",
+      "label": "State",
+      "inputType": "select-one",
+      "options": ["Maharashtra", "Gujarat", "Karnataka"],
+      "kind": "fact",
+      "canonicalKey": "address.state"
+    },
+    {
+      "ref": "password",
+      "label": "Password",
+      "inputType": "password",
+      "kind": "denied",
+      "canonicalKey": null
+    },
+    {
+      "ref": "card",
+      "label": "Card number",
+      "inputType": "text",
+      "kind": "denied",
+      "canonicalKey": null
+    },
+    {
+      "ref": "passport",
+      "label": "Passport number",
+      "inputType": "text",
+      "kind": "denied",
+      "canonicalKey": null
+    },
+    {
+      "ref": "prefilled-card",
+      "label": "Reference code",
+      "inputType": "text",
+      "currentValue": "[filler:redacted:card_number]",
+      "kind": "denied",
+      "canonicalKey": null
+    },
+    {
+      "ref": "terms",
+      "label": "I agree to the terms",
+      "inputType": "checkbox",
+      "kind": "skip",
+      "canonicalKey": null
+    },
+    {
+      "ref": "referral",
+      "frame": "tricky-frame.html",
+      "label": "Referral code",
+      "inputType": "text",
+      "kind": "skip",
+      "canonicalKey": null
+    }
+  ],
+  "notDiscovered": [
+    "honeypot",
+    "hidden-input",
+    "display-none",
+    "visibility-hidden",
+    "aria-hidden",
+    "zero-size"
+  ]
+}

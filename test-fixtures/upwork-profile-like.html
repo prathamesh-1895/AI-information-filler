@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Create your profile – step 1 of 3</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { font-family: sans-serif; max-width: 760px; margin: 24px auto; }
+      .field { margin: 16px 0; }
+      .counter, .hint { color: #5e6d55; font-size: 12px; }
+      .tag-input { display: flex; gap: 6px; border: 1px solid #ccc; padding: 6px; flex-wrap: wrap; }
+      .chip { background: #e4ebe4; border-radius: 12px; padding: 2px 8px; }
+      .step[hidden], .modal[hidden] { display: none; }
+      .rate { display: flex; align-items: center; gap: 4px; }
+    </style>
+  </head>
+  <body>
+    <header><h1>Create your freelancer profile</h1></header>
+    <form id="profile" novalidate>
+      <!-- Step 1 -->
+      <section class="step" data-step="1">
+        <h2>Tell us about your work</h2>
+
+        <div class="field">
+          <label for="title">Your professional role</label>
+          <p class="hint">e.g. Business Consultant for small businesses</p>
+          <input id="title" name="title" type="text" data-fx="title" />
+          <div class="counter" aria-live="polite">0 / 70</div>
+        </div>
+
+        <div class="field">
+          <label for="rate">Hourly rate</label>
+          <div class="rate"><span>$</span><input id="rate" name="hourlyRate" type="text" inputmode="decimal" aria-describedby="rate-help" data-fx="rate" /><span>/hr</span></div>
+          <p id="rate-help" class="hint">Total amount the client will see.</p>
+        </div>
+
+        <div class="field">
+          <label for="skills-input">Skills</label>
+          <div class="tag-input">
+            <span class="chip">Excel</span>
+            <input id="skills-input" type="text" placeholder="Type a skill and press Enter" data-fx="skills" />
+          </div>
+          <p class="hint">Add up to 15 skills.</p>
+        </div>
+
+        <div class="field">
+          <label for="overview">Profile overview</label>
+          <p class="hint">Use this space to show clients you have the skills and experience they're looking for.</p>
+          <textarea id="overview" name="overview" rows="8" data-fx="overview"></textarea>
+          <div class="counter">At least 100 characters · 0/5000</div>
+        </div>
+
+        <fieldset class="field">
+          <legend>Experience level</legend>
+          <label><input type="radio" name="level" value="entry" data-fx="level" /> Entry level</label>
+          <label><input type="radio" name="level" value="intermediate" data-fx="level" /> Intermediate</label>
+          <label><input type="radio" name="level" value="expert" data-fx="level" /> Expert</label>
+        </fieldset>
+
+        <div class="field">
+          <label for="english">English proficiency</label>
+          <select id="english" name="english" data-fx="english">
+            <option value="" disabled selected>Select</option>
+            <option value="basic">Basic</option>
+            <option value="conversational">Conversational</option>
+            <option value="fluent">Fluent</option>
+            <option value="native">Native or bilingual</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <h3>Employment history</h3>
+          <button type="button" id="add-exp">+ Add experience</button>
+        </div>
+
+        <div class="nav">
+          <button type="button" class="next" data-next="2">Next</button>
+        </div>
+      </section>
+
+      <!-- Step 2 (revealed by Next) -->
+      <section class="step" data-step="2" hidden>
+        <h2>Where are you based?</h2>
+        <div class="field"><label for="street">Street address</label><input id="street" name="street" data-fx="street" /></div>
+        <div class="field"><label for="city">City</label><input id="city" name="city" data-fx="city" /></div>
+        <div class="field"><label for="zip">ZIP/Postal code</label><input id="zip" name="zip" data-fx="zip" /></div>
+        <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" data-fx="phone2" /></div>
+        <div class="nav">
+          <button type="button" class="back" data-next="1">Back</button>
+          <button type="button" class="next" data-next="3">Next</button>
+        </div>
+      </section>
+
+      <!-- Step 3 -->
+      <section class="step" data-step="3" hidden>
+        <h2>Review</h2>
+        <p>Check everything, then submit your profile.</p>
+        <div class="nav">
+          <button type="button" class="back" data-next="2">Back</button>
+          <button type="submit">Submit profile</button>
+        </div>
+      </section>
+    </form>
+
+    <!-- Employment modal, opened by "+ Add experience" -->
+    <div class="modal" role="dialog" aria-labelledby="exp-title" hidden>
+      <h2 id="exp-title">Add employment</h2>
+      <label for="exp-company">Company</label><input id="exp-company" data-fx="exp-company" />
+      <label for="exp-title-input">Title</label><input id="exp-title-input" data-fx="exp-title" />
+      <label for="exp-desc">Description</label><textarea id="exp-desc" data-fx="exp-desc"></textarea>
+      <button type="button" class="close-modal">Save</button>
+    </div>
+
+    <script>
+      document.querySelectorAll('[data-next]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.step').forEach((s) => (s.hidden = s.dataset.step !== btn.dataset.next));
+        }),
+      );
+      document.getElementById('add-exp').addEventListener('click', () => (document.querySelector('.modal').hidden = false));
+      document.querySelector('.close-modal').addEventListener('click', () => (document.querySelector('.modal').hidden = true));
+      // Live character counters, like the real site.
+      for (const [id, max] of [['title', 70], ['overview', 5000]]) {
+        const el = document.getElementById(id);
+        const counter = el.parentElement.querySelector('.counter');
+        el.addEventListener('input', () => {
+          counter.textContent = counter.textContent.replace(/\d+\s*\/\s*(\d+)/, `${el.value.length} / ${max}`);
+        });
+      }
+    </script>
+  </body>
+</html>

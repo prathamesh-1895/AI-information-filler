@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 2 — Encrypted vault (2026-10-01)
+**Last completed phase:** Phase 3 — Page Agent: scanner (2026-10-01)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -11,7 +11,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 0 | Foundation & repo scaffold | ✅ COMPLETE (2026-10-01) | pnpm/Turbo monorepo, 4 packages, WXT extension shell with side panel, Vitest + Playwright harness, fixture server, governance files |
 | 1 | Core domain model & policy | ✅ COMPLETE (2026-10-01) | 64-key canonical registry (5 list groups), Zod schemas for all records, deny-list + submit-button policy with checksum value detection, label normalisation and SHA-256 field signatures |
 | 2 | Encrypted vault | ✅ COMPLETE (2026-10-01) | PBKDF2 (600k) + AES-256-GCM with per-record IV and AAD, Dexie store, Fact/Document/FieldMemory/Answer repos, lock/unlock/auto-lock/session resume, atomic passphrase change, encrypted backup/import, wipe |
-| 3 | Page Agent: scanner | ⬜ NOT STARTED | |
+| 3 | Page Agent: scanner | ✅ COMPLETE (2026-10-01) | 7 fixtures (74 fields), scanner with shadow DOM/iframes/ARIA widgets, 8-step label resolution (74/74 labels), constraints/options/counters, robust selectors + re-find, typed panel↔background↔page messaging, scanner preview in the side panel |
 | 4 | Page Agent: filler, observer, highlighter | ⬜ NOT STARTED | |
 | 5 | Rule mapper & orchestrator | ⬜ NOT STARTED | |
 | 6 | Side panel UI | ⬜ NOT STARTED | |
@@ -31,8 +31,9 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 3, Task 3.1** (fixture library). Model: **Sonnet 5.5**, so switch before saying "continue".
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5.
+- Next: **Phase 4, Task 4.1** (fill primitives). Model: **Sonnet 5.5**.
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet).
+- **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
 
@@ -133,3 +134,51 @@ Tests: vault 54, core 222, repo total 280 unit + 2 e2e.
 ### Open items surfaced in Phase 2
 - Passphrase strength meter and the "cannot be recovered" warning are UI work (Phase 6.1). The vault only enforces a minimum of 8 characters.
 - Auto-lock minutes and the session-unlock toggle need Settings UI (Phase 6.4). The `chrome.storage.session` adapter is written when the vault is wired into the background worker (Phase 5/6).
+
+---
+
+## Phase 3 — files
+
+Created:
+- `apps/extension/src/page-agent/`: `dom.ts` (tree walk across shadow roots, visibility/honeypot helpers, label text cleaning), `discover.ts` (control discovery and grouping), `label.ts` (label, help text and section-heading resolution; `ControlIndex`), `constraints.ts` (options, max length from attributes or on-page counters, required/disabled, current value with redaction), `selector.ts` (robust selectors with `>>>` shadow hops, `resolveSelector`), `scan.ts` (`scan()`, `resolve()` with signature fallback)
+- `apps/extension/src/messaging/`: `protocol.ts` (Zod message and result schemas, `SITE_ACCESS`), `scan-merge.ts` (frame merge, restricted-URL and injection-error classification), `background-handler.ts`, `client.ts`, `messaging.test.ts`
+- `apps/extension/entrypoints/sidepanel/ScannerPreview.tsx` (temporary dev preview, replaced in Phase 6)
+- `test-fixtures/`: `google-form-like`, `upwork-profile-like`, `fiverr-seller-like`, `react-controlled`, `tricky` (+ `tricky-frame.html`), `job-application-like` (each `.html` + `.expected.json`), rewritten `README.md`
+- `e2e/scanner.spec.ts` (7 fixtures + reload stability, re-render re-find, wizard rescan), `e2e/panel.spec.ts` (3 tests), `e2e/globals.d.ts`
+- `scripts/e2e.mjs` (builds in E2E mode, then runs Playwright)
+
+Modified:
+- `apps/extension/entrypoints/page-agent.ts` (installs `globalThis.__fillerPageAgent`), `entrypoints/background.ts` (message routing, Filler's own pages only), `entrypoints/sidepanel/App.tsx`
+- `apps/extension/wxt.config.ts`: `optional_host_permissions` (http/https); E2E builds (`FILLER_E2E=1`) add `host_permissions: http://127.0.0.1/*` and write to `.output-e2e`
+- `packages/core`: `FieldDescriptor.min/max`; `redactedValue()` and redaction-aware `detectSensitiveValue`
+- `test-fixtures/simple-contact.*` (data-fx refs), `e2e/smoke.spec.ts`, `e2e/fixtures.ts` (loads `.output-e2e`), `package.json` (`e2e` scripts, `@filler/core` dev dependency), `eslint.config.js`, `.prettierignore`, `.gitignore`
+- `docs/PLAYBOOK.md`: Phase 11 generic-first rewrite (site families) and the phase-map row
+
+Tests: 300 unit (core 223, vault 54, extension 21, other 2) + 15 e2e. **Scanner label accuracy 74/74 (100%).** The discovered set matches the expected set exactly on all 7 fixtures, and all 6 must-skip elements are skipped.
+
+## Phase 3 — design notes
+
+- **Injection model.** The panel sends `SCAN_REQUEST`. The background runs `chrome.scripting.executeScript` twice with `allFrames: true`: once to install `/page-agent.js` (idempotent), then a function calling `__fillerPageAgent.scan()`. Chrome returns each frame's result with its `frameId`, so no `webNavigation` permission is needed. `mergeFrameScans` prefixes ids (`0:f3`, `12:f0`) and sets `frameId` for later fill routing.
+- **Permissions.** No host permissions at install. It works through `activeTab` when the user invokes Filler on a tab. Otherwise the panel offers "Allow Filler to read forms on websites", which requests the manifest's `optional_host_permissions` from a click handler (user gesture). Without the `tabs` permission a tab's URL is often unknown, and Chrome returns the same generic "Cannot access contents of the page" error for `about:blank` and for a site without access. So once all-sites access has been granted, that error is reported as a restricted page instead of asking again.
+- **The background accepts messages only from Filler's own extension pages** (`sender.url` must start with the extension origin), never from content or page scripts.
+- **Discovery.** A tree walk in document order that descends into open shadow roots in place. Native radios and checkboxes group by `name` within their form (or tree). A lone checkbox is a single yes/no control. ARIA radios group by `role=radiogroup`; ARIA checkboxes group by the nearest `group/list/radiogroup/fieldset`. A listbox that is a combobox popup is skipped. Tag inputs are detected from `tag/chip/token` container classes, and their chips become the current value.
+- **Visibility.** `checkVisibility` (display/visibility/content-visibility, but *not* opacity, because custom-styled checkboxes hide the native input with `opacity: 0`), plus not `aria-hidden`, not zero-size, and not positioned off the page. A radio or checkbox also counts as visible when its label is. Honeypots are also caught by label or name text ("leave this empty", `hp`, "bot trap").
+- **Label order (Task 3.3):** `<label for>` / wrapping label → `aria-labelledby` / `aria-label` → **container** (a heading-like element inside the nearest ancestor that holds *only this control*) → **proximity** (preceding text in the same row, climbing only while the parent holds just this control) → placeholder → combobox text → non-dynamic `name`/`id`.
+  - Groups use the group's ARIA label, then a fieldset legend that belongs to that group alone.
+  - A text shared by several controls (Fiverr's "Full Name" row with First/Last inputs) is never used as the label, so those inputs fall back to their own placeholders.
+  - **Grid rows** labelled only by their row name get the question prefixed ("Rate yourself: Communication").
+  - `<small>` badges ("Private") are stripped.
+- **Section heading** is the nearest fieldset legend or labelled group other than the label itself, else the nearest preceding h1–h4. That gives generic labels context: Day/Month/Year → "Date of birth", Institution → "Education 2".
+- **Max length** comes from the `maxlength` attribute, else from on-page counters ("0 / 70", "At least 100 characters · 0/5000", "Maximum 70 characters") inside the control's own container, and only for text-like controls. Counters are left out of help text.
+- **Sensitive values never leave the page.** Password and file values are never read. Any value matching `detectSensitiveValue` is replaced by `[filler:redacted:<category>]`, which the core policy still recognises as denied.
+- **Selectors** use a stable id, then a stable name, then `aria-label`, then an `nth-of-type` path from the nearest stable-id ancestor, with ` >>> ` hops into shadow roots. Native radio groups use `input[type=radio][name=…]`.
+- **Re-find** tries the live element, then the selector, then rescans and matches the SHA-256 signature plus its position among fields with the same signature. The React-style fixture proves all 5 fields are re-found after a re-render that regenerates every id.
+- **E2E builds are separate** (`.output-e2e`, access to the fixture host only), so `pnpm e2e` never overwrites the production build the user loads from `.output`.
+- The scanner-preview panel is labelled "dev" and is a temporary Task 3.5 view. Phase 6 replaces it with the real session UI.
+
+### Open items surfaced in Phase 3
+- Cross-origin iframes are only scanned when site access covers that origin (Chrome skips the frame otherwise). Acceptable for now; revisit in Phase 11 with real sites, such as embedded job or payment widgets.
+- ARIA comboboxes whose options render only after opening report no options. Phase 4's filler opens them to read the options.
+- Closed shadow roots are invisible to any extension. Vision mode (Phase 10) is the fallback.
+- Tag-input detection is based on class names. Phase 11 platform profiles can add explicit selectors for sites it misses.
+- The live-verification walk used Playwright screenshots of the panel at 320px (zero console errors, no horizontal overflow). The user can load the unpacked build by hand in Chrome as described in the phase summary.
