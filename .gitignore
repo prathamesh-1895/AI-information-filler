@@ -1,0 +1,16 @@
+node_modules/
+.output/
+dist/
+.wxt/
+.turbo/
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+.env
+.env.*
+!.env.example
+supabase/.temp/
+supabase/.branches/
+*.log
+.DS_Store

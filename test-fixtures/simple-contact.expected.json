@@ -1,0 +1,25 @@
+{
+  "fixture": "simple-contact.html",
+  "fields": [
+    {
+      "selector": "#full-name",
+      "label": "Full name",
+      "kind": "fact",
+      "canonicalKey": "person.name.full"
+    },
+    {
+      "selector": "#email",
+      "label": "Email address",
+      "kind": "fact",
+      "canonicalKey": "contact.email"
+    },
+    {
+      "selector": "#phone",
+      "label": "Mobile number",
+      "kind": "fact",
+      "canonicalKey": "contact.phone.mobile"
+    },
+    { "selector": "#city", "label": "City", "kind": "fact", "canonicalKey": "address.city" },
+    { "selector": "#message", "label": "Message", "kind": "open_ended", "canonicalKey": null }
+  ]
+}

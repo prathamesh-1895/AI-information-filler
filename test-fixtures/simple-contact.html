@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simple contact form</title>
+    <script src="fixture-harness.js"></script>
+  </head>
+  <body>
+    <h1>Contact us</h1>
+    <form id="contact">
+      <label for="full-name">Full name</label>
+      <input id="full-name" name="fullName" type="text" autocomplete="name" required />
+
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" autocomplete="email" required />
+
+      <label for="phone">Mobile number</label>
+      <input id="phone" name="phone" type="tel" autocomplete="tel" />
+
+      <label for="city">City</label>
+      <input id="city" name="city" type="text" />
+
+      <label for="message">Message</label>
+      <textarea id="message" name="message" maxlength="500"></textarea>
+
+      <button type="submit">Send</button>
+    </form>
+  </body>
+</html>
