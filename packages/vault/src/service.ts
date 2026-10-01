@@ -25,12 +25,14 @@ import {
   importAesKey,
   randomBytes,
   toBase64,
+  type EncryptedBlob,
 } from './crypto';
 import {
   DATA_TABLES,
   openVaultDb,
   type DataTable,
   type EncryptedRow,
+  type SyncStateRow,
   type VaultDb,
   type VaultMetaRow,
 } from './db';
@@ -85,6 +87,22 @@ export const BackupSchema = z.object({
 export type Backup = z.infer<typeof BackupSchema>;
 
 const aadFor = (table: DataTable, id: string) => `${table}/${id}`;
+const SYNC_AAD = 'sync/snapshot/v1';
+
+export const SnapshotSchema = z.object({
+  kdf: z.object({ salt: z.string().min(1), iterations: z.number().int().positive() }),
+  verifier: BlobSchema,
+  tables: z.object({
+    facts: z.array(RowSchema),
+    documents: z.array(RowSchema),
+    fieldMemory: z.array(RowSchema),
+    answers: z.array(RowSchema),
+  }),
+  tombstones: z.array(
+    z.object({ table: z.enum(DATA_TABLES), rowId: z.string().min(1), deletedAt: z.string() }),
+  ),
+});
+export type Snapshot = z.infer<typeof SnapshotSchema>;
 
 export class VaultService {
   readonly db: VaultDb;
@@ -97,6 +115,7 @@ export class VaultService {
   private readonly now: () => number;
   private readonly sessionKeyStore: SessionKeyStore | undefined;
   private readonly lockListeners = new Set<() => void>();
+  private readonly changeListeners = new Set<() => void>();
 
   constructor(options: VaultServiceOptions = {}) {
     this.db = options.db ?? openVaultDb(options.dbName);
@@ -269,7 +288,11 @@ export class VaultService {
     return this.exclusive(async () => {
       const key = this.requireKey();
       const blob = await encryptJson(key, value, aadFor(table, id));
-      await this.db[table].put({ ...blob, id, updatedAt: new Date(this.now()).toISOString() });
+      await this.db.transaction('rw', [this.db[table], this.db.tombstones], async () => {
+        await this.db[table].put({ ...blob, id, updatedAt: new Date(this.now()).toISOString() });
+        await this.db.tombstones.delete(`${table}/${id}`); // re-created: no longer deleted
+      });
+      this.emitChange();
     });
   }
 
@@ -286,17 +309,36 @@ export class VaultService {
   }
 
   deleteRecord(table: DataTable, id: string): Promise<void> {
-    return this.exclusive(async () => {
-      this.requireKey();
-      await this.db[table].delete(id);
-    });
+    return this.deleteRecords(table, [id]);
   }
 
+  /** Deletes records and remembers the deletions, so sync does not bring them back. */
   deleteRecords(table: DataTable, ids: string[]): Promise<void> {
     return this.exclusive(async () => {
       this.requireKey();
-      await this.db[table].bulkDelete(ids);
+      const deletedAt = new Date(this.now()).toISOString();
+      await this.db.transaction('rw', [this.db[table], this.db.tombstones], async () => {
+        const existing = (await this.db[table].bulkGet(ids)).flatMap((r) => (r ? [r.id] : []));
+        await this.db[table].bulkDelete(ids);
+        await this.db.tombstones.bulkPut(
+          existing.map((rowId) => ({ id: `${table}/${rowId}`, table, rowId, deletedAt })),
+        );
+      });
+      this.emitChange();
     });
+  }
+
+  /**
+   * Subscribes to local changes made by the user (record writes and deletes).
+   * Applying a synced snapshot does not fire it. Returns an unsubscribe function.
+   */
+  onChange(listener: () => void): () => void {
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
+  }
+
+  private emitChange(): void {
+    for (const listener of this.changeListeners) listener();
   }
 
   // ------------------------------------------------------- backup and wipe
@@ -355,26 +397,11 @@ export class VaultService {
           }
         }
       }
-      const at = new Date(this.now()).toISOString();
-      const existing = await this.db.meta.get('vault');
-      await this.db.transaction(
-        'rw',
-        [this.db.meta, ...DATA_TABLES.map((t) => this.db[t])],
-        async () => {
-          for (const table of DATA_TABLES) {
-            await this.db[table].clear();
-            await this.db[table].bulkAdd(backup.tables[table]);
-          }
-          await this.db.meta.put({
-            id: 'vault',
-            formatVersion: 1,
-            salt: backup.kdf.salt,
-            iterations: backup.kdf.iterations,
-            verifier: backup.verifier,
-            createdAt: existing?.createdAt ?? at,
-            updatedAt: at,
-          });
-        },
+      await this.replaceAll(
+        { salt: backup.kdf.salt, iterations: backup.kdf.iterations },
+        backup.verifier,
+        backup.tables,
+        [],
       );
       await this.setKey(key, raw);
     });
@@ -385,14 +412,170 @@ export class VaultService {
     return this.exclusive(async () => {
       await this.db.transaction(
         'rw',
-        [this.db.meta, ...DATA_TABLES.map((t) => this.db[t])],
+        [this.db.meta, this.db.tombstones, this.db.sync, ...DATA_TABLES.map((t) => this.db[t])],
         async () => {
           for (const table of DATA_TABLES) await this.db[table].clear();
           await this.db.meta.clear();
+          await this.db.tombstones.clear();
+          await this.db.sync.clear();
         },
       );
       this.lock();
     });
+  }
+
+  // --------------------------------------------------------------- sync (Phase 7)
+
+  /** Everything sync needs: KDF params, verifier, encrypted rows and deletions. Values stay encrypted. */
+  async exportSnapshot(): Promise<Snapshot> {
+    this.requireKey();
+    const meta = await this.requireMeta();
+    const tables = Object.fromEntries(
+      await Promise.all(DATA_TABLES.map(async (t) => [t, await this.db[t].toArray()] as const)),
+    ) as Snapshot['tables'];
+    const tombstones = await this.db.tombstones.toArray();
+    return {
+      kdf: { salt: meta.salt, iterations: meta.iterations },
+      verifier: meta.verifier,
+      tables,
+      tombstones: tombstones.map(({ table, rowId, deletedAt }) => ({ table, rowId, deletedAt })),
+    };
+  }
+
+  /** Encrypts a whole snapshot as one opaque blob, so the server learns nothing (not even key names). */
+  async sealSnapshot(snapshot: Snapshot): Promise<EncryptedBlob> {
+    return encryptJson(this.requireKey(), snapshot, SYNC_AAD);
+  }
+
+  async openSnapshot(blob: EncryptedBlob): Promise<Snapshot> {
+    return SnapshotSchema.parse(await decryptJson(this.requireKey(), blob, SYNC_AAD));
+  }
+
+  /** Re-encrypts one record under a new id (AAD binds ciphertext to its id). Used for conflict copies. */
+  async rekeyRecord(
+    table: DataTable,
+    row: EncryptedRow,
+    newId: string,
+    transform: (value: unknown) => unknown = (v) => v,
+  ): Promise<EncryptedRow> {
+    const key = this.requireKey();
+    const value = transform(await decryptJson(key, row, aadFor(table, row.id)));
+    return {
+      ...(await encryptJson(key, value, aadFor(table, newId))),
+      id: newId,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  /** Decrypts one record of a snapshot (used by sync to compare values). */
+  async peekRecord<T>(table: DataTable, row: EncryptedRow): Promise<T> {
+    return decryptJson<T>(this.requireKey(), row, aadFor(table, row.id));
+  }
+
+  /** Writes a merged snapshot (same key) in one transaction. Every row is checked to decrypt first. */
+  applySnapshot(snapshot: Snapshot): Promise<void> {
+    return this.exclusive(async () => {
+      const key = this.requireKey();
+      const meta = await this.requireMeta();
+      if (snapshot.kdf.salt !== meta.salt) {
+        throw new BackupFormatError('That snapshot belongs to a different vault.');
+      }
+      for (const table of DATA_TABLES) {
+        for (const row of snapshot.tables[table])
+          await decryptJson(key, row, aadFor(table, row.id));
+      }
+      await this.db.transaction(
+        'rw',
+        [this.db.tombstones, ...DATA_TABLES.map((t) => this.db[t])],
+        () => this.writeAllInTransaction(snapshot.tables, snapshot.tombstones),
+      );
+    });
+  }
+
+  /**
+   * Replaces this device's vault with a cloud vault, unlocking it with the
+   * user's passphrase (a new device joining, or "use the cloud copy").
+   */
+  joinRemote(
+    remote: {
+      kdf: { salt: string; iterations: number };
+      verifier: EncryptedBlob;
+      blob: EncryptedBlob;
+    },
+    passphrase: string,
+  ): Promise<Snapshot> {
+    return this.exclusive(async () => {
+      const raw = await deriveKeyBytes(
+        passphrase,
+        fromBase64(remote.kdf.salt),
+        remote.kdf.iterations,
+      );
+      const key = await importAesKey(raw);
+      await checkVerifier(key, remote.verifier);
+      let snapshot: Snapshot;
+      try {
+        snapshot = SnapshotSchema.parse(await decryptJson(key, remote.blob, SYNC_AAD));
+        for (const table of DATA_TABLES) {
+          for (const row of snapshot.tables[table])
+            await decryptJson(key, row, aadFor(table, row.id));
+        }
+      } catch {
+        throw new BackupFormatError(
+          'The cloud copy of your vault is damaged and cannot be opened.',
+        );
+      }
+      await this.replaceAll(snapshot.kdf, snapshot.verifier, snapshot.tables, snapshot.tombstones);
+      await this.setKey(key, raw);
+      return snapshot;
+    });
+  }
+
+  async getSyncState(): Promise<SyncStateRow | undefined> {
+    return this.db.sync.get('state');
+  }
+
+  async setSyncState(state: Omit<SyncStateRow, 'id'>): Promise<void> {
+    await this.db.sync.put({ id: 'state', ...state });
+  }
+
+  private async replaceAll(
+    kdf: { salt: string; iterations: number },
+    verifier: EncryptedBlob,
+    tables: Snapshot['tables'],
+    tombstones: Snapshot['tombstones'],
+  ): Promise<void> {
+    const at = new Date(this.now()).toISOString();
+    const existing = await this.db.meta.get('vault');
+    await this.db.transaction(
+      'rw',
+      [this.db.meta, this.db.tombstones, ...DATA_TABLES.map((t) => this.db[t])],
+      async () => {
+        await this.writeAllInTransaction(tables, tombstones);
+        await this.db.meta.put({
+          id: 'vault',
+          formatVersion: 1,
+          salt: kdf.salt,
+          iterations: kdf.iterations,
+          verifier,
+          createdAt: existing?.createdAt ?? at,
+          updatedAt: at,
+        });
+      },
+    );
+  }
+
+  private async writeAllInTransaction(
+    tables: Snapshot['tables'],
+    tombstones: Snapshot['tombstones'],
+  ): Promise<void> {
+    for (const table of DATA_TABLES) {
+      await this.db[table].clear();
+      await this.db[table].bulkAdd(tables[table]);
+    }
+    await this.db.tombstones.clear();
+    await this.db.tombstones.bulkAdd(
+      tombstones.map((t) => ({ id: `${t.table}/${t.rowId}`, ...t })),
+    );
   }
 
   // ---------------------------------------------------------------- internals

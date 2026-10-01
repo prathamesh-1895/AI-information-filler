@@ -34,12 +34,31 @@ export interface VaultMetaRow {
 export const DATA_TABLES = ['facts', 'documents', 'fieldMemory', 'answers'] as const;
 export type DataTable = (typeof DATA_TABLES)[number];
 
+/** Remembers deletions so sync does not bring deleted records back (Phase 7). */
+export interface TombstoneRow {
+  /** `table/rowId` */
+  id: string;
+  table: DataTable;
+  rowId: string;
+  deletedAt: string;
+}
+
+/** Local sync bookkeeping (single row, id 'state'). */
+export interface SyncStateRow {
+  id: 'state';
+  deviceId: string;
+  lastSyncedVersion: number;
+  lastSyncAt: string;
+}
+
 export type VaultDb = Dexie & {
   meta: EntityTable<VaultMetaRow, 'id'>;
   facts: EntityTable<FactRow, 'id'>;
   documents: EntityTable<DocumentRow, 'id'>;
   fieldMemory: EntityTable<FieldMemoryRow, 'id'>;
   answers: EntityTable<AnswerRow, 'id'>;
+  tombstones: EntityTable<TombstoneRow, 'id'>;
+  sync: EntityTable<SyncStateRow, 'id'>;
 };
 
 export function openVaultDb(name: string = VAULT_DB_NAME): VaultDb {
@@ -50,6 +69,11 @@ export function openVaultDb(name: string = VAULT_DB_NAME): VaultDb {
     documents: 'id, updatedAt',
     fieldMemory: 'id, updatedAt',
     answers: 'id, updatedAt',
+  });
+  // v2 (Phase 7): deletion tombstones and sync state. Existing data is untouched.
+  db.version(2).stores({
+    tombstones: 'id, table, deletedAt',
+    sync: 'id',
   });
   return db;
 }

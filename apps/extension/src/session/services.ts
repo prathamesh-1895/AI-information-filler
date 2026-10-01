@@ -20,6 +20,9 @@ import {
   type Settings,
   type SettingsPatch,
 } from '../settings';
+import { CloudAuth } from '../cloud/auth';
+import { supabase } from '../cloud/supabase';
+import { CloudSync } from '../cloud/sync-service';
 import { SessionHost } from './host';
 
 let settings: Settings = DEFAULT_SETTINGS;
@@ -67,6 +70,9 @@ export const host = new SessionHost({
 });
 
 vault.onLock(() => void host.broadcast({ type: 'VAULT_LOCKED' }));
+
+export const auth = new CloudAuth(supabase);
+export const cloud = new CloudSync(vault, auth, supabase, () => settings.cloudSync);
 
 async function apply(next: Settings): Promise<void> {
   settings = next;

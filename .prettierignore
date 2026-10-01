@@ -6,3 +6,4 @@ pnpm-lock.yaml
 docs
 .output-e2e
 test-fixtures/__scans__
+supabase/functions/_shared/core

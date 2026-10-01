@@ -25,6 +25,8 @@ const fields = {
   /** Extra phrases Filler must never fill, on top of the built-in list. */
   denyPatterns: z.array(z.string().trim().min(1).max(200)).max(200),
   theme: z.enum(['system', 'light', 'dark']),
+  /** Sync the encrypted vault through the user's Filler account (Phase 7). Off until turned on. */
+  cloudSync: z.boolean(),
 };
 
 export const SettingsSchema = z.object(fields);
@@ -43,6 +45,7 @@ export const DEFAULT_SETTINGS: Settings = {
   answerLanguage: 'English',
   denyPatterns: [],
   theme: 'system',
+  cloudSync: false,
 };
 
 const STORAGE_KEY = 'filler.settings';

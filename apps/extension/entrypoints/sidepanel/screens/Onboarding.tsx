@@ -1,11 +1,13 @@
 import { Banner, Button, Card, TextField } from '@filler/ui';
 import { KeyRound, ShieldCheck, Sparkles } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { AuthStatus } from '@/src/cloud/auth';
+import { RestoreFromAccount } from './Account';
 import { call } from '@/src/messaging/client';
 import { passphraseStrength } from '../format';
 import { usePanel } from '../store';
 
-type Step = 'welcome' | 'passphrase' | 'profile';
+type Step = 'welcome' | 'passphrase' | 'profile' | 'restore';
 
 const STRENGTH_COLORS = [
   'bg-red-600',
@@ -19,7 +21,14 @@ const STRENGTH_COLORS = [
 export function Onboarding() {
   const [step, setStep] = useState<Step>('welcome');
   const refreshVault = usePanel((s) => s.refreshVault);
+  const [cloudReady, setCloudReady] = useState(false);
+  useEffect(() => {
+    void call<AuthStatus>({ type: 'AUTH_STATUS' }).then((r) =>
+      setCloudReady(r.ok && r.data.configured),
+    );
+  }, []);
 
+  if (step === 'restore') return <RestoreFromAccount onCancel={() => setStep('welcome')} />;
   if (step === 'welcome') {
     return (
       <section aria-labelledby="welcome-title" className="space-y-4">
@@ -45,6 +54,11 @@ export function Onboarding() {
         <Button className="w-full" onClick={() => setStep('passphrase')}>
           Get started
         </Button>
+        {cloudReady && (
+          <Button variant="ghost" className="w-full" onClick={() => setStep('restore')}>
+            I already use Filler: restore from my account
+          </Button>
+        )}
       </section>
     );
   }

@@ -20,8 +20,18 @@ import {
   observeTab,
   scanTab,
 } from '../messaging/background-handler';
+import { z } from 'zod';
 import { fail, ok, PanelRequestSchema, type Result } from '../messaging/protocol';
-import { currentSettings, host, ready, repos, updateSettings, vault } from './services';
+import {
+  auth,
+  cloud,
+  currentSettings,
+  host,
+  ready,
+  repos,
+  updateSettings,
+  vault,
+} from './services';
 
 function vaultFailure(error: unknown): Result<never> {
   if (error instanceof WrongPassphraseError) return fail('WRONG_PASSPHRASE', error.message);
@@ -41,6 +51,17 @@ async function vaultCall<T>(fn: () => Promise<T>): Promise<Result<T>> {
     return ok(await fn());
   } catch (error) {
     return vaultFailure(error);
+  }
+}
+
+async function cloudCall<T>(fn: () => Promise<T>): Promise<Result<T>> {
+  try {
+    return ok(await fn());
+  } catch (error) {
+    if (error instanceof WrongPassphraseError) return fail('WRONG_PASSPHRASE', error.message);
+    if (error instanceof z.ZodError)
+      return fail('INVALID', error.issues[0]?.message ?? 'Check what you typed.');
+    return fail('CLOUD', error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -135,6 +156,32 @@ export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>>
       return vaultCall(async () => ({
         removed: await repos.fieldMemory.deleteBySite(request.site),
       }));
+    case 'AUTH_STATUS':
+      return ok(await auth.status());
+    case 'AUTH_SEND_CODE':
+      return cloudCall(async () => {
+        await auth.sendCode(request.email);
+        return { sent: true };
+      });
+    case 'AUTH_VERIFY':
+      return cloudCall(() => auth.verify(request.email, request.code));
+    case 'AUTH_SIGN_OUT':
+      return cloudCall(async () => {
+        await auth.signOut();
+        return auth.status();
+      });
+    case 'SYNC_STATUS':
+      return ok(await cloud.status());
+    case 'SYNC_NOW':
+      return cloudCall(() => cloud.syncNow());
+    case 'SYNC_USE_CLOUD':
+      return cloudCall(async () => {
+        const result = await cloud.useCloudCopy(request.passphrase);
+        await host.broadcast({ type: 'VAULT_UNLOCKED' });
+        return result;
+      });
+    case 'SYNC_REPLACE_CLOUD':
+      return cloudCall(() => cloud.replaceCloudCopy());
     case 'SETTINGS_GET':
       return ok(currentSettings());
     case 'SETTINGS_SET':

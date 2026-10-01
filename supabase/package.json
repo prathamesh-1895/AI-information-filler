@@ -1,0 +1,21 @@
+{
+  "name": "@filler/supabase",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Database migrations and Edge Functions for Filler (Supabase)",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@types/node": "^26.6.3",
+    "typescript": "~5.9",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "zod": "^4.6.5"
+  }
+}

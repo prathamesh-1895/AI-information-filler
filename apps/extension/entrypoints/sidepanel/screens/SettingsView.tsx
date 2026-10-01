@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { call } from '@/src/messaging/client';
 import type { Settings } from '@/src/settings';
 import { usePanel } from '../store';
+import { AccountCard } from './Account';
 
 const select =
   'w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-950';
@@ -36,6 +37,8 @@ export function SettingsView() {
   return (
     <div className="space-y-4">
       {note && <Banner tone="green">{note}</Banner>}
+
+      <AccountCard />
 
       <Card className="space-y-3">
         <h3 className="text-sm font-semibold">Security</h3>

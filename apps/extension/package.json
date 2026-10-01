@@ -26,6 +26,7 @@
     "@filler/core": "workspace:^",
     "@filler/ui": "workspace:^",
     "@filler/vault": "workspace:^",
+    "@supabase/supabase-js": "^2.117.2",
     "lucide-react": "^1.49.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

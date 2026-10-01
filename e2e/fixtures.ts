@@ -5,6 +5,17 @@ const extensionPath = fileURLToPath(
   new URL('../apps/extension/.output-e2e/chrome-mv3', import.meta.url),
 );
 
+/** A fresh browser profile with the extension: one "device". */
+export async function launchDevice(): Promise<{ context: BrowserContext; extensionId: string }> {
+  const context = await chromium.launchPersistentContext('', {
+    channel: 'chromium',
+    args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+  });
+  let [worker] = context.serviceWorkers();
+  worker ??= await context.waitForEvent('serviceworker');
+  return { context, extensionId: new URL(worker.url()).host };
+}
+
 /** Playwright fixtures: a persistent Chromium context with the built extension loaded. */
 export const test = base.extend<{ context: BrowserContext; extensionId: string }>({
   // eslint-disable-next-line no-empty-pattern

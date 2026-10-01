@@ -16,7 +16,9 @@
     "fixtures": "node scripts/serve-fixtures.mjs",
     "e2e": "node scripts/e2e.mjs",
     "e2e:install": "node scripts/playwright.mjs install chromium",
-    "e2e:headed": "node scripts/e2e.mjs --headed"
+    "e2e:headed": "node scripts/e2e.mjs --headed",
+    "sync:shared": "node scripts/sync-shared.mjs",
+    "sync:shared:check": "node scripts/sync-shared.mjs --check"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

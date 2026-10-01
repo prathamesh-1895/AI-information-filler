@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 6 — Side panel UI (2026-10-01)
+**Last completed phase:** Phase 7 — Supabase: auth, database, encrypted sync (2026-10-01; checkpoint A pending)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -15,7 +15,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 4 | Page Agent: filler, observer, highlighter | ✅ COMPLETE (2026-10-01) | Framework-safe fill for every control type with read-back verification and typing retry, option/date matching in core, code-enforced refusal of denied fields and submit-like buttons, debounced field-diff observer, shadow-DOM highlighter, frame-routed fill/highlight/navigation messaging |
 | 5 | Rule mapper & orchestrator | ✅ COMPLETE (2026-10-01) | 64-key dictionary with section-aware list groups, rule mapper (100% on fixture scans, no AI), lossless value formatter, pure session reducer + AI seam in core, background session host with vault, ask-once memory end to end |
 | 6 | Side panel UI | ✅ COMPLETE (2026-10-01) | Onboarding/unlock, fill session (shaped questions, keyboard review list, banners), vault manager (groups, repeat sections, deny list, encrypted backup, wipe), settings with proven behaviours, shortcuts, axe-clean light/dark UI. **Tier A complete.** |
-| 7 | Supabase: auth, database, encrypted sync | ⬜ NOT STARTED | |
+| 7 | Supabase: auth, database, encrypted sync | ✅ COMPLETE (2026-10-01, verified offline; 🔑 checkpoint A pending) | RLS schema proven on PGlite, email-code sign-in, end-to-end encrypted two-device sync with tombstones and conflict copies, Edge Function base (health, CORS, auth, quotas), generated shared core, local mock Supabase for e2e |
 | 8 | AI gateway & field understanding | ⬜ NOT STARTED | |
 | 9 | AI answer generation & goal context | ⬜ NOT STARTED | |
 | 10 | Screen Share & vision mode | ⬜ NOT STARTED | |
@@ -26,13 +26,13 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 | Checkpoint | Phase | Status |
 |---|---|---|
-| 🔑 A — Supabase project (URL + anon key, CLI linked) | 7 | ⬜ pending |
+| 🔑 A — Supabase project (URL + anon key, email-code template, migrations applied, health deployed) | 7 | ⏳ waiting for the user (no project on the account yet; steps in supabase/README.md) |
 | 🔑 B — Free AI API key in Supabase secrets | 8 | ⬜ pending |
 
 ## Notes for next session
 
-- Next: **Phase 7, Task 7.1** (schema & RLS migrations). Model: **Opus 5.5**. Phase 7 has 🔑 USER CHECKPOINT A (Supabase project) before Task 7.2.
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet).
+- Next: **Phase 8, Task 8.1** (provider adapters). Model: **Opus 5.5**. Phase 8 has 🔑 USER CHECKPOINT B (free AI key); checkpoint A from Phase 7 is still open and is needed before any live AI call.
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5.
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -335,3 +335,63 @@ Tests: 495 unit (core 398, vault 56, extension 38, other 3) + 50 e2e (7 new UI t
 - A passphrase change UI is not exposed yet (`VaultService.changePassphrase` exists); add it to Settings → Security in Phase 12's quality pass.
 - The "Offline mode" chip is static until Phase 8 provides the real AI mode and reason.
 - Real `sidePanel.open` from the Alt+Shift+S shortcut can't be driven by Playwright; verify it manually when loading the build (steps in the phase summary).
+
+---
+
+## Phase 7 — files
+
+Created:
+- `supabase/`: new workspace package (`@filler/supabase`, added to `pnpm-workspace.yaml`), `README.md` (setup and checkpoint steps), `tsconfig.json`
+- `supabase/migrations/20261001000000_init.sql`: `profiles` (+ sign-up trigger), `vault_blobs`, `ai_usage` + `consume_ai_quota()`, `ai_cache`, `feedback`; RLS everywhere; version trigger; pinned `search_path`
+- `supabase/functions/_shared/`: `http.ts` (CORS/origin gate, structured errors), `auth.ts` (`requireUser`), `quota.ts` (env-driven limits), `deno.d.ts`; generated `core/` (18 files)
+- `supabase/functions/health/handler.ts` + `index.ts`, `supabase/functions/deno.json` (import map)
+- `supabase/tests/db.ts` (PGlite + Supabase role/auth stub), `rls.test.ts` (13), `functions.test.ts` (10)
+- `packages/vault/src/sync.ts` (+ `sync.test.ts`, 9): `VaultSync`, `mergeSnapshots`, `MemoryTransport`, `SyncTransport`, `RemoteVault`
+- `apps/extension/src/cloud/`: `supabase.ts` (client + chrome.storage auth storage), `auth.ts` (`CloudAuth`, email OTP), `transport.ts` (`SupabaseTransport`), `sync-service.ts` (`CloudSync`)
+- `apps/extension/entrypoints/sidepanel/screens/Account.tsx` (`SignIn`, `AccountCard`, `RestoreFromAccount`)
+- `scripts/sync-shared.mjs`, `scripts/mock-supabase.mjs`; `e2e/cloud.spec.ts` (2 two-device tests)
+
+Modified:
+- `packages/vault/src/db.ts` (Dexie v2: `tombstones`, `sync`), `service.ts` (tombstones on delete, `onChange`, `exportSnapshot`/`sealSnapshot`/`openSnapshot`/`applySnapshot`/`rekeyRecord`/`peekRecord`/`joinRemote`, sync state; import/wipe clear tombstones), `index.ts`
+- `apps/extension/src/messaging/protocol.ts` (AUTH_* / SYNC_* requests, `CLOUD` error code), `src/session/router.ts`, `src/session/services.ts` (auth + cloud singletons), `src/settings.ts` (`cloudSync`, default off)
+- `apps/extension/entrypoints/sidepanel/screens/Onboarding.tsx` ("restore from my account"), `SettingsView.tsx` (Account card)
+- `scripts/e2e.mjs` (E2E builds use the mock Supabase URL/key), `playwright.config.ts` (starts the mock), `e2e/fixtures.ts` (`launchDevice`)
+- `package.json` (`sync:shared`, `sync:shared:check`), `.prettierignore`
+
+Tests: 526 unit (core 398, vault 65, extension 38, supabase 23, other 2) + 52 e2e.
+
+## Phase 7 — design notes
+
+- **No Docker, no Supabase CLI, no Deno on this machine, and no Supabase project on the account yet** (checked read-only through the Supabase connector: `list_projects` returned none). Everything was therefore built so it can be verified offline:
+  - **Migrations run on real Postgres** via PGlite (WASM, in process), with Supabase's `auth` schema, `auth.uid()` and `anon`/`authenticated`/`service_role` roles stubbed with Supabase's default grants. 13 tests prove isolation per table. A **control test** disables RLS and shows A *can* then see B's row, so the harness is really enforcing it.
+  - **Edge Functions** keep their logic in pure `handler.ts` (Web `Request` → `Response`), tested in Node 24. `index.ts` only wires `Deno.serve` and a service-role client. Deno resolves `zod` and `@supabase/supabase-js` through `functions/deno.json`.
+  - **E2E:** `scripts/mock-supabase.mjs` imitates GoTrue (OTP, verify, refresh, user, logout) and PostgREST for `vault_blobs` with the same per-user and version rules. Request and response shapes were taken from the installed `@supabase/auth-js` source, so the real `supabase-js` client runs against it unchanged.
+- **Schema rules:**
+  - Users read and update only their own profile, and only `display_name` (column grant), never `plan`.
+  - `vault_blobs` is one row per user. Every write must bump `version` by exactly one (trigger), and clients update `where version = expected`, so a stale device updates nothing and re-merges.
+  - `ai_usage` is readable by its owner but writable only through `consume_ai_quota()` (security definer, `execute` granted to `service_role` only), which increments and checks the limit atomically.
+  - `ai_cache` is service-role only. `feedback` is insert/read own, no edits.
+  - Every function pins `search_path = ''`. `(select auth.uid())` is used in policies for planner efficiency.
+- **End-to-end encrypted sync:**
+  - The cloud row holds `kdf` (salt, iterations), `verifier` and **one AES-GCM blob of the whole snapshot** (AAD `sync/snapshot/v1`). The server learns nothing: not values, not key names (`custom.*` slugs could reveal personal topics), not sites, not even how many details exist (beyond size). The e2e test reads the mock's storage and finds no names, cities, key names or passphrase.
+  - A new device restores by deriving the key from the passphrase with the cloud salt and checking the verifier. Devices then share one key, so per-record merges work.
+  - Merge: last-writer-wins per record by `updatedAt`; tombstones (recorded on every delete, cleared on re-create) beat older edits. A fact changed on **both** devices since the last sync keeps the newer value and saves the older one as `custom.conflict_<key>` (re-encrypted under its new id, because AAD binds ciphertext to its id), and the UI reports it.
+  - A cloud vault made with a different passphrase (different salt) is detected; the user chooses "use the account's vault here" (needs that passphrase) or "replace it with this device's vault".
+  - Pushes retry up to three rounds on version conflicts.
+- **Sign-in** is optional and uses a 6-digit email code (`signInWithOtp` + `verifyOtp`, implicit flow). Magic links don't work inside extensions. The session is stored in `chrome.storage.local` by supabase-js. Builds without `VITE_SUPABASE_*` show "Cloud sync is not set up in this build" and everything else works.
+- **Auto-sync:** `VaultService.onChange` fires on user writes and deletes (not on applied snapshots, to avoid loops). `CloudSync` debounces 3 s and syncs only when Settings → "Sync my vault" is on, the user is signed in and the vault is unlocked.
+- **Shared code for functions:** `pnpm sync:shared` copies `packages/core/src` into `supabase/functions/_shared/core`, rewriting relative imports to explicit `.ts` paths (Deno) and copying the field dictionary. A unit test runs `--check` so the gate fails if the copy is stale, and another proves the copy enforces the same deny policy.
+- **health function:** requires a valid user token (401 with a structured error otherwise); CORS answers only Filler's extension origin (`ALLOWED_ORIGINS`, or any `chrome-extension://<32 a–p chars>` when unset); web origins get 403; reports `providerConfigured` and the provider name, **never the key** (a test asserts the key never appears in the body).
+
+### 🔑 Checkpoint A — pending (user action)
+Built and verified offline; the live part waits for the user (steps in `supabase/README.md`):
+1. Create a free Supabase project. Put its URL and anon/publishable key in `.env`.
+2. In Auth → Email Templates → Magic Link, include `{{ .Token }}` so the email shows the 6-digit code.
+3. Apply `supabase/migrations/*.sql` (CLI `supabase db push`, or Claude via the Supabase connector once the user names the project), then run the security advisors.
+4. Deploy `health`.
+Then rerun the account flow against the real project and record the result here.
+
+### Open items surfaced in Phase 7
+- Live verification (checkpoint A) is pending as above.
+- `profiles.display_name` is not shown in the UI yet (not needed so far).
+- The sync blob is the whole vault. That is fine for profile-sized data, but a very large document store (Phase 11 résumés) may need size checks; the column allows ≈30 MB.

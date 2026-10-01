@@ -130,6 +130,25 @@ export const MemoryClearSiteRequestSchema = z.object({
   type: z.literal('MEMORY_CLEAR_SITE'),
   site: z.string().min(1).max(253),
 });
+// ---- Account and sync (Phase 7)
+export const AuthStatusRequestSchema = z.object({ type: z.literal('AUTH_STATUS') });
+export const AuthSendCodeRequestSchema = z.object({
+  type: z.literal('AUTH_SEND_CODE'),
+  email: z.string().max(254),
+});
+export const AuthVerifyRequestSchema = z.object({
+  type: z.literal('AUTH_VERIFY'),
+  email: z.string().max(254),
+  code: z.string().max(12),
+});
+export const AuthSignOutRequestSchema = z.object({ type: z.literal('AUTH_SIGN_OUT') });
+export const SyncStatusRequestSchema = z.object({ type: z.literal('SYNC_STATUS') });
+export const SyncNowRequestSchema = z.object({ type: z.literal('SYNC_NOW') });
+export const SyncUseCloudRequestSchema = z.object({
+  type: z.literal('SYNC_USE_CLOUD'),
+  passphrase,
+});
+export const SyncReplaceCloudRequestSchema = z.object({ type: z.literal('SYNC_REPLACE_CLOUD') });
 export const SettingsGetRequestSchema = z.object({ type: z.literal('SETTINGS_GET') });
 export const SettingsSetRequestSchema = z.object({
   type: z.literal('SETTINGS_SET'),
@@ -172,6 +191,14 @@ export const PanelRequestSchema = z.discriminatedUnion('type', [
   MemoryClearSiteRequestSchema,
   SettingsGetRequestSchema,
   SettingsSetRequestSchema,
+  AuthStatusRequestSchema,
+  AuthSendCodeRequestSchema,
+  AuthVerifyRequestSchema,
+  AuthSignOutRequestSchema,
+  SyncStatusRequestSchema,
+  SyncNowRequestSchema,
+  SyncUseCloudRequestSchema,
+  SyncReplaceCloudRequestSchema,
   SessionStartRequestSchema,
   SessionGetRequestSchema,
   SessionEventRequestSchema,
@@ -253,6 +280,8 @@ export const ERROR_CODES = [
   /** A vault write was refused (denied value, weak passphrase, invalid fact). */
   'INVALID',
   'NO_SESSION',
+  /** Cloud (sign-in or sync) problems. */
+  'CLOUD',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
