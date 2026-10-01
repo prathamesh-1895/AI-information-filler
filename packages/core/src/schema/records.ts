@@ -155,6 +155,31 @@ export const PlanItemSchema = z.object({
   reason: z.string().max(1_000),
   /** Set when Filler must ask the user before this field can be filled. */
   question: z.string().max(1_000).optional(),
+  /** AI drafting state for open-ended fields (Phase 9). Key names only, never values. */
+  draft: z
+    .object({
+      /** Fact groups Filler would send ("Projects (3)"); the user can untick them. */
+      groups: z
+        .array(
+          z.object({
+            id: z.string().max(40),
+            label: z.string().max(80),
+            count: z.number().int().nonnegative(),
+            keys: z.array(z.string().max(80)).max(60),
+          }),
+        )
+        .max(20),
+      busy: z.boolean().optional(),
+      hint: z.string().max(300).optional(),
+      alternatives: z.array(z.string().max(20_000)).max(2).optional(),
+      /** Facts the draft says it used ("Why this"). */
+      usedFacts: z.array(z.string().max(80)).max(60).optional(),
+      /** What the AI needs to know before it can write this. */
+      needsInput: z.array(z.string().max(200)).max(3).optional(),
+      /** Why the last draft attempt gave nothing. */
+      error: z.string().max(500).optional(),
+    })
+    .optional(),
 });
 export type PlanItem = z.infer<typeof PlanItemSchema>;
 

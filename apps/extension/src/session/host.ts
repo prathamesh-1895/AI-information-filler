@@ -11,7 +11,10 @@ import {
   mapFields,
   offlineAi,
   reduce,
+  restrictSelection,
+  selectFacts,
   type AiSeam,
+  type Answer,
   type Effect,
   type Fact,
   type FieldDescriptor,
@@ -21,7 +24,7 @@ import {
   type SessionEvent,
   type SessionState,
 } from '@filler/core';
-import type { Repositories, VaultService } from '@filler/vault';
+import { questionSimilarity, type Repositories, type VaultService } from '@filler/vault';
 import type { FillItem, FillResult, HighlightItem, PageScan, Result } from '../messaging/protocol';
 import { DEFAULT_SETTINGS, isTrusted, type Settings } from '../settings';
 
@@ -43,6 +46,25 @@ export interface HostDeps {
 }
 
 const SCAN_CODES = new Set<SessionErrorCode>(['NO_PERMISSION', 'RESTRICTED_PAGE', 'NO_TAB']);
+
+/** How close an earlier question must be to offer its answer offline (Task 9.5). */
+const PAST_ANSWER_MIN = 0.6;
+
+/** The best earlier answer for a question: most similar, same platform first. */
+export function bestPastAnswer(
+  answers: readonly Answer[],
+  question: string,
+  platform: string,
+): Answer | undefined {
+  let best: { answer: Answer; score: number } | undefined;
+  for (const answer of answers) {
+    const score =
+      questionSimilarity(question, answer.questionText) +
+      (answer.platform.toLowerCase() === platform.toLowerCase() ? 0.01 : 0);
+    if (score >= PAST_ANSWER_MIN && (!best || score > best.score)) best = { answer, score };
+  }
+  return best?.answer;
+}
 
 export class SessionHost {
   private readonly sessions = new Map<number, SessionState>();
@@ -193,12 +215,22 @@ export class SessionHost {
         }
         case 'PLAN': {
           if (!this.deps.vault.isUnlocked()) return [{ type: 'VAULT_LOCKED' }];
-          const facts = new Map((await this.deps.repos.facts.list()).map((f: Fact) => [f.key, f]));
+          const all = await this.deps.repos.facts.list();
+          const facts = new Map(all.map((f: Fact) => [f.key, f]));
           const fields = state.fields.filter((f: FieldDescriptor) =>
             effect.fieldIds.includes(f.id),
           );
+          // Earlier approved answers are offered for open-ended questions (Task 9.5); with AI
+          // down this is the main help, with AI on the user can still ask for a fresh draft.
+          const answers = await this.deps.repos.answers.list();
+          const platform = state.goal?.platform ?? state.site;
           const items = await buildPlan(fields, new Map(Object.entries(state.mappings)), {
             lookup: (key) => facts.get(key),
+            facts: all,
+            pastAnswer: (field) => {
+              const past = bestPastAnswer(answers, field.label, platform);
+              return past ? { value: past.value, platform: past.platform } : undefined;
+            },
             ai: this.ai,
             aiContext: {
               site: state.site,
@@ -259,6 +291,66 @@ export class SessionHost {
             (await this.settings()).highlight ? effect.items : [],
           );
           return [];
+        case 'GENERATE': {
+          const fieldId = effect.fieldId;
+          const field = state.fields.find((f) => f.id === fieldId);
+          if (!field) return [];
+          if (!this.deps.vault.isUnlocked())
+            return [
+              {
+                type: 'DRAFTED',
+                fieldId,
+                answer: {
+                  needsInput: '',
+                  reason: 'Unlock your vault so Filler can use your details.',
+                },
+              },
+            ];
+          const facts = await this.deps.repos.facts.list();
+          // The panel may untick groups, never add: keys are re-checked against the selection rules.
+          const allowed = new Set(
+            restrictSelection(selectFacts(field, facts, state.goal), effect.keys),
+          );
+          const platform = state.goal?.platform ?? state.site;
+          const examples = (
+            await this.deps.repos.answers.search(field.label, { platform, limit: 3 })
+          ).map((r) => ({ question: r.answer.questionText, answer: r.answer.value }));
+          const { answerLanguage } = await this.settings();
+          const goal = state.goal
+            ? { ...state.goal, language: state.goal.language ?? answerLanguage }
+            : { text: state.title || state.site || 'Fill this form', language: answerLanguage };
+          const answer = await this.ai.generateAnswer(
+            field,
+            state.mappings[fieldId] ?? {
+              kind: 'open_ended',
+              confidence: 0,
+              reason: '',
+              source: 'none',
+            },
+            {
+              site: state.site,
+              ...(state.title ? { title: state.title } : {}),
+              goal,
+              filled: state.used,
+              facts: facts
+                .filter((f) => allowed.has(f.key))
+                .map((f) => ({ key: f.key, value: f.value })),
+              examples,
+              ...(effect.hint ? { hint: effect.hint } : {}),
+            },
+          );
+          return [{ type: 'DRAFTED', fieldId, answer }];
+        }
+        case 'RECORD_ANSWER':
+          await this.deps.repos.answers.add({
+            id: this.newId(),
+            questionText: effect.question.slice(0, 2_000),
+            platform: effect.platform.slice(0, 253),
+            goal: effect.goal.slice(0, 2_000),
+            value: effect.value.slice(0, 20_000),
+            approvedAt: this.now(),
+          });
+          return [];
         case 'END_PAGE':
           await this.deps.endTab(tabId);
           return [];
@@ -267,6 +359,14 @@ export class SessionHost {
       // An effect that throws must not wedge the session.
       if (effect.type === 'SCAN')
         return [{ type: 'SCAN_FAILED', code: 'SCAN_FAILED', message: String(error) }];
+      if (effect.type === 'GENERATE')
+        return [
+          {
+            type: 'DRAFTED',
+            fieldId: effect.fieldId,
+            answer: { needsInput: '', reason: `The draft failed: ${String(error)}` },
+          },
+        ];
       if (effect.type === 'FILL') {
         return [
           {

@@ -37,10 +37,11 @@ export function pageDataOf(prompt: string): { fields: DataField[]; page?: unknow
   return JSON.parse(m[1]!) as { fields: DataField[] };
 }
 
-export type Mode = 'honest' | 'compromised' | 'garbage' | 'fenced';
+export type Mode = 'honest' | 'compromised' | 'garbage' | 'fenced' | 'inventing';
 
 /** The model's reply text for a prompt. */
 export function scriptedReply(prompt: string, mode: Mode = 'honest'): string {
+  if (prompt.includes('<<<DRAFT_DATA')) return scriptedDraft(prompt, mode);
   const { fields } = pageDataOf(prompt);
   if (mode === 'garbage') return 'Sure! Here are the fields you asked about.';
   if (mode === 'compromised' && /ignore (all )?previous|SYSTEM:/i.test(prompt)) {
@@ -154,4 +155,107 @@ function replyShape(url: string, text: string, usage: { input: number; output: n
     choices: [{ index: 0, message: { role: 'assistant', content: text }, finish_reason: 'stop' }],
     usage: { prompt_tokens: usage.input, completion_tokens: usage.output },
   };
+}
+
+// ------------------------------------------------------------ drafting (Phase 9)
+
+interface DraftData {
+  field: { label: string; maxLength?: number; options?: string[]; inputType: string };
+  goal: { role?: string; targetAudience?: string; audience?: string; tone?: string };
+  facts: Array<{ key: string; value: string | string[] }>;
+  filled: Array<{ key: string; value: string | string[] }>;
+  hint?: string;
+}
+
+export function draftDataOf(prompt: string): DraftData | null {
+  const m = /<<<DRAFT_DATA\n([\s\S]*?)\nDRAFT_DATA>>>/.exec(prompt);
+  return m ? (JSON.parse(m[1]!) as DraftData) : null;
+}
+
+const txt = (v: string | string[] | undefined) => (Array.isArray(v) ? v.join(', ') : (v ?? ''));
+const cap = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+
+/**
+ * A deterministic "writer": builds the draft only from what it was sent, so
+ * the envelope's checks can be exercised end to end. The hint changes the
+ * text ("shorter", "more formal", "mention …"), the goal's role leads, and
+ * values filled earlier in the session (the headline) are reused.
+ */
+function scriptedDraft(prompt: string, mode: Mode): string {
+  const data = draftDataOf(prompt);
+  if (!data) return 'no data';
+  const facts = new Map(data.facts.map((f) => [f.key, f.value]));
+  const filled = new Map(data.filled.map((f) => [f.key, f.value]));
+  const used: string[] = [];
+  const take = (key: string) => {
+    const v = facts.get(key);
+    if (v !== undefined) used.push(key);
+    return v;
+  };
+  const role = data.goal.role;
+  const audience = data.goal.audience;
+  const hint = (data.hint ?? '').toLowerCase();
+  const max = data.field.maxLength;
+
+  let value: string;
+  let alternatives: string[];
+  if (data.field.options?.length) {
+    value = data.field.options[data.field.options.length - 1]!;
+    alternatives = [];
+  } else if (max !== undefined && max <= 100) {
+    const skills = (take('skills') as string[] | undefined) ?? [];
+    const head = role ? cap(role) : txt(take('bio.headline')) || 'Professional';
+    value = (skills.length ? `${head} | ${skills.slice(0, 2).join(' & ')}` : head).slice(0, max);
+    alternatives = [head.slice(0, max)];
+  } else {
+    const projects = data.facts
+      .filter((f) => /^projects\[\d+\]\.name$/.test(f.key))
+      .map((f) => {
+        used.push(f.key);
+        return txt(f.value);
+      });
+    const skills = txt(take('skills'));
+    const years = txt(take('professional.years_experience'));
+    const headline = txt(filled.get('bio.headline')) || txt(take('bio.headline'));
+    if (!role && !headline && !projects.length && !skills) {
+      return JSON.stringify({
+        value: '',
+        alternatives: [],
+        usedFacts: [],
+        needsInput: ['Which of your projects or skills should this mention?'],
+      });
+    }
+    const formal = /formal/.test(hint);
+    const sentences = [
+      role
+        ? `${formal ? 'In a professional capacity, I' : 'I'} work as a ${role}${audience ? ` for ${audience}` : ''}.`
+        : null,
+      headline ? `As ${headline}, I focus on clear, practical results.` : null,
+      projects.length ? `My recent work includes ${projects.join(' and ')}.` : null,
+      skills ? `I work with ${skills}.` : null,
+      years ? `I have ${years} years of experience.` : null,
+    ].filter((x): x is string => Boolean(x));
+    const mention = /mention (.+)/.exec(data.hint ?? '');
+    if (mention) sentences.push(`I can also speak to ${mention[1]!.replace(/[.!]+$/, '')}.`);
+    const keep = /short/.test(hint) ? sentences.slice(0, 2) : sentences;
+    const fit = (parts: string[]) => {
+      const out: string[] = [];
+      for (const p of parts) if (!max || [...out, p].join(' ').length <= max) out.push(p);
+      return out.join(' ');
+    };
+    value = fit(keep);
+    alternatives = [fit([...keep].reverse()), fit(keep.slice(0, 1))].filter(
+      (a) => a && a !== value,
+    );
+  }
+  if (mode === 'inventing') {
+    value = `${value} I spent 10 years at Google.`.trim();
+    alternatives = alternatives.map((a) => `${a} Ex-Microsoft.`);
+  }
+  return JSON.stringify({
+    value,
+    alternatives: alternatives.slice(0, 2),
+    usedFacts: used,
+    needsInput: [],
+  });
 }

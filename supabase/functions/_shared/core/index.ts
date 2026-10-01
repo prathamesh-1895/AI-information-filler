@@ -16,3 +16,7 @@ export * from './ai/redact.ts';
 export * from './ai/contract.ts';
 export * from './ai/guard.ts';
 export * from './ai/convert.ts';
+export * from './ai/draft.ts';
+export * from './orchestrator/select.ts';
+export * from './orchestrator/goal.ts';
+export * from './orchestrator/suggest.ts';

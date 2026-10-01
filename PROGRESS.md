@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 8 — AI gateway & field understanding (2026-10-01; verified with mocked providers; 🔑 checkpoints A and B pending)
+**Last completed phase:** Phase 9 — AI answer generation & goal context (2026-10-01; verified with the scripted model; 🔑 checkpoints A and B pending)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -17,7 +17,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 6 | Side panel UI | ✅ COMPLETE (2026-10-01) | Onboarding/unlock, fill session (shaped questions, keyboard review list, banners), vault manager (groups, repeat sections, deny list, encrypted backup, wipe), settings with proven behaviours, shortcuts, axe-clean light/dark UI. **Tier A complete.** |
 | 7 | Supabase: auth, database, encrypted sync | ✅ COMPLETE (2026-10-01, verified offline; 🔑 checkpoint A pending) | RLS schema proven on PGlite, email-code sign-in, end-to-end encrypted two-device sync with tombstones and conflict copies, Edge Function base (health, CORS, auth, quotas), generated shared core, local mock Supabase for e2e |
 | 8 | AI gateway & field understanding | ✅ COMPLETE (2026-10-01, mocked providers; 🔑 checkpoint B pending, live provider not configured) | Gemini/Groq/OpenRouter/Ollama adapters with retry, timeout, fallback and token caps; safety envelope (redaction, delimited untrusted data, strict output, per-item guard, policy re-check, metadata-only logs); `ai-classify` with chunking and cache; typed client + AI seam with offline fallback, AI field memory, mode chip; per-user and global daily limits; Test AI connection and usage panel. Rules + classify on fixtures: kind 100%, key 99% |
-| 9 | AI answer generation & goal context | ⬜ NOT STARTED | |
+| 9 | AI answer generation & goal context | ✅ COMPLETE (2026-10-01, scripted model; live drafting waits for checkpoints A and B) | User-triggered drafts from public facts only ("Using" chips with untick), `ai-generate` with prompt rules, length/option/invention checks and one corrective retry, yellow draft cards (counter, why, alternatives, Regenerate with hint), approved drafts saved for reuse, goal parsing + editable goal chips, cross-page consistency, strengthen suggestions, offline reuse of earlier answers |
 | 10 | Screen Share & vision mode | ⬜ NOT STARTED | |
 | 11 | Résumé import & platform profiles | ⬜ NOT STARTED | |
 | 12 | Hardening, docs & release | ⬜ NOT STARTED | |
@@ -31,8 +31,8 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 9, Task 9.1** (fact selection). Model: **Sonnet 5.5** (playbook §0.7). Checkpoints A (Supabase project) and B (free AI key) are still open; Phase 9 can be built and tested with the scripted model like Phase 8, but live drafting needs both.
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5.
+- Next: **Phase 10, Task 10.1** (capture modes). Model: **Sonnet 5.5** (playbook §0.7). Checkpoints A (Supabase project) and B (free AI key) are still open; Phase 10's vision calls need a vision-capable model (Gemini recommended) once B is done.
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet).
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -485,3 +485,67 @@ Needs checkpoint A (a Supabase project) first. Then, in the user's own terminal:
 - The panel shows a field's help text as the page gives it, so hidden injected text is visible in a question card (the `ai-understanding` fixture's sr-only "visit https://evil.example…"). Nothing acts on it. Phase 12's injection hardening should hide or flag text that isn't visible on the page.
 - `ai_cache` has no expiry yet; add a cleanup (e.g. rows older than 30 days) in Phase 12.
 - Redaction treats any 8+ digit run as a phone number. That's harmless for classification but coarse.
+
+---
+
+## Phase 9 — files
+
+Created:
+- `packages/core/src/orchestrator/select.ts` (`selectFacts`, `topicGroups`, `isDraftable`, `restrictSelection`), `goal.ts` (`parseGoal`, `parseGoalText`, `platformOf`), `suggest.ts` (`strengthenSuggestions`), `phase9.test.ts` (selection, draft checks, goal, draft flow)
+- `packages/core/src/ai/draft.ts`: generate contract (`GenerateRequest`, `DraftOutput`, `GenerateResponse`), `checkDraft`, `checkDraftOutput`, `claimsIn`, `inventedClaims`
+- `supabase/functions/_shared/ai/generate.ts` (prompt rules, data block, `runGenerate` with one corrective retry), `supabase/functions/ai-generate/handler.ts` + `index.ts`
+- `supabase/tests/generate.test.ts` (12)
+- `apps/extension/entrypoints/sidepanel/screens/Drafts.tsx` (`DraftControls`, `DraftDetails`, `GoalChips`, `Suggestions`)
+- `e2e/drafts.spec.ts` (2)
+
+Modified:
+- core: `schema/records.ts` (PlanItem `draft`), `orchestrator/ai.ts` (draft context, richer `GeneratedAnswer`), `orchestrator/plan.ts` (no automatic generation; draft groups; past answers), `orchestrator/session.ts` (`DRAFT`, `DRAFTED`, `GENERATE`, `RECORD_ANSWER`, goal parsing, platform from URL, consistency key for key-less answers), `plan.test.ts`, `index.ts`
+- `packages/ai-client/src/client.ts` (`generate`), `seam.ts` (`generateAnswer`, `generateRequest`, client-side re-check) + tests
+- `apps/extension/src/session/host.ts` (`bestPastAnswer`, GENERATE / RECORD_ANSWER effects, facts + past answers into planning) + test; `entrypoints/sidepanel/screens/FillView.tsx`
+- `supabase/tests/fake-llm.ts` (scripted writer, `inventing` mode), `scripts/mock-supabase.mjs` (`ai-generate`), `test-fixtures/upwork-profile-like.html` (step 3 "Why should clients hire you?"), `e2e/ui.spec.ts` ("Save for reuse"), `supabase/README.md`
+
+Tests: 654 unit (core 447, vault 66, extension 40, ai-client 17, supabase 83, ui 1) + 58 e2e.
+
+## Phase 9 — design notes
+
+- **Drafting is explicit.** Planning no longer calls the AI. An open-ended field (or a missing `bio.*` pitch fact such as the headline) shows **Using: Profession, Skills, Projects (2)** chips, an optional hint and **Draft with AI**. Nothing is sent until the user clicks.
+  - The reducer emits `GENERATE`. The host re-runs the selection rules and intersects them with the keys the panel sent, so the panel can untick but never add.
+  - `DRAFTED` puts a pending AI draft in the review list. It is never approved automatically: approve-all-from-vault and trusted sites only cover vault/memory values.
+- **Fact selection (9.1).**
+  - The question's topic picks key groups. Projects → projects, skills; overview/about → bio, professional, experience, skills, projects, education; rate → preferences, professional; and so on.
+  - Only `public` facts are eligible. The registry tier is checked too, so a mislabelled `contact.email` is still refused. `personal` and `restricted` facts, and anything that looks like a never-store value, are never selected.
+  - The user's `custom.*` facts are added only when the question names them. Limits: 5 items per list group, 40 facts in total.
+  - Values filled earlier in the session go along for consistency only when they are public registry keys (e.g. the headline, never contact or address data).
+- **ai-generate (9.2).**
+  - Smart tier, temperature 0.7, no cache (the request holds personal data), metadata-only logs, its own daily quota.
+  - Every prompt rule from the playbook is in the system prompt, and a test asserts each one. A length guide is also sent: 80–100% of maxLength for long fields, a hard cap for short ones.
+  - **Checks on every draft, both server- and client-side:**
+    - within maxLength;
+    - exactly one allowed option for choices (normalised to the exact option text);
+    - cited facts were actually sent;
+    - no links the user didn't give;
+    - **invention check:** every capitalised name, acronym and number must appear somewhere in what was sent.
+  - A failing draft gets one retry that names the problems. A good alternative is promoted when the main value fails. Otherwise the user gets a plain "write it yourself" reason, or the model's `needsInput` questions.
+  - Sentence-initial words count as names unless they look like ordinary words ("Helping", "Recently"), so "Google hired me" and "Ex-Microsoft" are caught.
+- **Review UX (9.3).**
+  - AI drafts sit in yellow cards with a character counter against the limit, "Why this" (the used fact groups), "Other versions" with "Use this instead", and **Regenerate** with a "Change it how?" box.
+  - Inline edit is still available. Approving or editing an AI draft saves it to `answers` (platform, goal, question).
+  - Past-answer suggestions offer "Draft with AI instead" when AI is on.
+- **Goal intelligence and session memory (9.4).**
+  - `parseGoal` reads role ("as a …"), audience ("for small businesses") and tone words; the platform comes from the page URL (Upwork, Fiverr, Google Forms, LinkedIn, …). Explicit fields win.
+  - Goal chips (Platform, Role, Audience, Tone, Language) can be edited in the session, and the next draft uses them.
+  - Filled values, including key-less answers under `custom.<label>`, are remembered per session, and later pages' drafts receive the public ones. The e2e shows step 3's pitch using the title approved on step 1.
+  - "You might want to strengthen" lists long fields using under 25% of their limit (fields of 300+ characters), with an optional "Draft a fuller version". It suggests only.
+  - The answer language (Settings) goes into the request and the prompt.
+- **Offline (9.5).**
+  - With AI down, the chip says so and there is no Draft button. The question has a character counter and a **Save for reuse** toggle.
+  - The best earlier approved answer to a similar question (token similarity ≥ 0.6, same platform first) is offered as a pending suggestion. This happens with AI on as well, since it costs nothing.
+  - Ask-once for key-less answers is unchanged (saved as a `custom.*` fact + field memory).
+- **Not stubs:** the scripted writer (`supabase/tests/fake-llm.ts`) only uses what it was sent, so tests exercise the real envelope, checks, client and UI. It is not a measure of real model quality; live drafting waits for checkpoints A and B.
+- **Live walk:** 360 px, light and dark. Questions with draft chips, the yellow draft card with alternatives, goal chips. No console errors, no horizontal scroll, and axe reports no serious or critical issues on the draft card in either theme (now part of `drafts.spec.ts`).
+
+### Open items surfaced in Phase 9
+- Live drafting is untested until checkpoints A and B. In particular the invention check may be strict with real models: it rejects any capitalised word or number the facts don't contain. If live drafts get rejected too often, widen the ordinary-word list rather than weakening the rule.
+- Past answers match by word overlap only. A semantic match (e.g. through the AI) could come later.
+- Very long fact lists are cut at 40 facts / 5 items per group. The "Using" chips toggle whole groups, not single items.
+- The goal's platform shows the host for unknown sites (e.g. `forms.example.org`). It is editable.

@@ -5,14 +5,33 @@
  */
 import { formatForField, questionFor, type FactLookup } from '../mapper/format';
 import type { MapResult } from '../mapper/map';
-import { getKeyDef } from '../schema/keys';
-import type { FieldDescriptor, PlanItem } from '../schema/records';
+import { getKeyDef, parseKey } from '../schema/keys';
+import type { Fact, FieldDescriptor, PlanItem } from '../schema/records';
 import type { AiContext, AiSeam } from './ai';
+import { selectFacts } from './select';
+
+export interface PastAnswer {
+  value: string;
+  platform?: string;
+}
 
 export interface PlanDeps {
   lookup: FactLookup;
   ai: AiSeam;
   aiContext: AiContext;
+  /** All vault facts, for choosing what an AI draft may use (Phase 9). */
+  facts?: readonly Fact[];
+  /** Best previously approved answer to a similar question, if any (Task 9.5). */
+  pastAnswer?: (field: FieldDescriptor) => PastAnswer | undefined;
+}
+
+/** Facts that are really a pitch (written for the goal) can be drafted when the vault lacks them. */
+export const DRAFTABLE_GROUPS = new Set(['bio']);
+
+function draftFor(field: FieldDescriptor, deps: PlanDeps): Pick<PlanItem, 'draft'> {
+  if (!deps.facts) return {};
+  const { groups } = selectFacts(field, deps.facts, deps.aiContext.goal);
+  return { draft: { groups } };
 }
 
 const hasValue = (v: FieldDescriptor['currentValue']) =>
@@ -50,6 +69,7 @@ export async function planField(
       };
     }
     if (mapping.kind !== 'open_ended') {
+      const group = parseKey(mapping.canonicalKey)?.group ?? '';
       return {
         ...base,
         confidence: 0,
@@ -57,28 +77,37 @@ export async function planField(
         reason: formatted.reason,
         // The AI's phrasing ("What is your team called?") beats the generic one.
         question: mapping.question ?? formatted.question,
+        ...(DRAFTABLE_GROUPS.has(group) ? draftFor(field, deps) : {}),
       };
     }
   }
 
   if (mapping.kind === 'open_ended') {
-    const answer = await deps.ai.generateAnswer(field, mapping, deps.aiContext);
-    if ('value' in answer) {
+    // Drafting is the user's call (they see which facts would be sent first), so
+    // nothing is generated here. Offline, an earlier approved answer is offered.
+    const draft = draftFor(field, deps);
+    const past = hasValue(field.currentValue) ? undefined : deps.pastAnswer?.(field);
+    if (past) {
       return {
         ...base,
-        value: answer.value,
-        source: 'ai',
-        confidence: 0.5,
+        value: past.value,
+        source: 'user',
+        confidence: 0.6,
         status: 'pending',
-        reason: answer.reason,
+        reason: `Your earlier answer to a similar question${past.platform ? ` (${past.platform})` : ''}. Check it fits before approving.`,
+        ...draft,
       };
     }
     return {
       ...base,
       confidence: 0,
       status: 'pending',
-      reason: answer.reason,
-      question: answer.needsInput,
+      reason:
+        deps.ai.mode === 'ai'
+          ? 'Filler can draft this from your details, or you can write it.'
+          : 'Offline mode: Filler needs you to write this one.',
+      question: mapping.question ?? questionFor(field),
+      ...draft,
     };
   }
 

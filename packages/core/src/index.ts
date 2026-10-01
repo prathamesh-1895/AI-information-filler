@@ -15,3 +15,7 @@ export * from './ai/redact';
 export * from './ai/contract';
 export * from './ai/guard';
 export * from './ai/convert';
+export * from './ai/draft';
+export * from './orchestrator/select';
+export * from './orchestrator/goal';
+export * from './orchestrator/suggest';

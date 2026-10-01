@@ -6,11 +6,16 @@
  * Open-ended drafting stays offline until Phase 9.
  */
 import {
+  checkDraft,
   CLASSIFY_MAX_FIELDS,
   fromClassified,
-  offlineAi,
+  getKeyDef,
+  questionFor,
   toAiField,
   type AiContext,
+  type FactValue,
+  type GeneratedAnswer,
+  type GenerateRequest,
   type AiSeam,
   type AiStatus,
   type FieldDescriptor,
@@ -106,8 +111,84 @@ export function createAiSeam(options: AiSeamOptions): CloudAiSeam {
       return out;
     },
 
-    // Phase 9 brings AI drafting; until then open-ended fields are asked.
-    generateAnswer: (field, mapping, ctx) => offlineAi.generateAnswer(field, mapping, ctx),
+    async generateAnswer(field, _mapping, ctx): Promise<GeneratedAnswer> {
+      const ask = (reason: string, questions: string[] = []): GeneratedAnswer => ({
+        needsInput: questions[0] ?? questionFor(field),
+        reason,
+        ...(questions.length ? { questions } : {}),
+      });
+      if (!(await options.enabled())) {
+        set(offlineStatus('disabled'));
+        return ask('AI help is turned off in Settings. Write this one yourself.');
+      }
+      const request = generateRequest(field, ctx);
+      const result = await options.client.generate(request);
+      if (!result.ok) {
+        set(offlineStatus(result.reason));
+        return ask(
+          `${capitalise(OFFLINE_TEXT[result.reason])}. Write this one yourself, or try again later.`,
+        );
+      }
+      set({ mode: 'ai' });
+      const r = result.data;
+      // The server already checked the draft; checked again here so a bad reply never reaches the page.
+      const main = r.value !== undefined ? checkDraft(r.value, request) : null;
+      const alternatives = r.alternatives
+        .map((a) => checkDraft(a, request))
+        .flatMap((c) => (c.ok ? [c.value] : []));
+      const best = main?.ok ? main.value : alternatives[0];
+      if (best !== undefined)
+        return {
+          value: best,
+          reason: 'AI draft from your details. Check it, then approve or edit.',
+          alternatives: alternatives.filter((a) => a !== best).slice(0, 2),
+          usedFacts: r.usedFacts,
+        };
+      if (r.needsInput.length) return ask('The AI needs a bit more from you first.', r.needsInput);
+      return ask(
+        r.problem ??
+          'The AI could not write a draft that follows Filler’s rules. Write it yourself.',
+      );
+    },
   };
   return seam;
+}
+
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const clipValue = (v: FactValue): FactValue =>
+  Array.isArray(v) ? v.slice(0, 60).map((x) => x.slice(0, 500)) : v.slice(0, 4_000);
+
+/**
+ * Builds the generate request from what the host selected. Values filled
+ * earlier in the session are sent for consistency only when they are public
+ * registry details (a headline, a rate), never contact or address data.
+ */
+export function generateRequest(field: FieldDescriptor, ctx: AiContext): GenerateRequest {
+  const goal = ctx.goal;
+  const options = field.options
+    ?.map((o) => (o.text || o.value).trim().slice(0, 200))
+    .filter(Boolean)
+    .slice(0, 100);
+  return {
+    field: { ...toAiField(field), ...(options?.length ? { options } : {}) },
+    page: { host: ctx.site.slice(0, 253) || 'unknown' },
+    goal: {
+      ...(goal?.text ? { text: goal.text.slice(0, 500) } : {}),
+      ...(goal?.platform ? { platform: goal.platform.slice(0, 253) } : {}),
+      ...(goal?.role ? { role: goal.role.slice(0, 200) } : {}),
+      ...(goal?.targetAudience ? { audience: goal.targetAudience.slice(0, 300) } : {}),
+      ...(goal?.tone ? { tone: goal.tone.slice(0, 100) } : {}),
+      ...(goal?.language ? { language: goal.language.slice(0, 50) } : {}),
+    },
+    facts: (ctx.facts ?? []).slice(0, 60).map((f) => ({ key: f.key, value: clipValue(f.value) })),
+    filled: Object.entries(ctx.filled)
+      .filter(([key]) => getKeyDef(key)?.sensitivity === 'public')
+      .slice(0, 40)
+      .map(([key, value]) => ({ key, value: clipValue(value) })),
+    examples: (ctx.examples ?? [])
+      .slice(0, 3)
+      .map((e) => ({ question: e.question.slice(0, 500), answer: e.answer.slice(0, 6_000) })),
+    ...(ctx.hint ? { hint: ctx.hint.slice(0, 300) } : {}),
+  };
 }

@@ -318,4 +318,67 @@ describe('settings change host behaviour (PLAYBOOK Task 6.4)', () => {
     expect(seen).toHaveLength(1);
     expect(again.mappings[byLabel(again, 'Message').field.id]).toMatchObject({ source: 'memory' });
   });
+
+  it('drafts on request with only selected public facts, saves approved drafts, reuses them offline (Phase 9)', async () => {
+    const contexts: Array<Parameters<AiSeam['generateAnswer']>[2]> = [];
+    let mode: 'ai' | 'offline' = 'ai';
+    const ai: AiSeam = {
+      get mode() {
+        return mode;
+      },
+      async resolveUnmapped() {
+        return new Map();
+      },
+      async generateAnswer(_f, _m, ctx) {
+        contexts.push(ctx);
+        return { value: 'I build GST tools in Excel.', reason: 'AI draft', usedFacts: ['skills'] };
+      },
+    };
+    const { host, repos } = await setup(
+      snapshot('simple-contact'),
+      { answerLanguage: 'Marathi' },
+      ai,
+    );
+    await repos.facts.setValue('skills', ['Excel']);
+    await repos.facts.setValue('projects[0].name', 'GST Tools');
+    await repos.facts.setValue('contact.phone.mobile', '+91 98765 43210');
+    let s = await host.start(1, { text: 'Contact form as a business consultant' });
+    const message = byLabel(s, 'Message');
+    // Only public facts are offered: skills (projects are not about a contact message; the phone is personal).
+    expect(message.item.draft?.groups.map((g) => g.id)).toEqual(['skills']);
+    expect(contexts).toHaveLength(0); // nothing sent before the user asks
+
+    // The panel asks with an extra key it may not add: it is dropped.
+    s = await host.dispatch(1, {
+      type: 'DRAFT',
+      fieldId: message.field.id,
+      keys: ['skills', 'contact.phone.mobile'],
+      hint: 'shorter',
+    });
+    expect(contexts[0]).toMatchObject({
+      facts: [{ key: 'skills', value: ['Excel'] }],
+      hint: 'shorter',
+      goal: { role: 'business consultant', language: 'Marathi' },
+    });
+    expect(byLabel(s, 'Message').item).toMatchObject({
+      value: 'I build GST tools in Excel.',
+      source: 'ai',
+      status: 'pending',
+    });
+
+    await host.dispatch(1, { type: 'APPROVE', fieldIds: [message.field.id] });
+    expect((await repos.answers.list()).map((a) => [a.questionText, a.value])).toEqual([
+      ['Message', 'I build GST tools in Excel.'],
+    ]);
+
+    // Offline next time: the earlier answer is offered, never pre-approved.
+    mode = 'offline';
+    s = await host.start(1);
+    expect(byLabel(s, 'Message').item).toMatchObject({
+      value: 'I build GST tools in Excel.',
+      source: 'user',
+      status: 'pending',
+      reason: expect.stringContaining('earlier answer'),
+    });
+  });
 });

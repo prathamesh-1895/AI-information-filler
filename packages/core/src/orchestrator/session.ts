@@ -13,7 +13,8 @@
  */
 import { z } from 'zod';
 import type { MapResult } from '../mapper/map';
-import type { AiStatus } from './ai';
+import type { AiStatus, GeneratedAnswer } from './ai';
+import { parseGoal, platformOf } from './goal';
 import { customKeyFor } from '../schema/keys';
 import {
   FactValueSchema,
@@ -87,6 +88,13 @@ export const UserEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('SKIP'), fieldId: z.string() }),
   z.object({ type: z.literal('FILL'), fieldIds: z.array(z.string()).optional() }),
   z.object({ type: z.literal('RESCAN') }),
+  /** Ask the AI for a draft using these fact keys (Phase 9). */
+  z.object({
+    type: z.literal('DRAFT'),
+    fieldId: z.string(),
+    keys: z.array(z.string().max(80)).max(60),
+    hint: z.string().max(300).optional(),
+  }),
   z.object({ type: z.literal('END') }),
 ]);
 export type UserEvent = z.infer<typeof UserEventSchema>;
@@ -99,6 +107,7 @@ export type SystemEvent =
   | { type: 'MAPPED'; mappings: Record<string, MapResult>; ai?: AiStatus }
   | { type: 'PLANNED'; items: PlanItem[] }
   | { type: 'ANSWER_REJECTED'; fieldId: string; reason: string }
+  | { type: 'DRAFTED'; fieldId: string; answer: GeneratedAnswer }
   | { type: 'FILL_RESULTS'; results: FillResultLite[] }
   | { type: 'FIELDS_CHANGED'; url: string; added: FieldDescriptor[]; removed: string[]; at: string }
   | { type: 'VAULT_LOCKED' }
@@ -127,6 +136,15 @@ export type Effect =
       items: Array<{ fieldId: string; selector: string; signature: string; value: FactValue }>;
     }
   | { type: 'HIGHLIGHT'; items: Array<{ fieldId: string; state: HighlightState; title: string }> }
+  | { type: 'GENERATE'; fieldId: string; keys: string[]; hint?: string }
+  | {
+      type: 'RECORD_ANSWER';
+      fieldId: string;
+      question: string;
+      value: string;
+      platform: string;
+      goal: string;
+    }
   | { type: 'END_PAGE' };
 
 export interface Transition {
@@ -195,6 +213,29 @@ function withoutQuestion(item: PlanItem): PlanItem {
   return rest;
 }
 
+/** Approved AI drafts and the user's own written answers are kept for reuse (Task 9.3/9.5). */
+function recordAnswer(state: SessionState, item: PlanItem, value: FactValue): Effect[] {
+  const field = state.fields.find((f) => f.id === item.fieldId);
+  if (!field || typeof value !== 'string' || !value.trim() || !field.label.trim()) return [];
+  return [
+    {
+      type: 'RECORD_ANSWER',
+      fieldId: item.fieldId,
+      question: field.label,
+      value,
+      platform: state.goal?.platform ?? state.site,
+      goal: state.goal?.text ?? '',
+    },
+  ];
+}
+
+/** Key under which a value is remembered for consistency across pages. */
+function usedKey(state: SessionState, item: PlanItem): string | undefined {
+  if (item.canonicalKey) return item.canonicalKey;
+  const label = state.fields.find((f) => f.id === item.fieldId)?.label;
+  return label ? customKeyFor(label) : undefined;
+}
+
 /** The reducer. Events that do not apply to the current phase are ignored (state unchanged, no effects). */
 export function reduce(current: SessionState, event: SessionEvent): Transition {
   const none: Transition = { state: current, effects: [] };
@@ -209,7 +250,7 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
           ...initialState(),
           id: event.id,
           tabId: event.tabId,
-          ...(event.goal ? { goal: event.goal } : {}),
+          ...(event.goal ? { goal: parseGoal(event.goal, '')! } : {}),
           phase: 'SCANNING',
           startedAt: event.at,
           updatedAt: event.at,
@@ -231,9 +272,11 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
         capturedAt: event.at,
         fieldIds: event.fields.map((f) => f.id),
       };
+      const platform = s.goal && !s.goal.platform ? platformOf(event.url) : undefined;
       return {
         state: {
           ...s,
+          ...(platform && s.goal ? { goal: { ...s.goal, platform } } : {}),
           phase: 'MAPPING',
           url: event.url,
           title: event.title,
@@ -320,6 +363,8 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
           signature: field.signature,
           site: s.site,
         });
+      if (event.save && item.kind === 'open_ended')
+        effects.push(...recordAnswer(s, item, event.value));
       const settled = { ...next, mappings, phase: 'AWAITING_REVIEW' as const };
       effects.push(highlightOf(settled));
       return { state: settled, effects };
@@ -347,24 +392,88 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
         ...withoutQuestion(p),
         value: event.value,
         status: 'edited',
-        reason: 'Edited by you',
+        reason: p.source === 'ai' ? 'AI draft, edited by you' : 'Edited by you',
       }));
-      return { state: { ...next, phase: 'AWAITING_REVIEW' }, effects: [] };
+      const effects = item.source === 'ai' ? recordAnswer(s, item, event.value) : [];
+      return { state: { ...next, phase: 'AWAITING_REVIEW' }, effects };
     }
 
     case 'APPROVE': {
       const ids = new Set(event.fieldIds);
+      const approving = s.plan.filter(
+        (p) => ids.has(p.fieldId) && p.status === 'pending' && p.value !== undefined,
+      );
+      const now = new Set(approving.map((p) => p.fieldId));
       return {
         state: {
           ...s,
-          plan: s.plan.map((p) =>
-            ids.has(p.fieldId) && p.status === 'pending' && p.value !== undefined
-              ? { ...p, status: 'approved' }
-              : p,
-          ),
+          plan: s.plan.map((p) => (now.has(p.fieldId) ? { ...p, status: 'approved' } : p)),
         },
-        effects: [],
+        effects: approving
+          .filter((p) => p.source === 'ai')
+          .flatMap((p) => recordAnswer(s, p, p.value!)),
       };
+    }
+
+    case 'DRAFT': {
+      const item = s.plan.find((p) => p.fieldId === event.fieldId);
+      if (!item?.draft || item.draft.busy || item.kind === 'denied' || !OPEN.has(item.status))
+        return none;
+      const { error: _e, needsInput: _n, hint: _h, ...draft } = item.draft;
+      const next = updateItem(s, event.fieldId, (p) => ({
+        ...p,
+        draft: { ...draft, busy: true, ...(event.hint ? { hint: event.hint } : {}) },
+      }));
+      return {
+        state: next,
+        effects: [
+          {
+            type: 'GENERATE',
+            fieldId: event.fieldId,
+            keys: event.keys,
+            ...(event.hint ? { hint: event.hint } : {}),
+          },
+        ],
+      };
+    }
+
+    case 'DRAFTED': {
+      const item = s.plan.find((p) => p.fieldId === event.fieldId);
+      if (!item?.draft) return none;
+      const {
+        busy: _b,
+        error: _e,
+        needsInput: _n,
+        alternatives: _a,
+        usedFacts: _u,
+        ...draft
+      } = item.draft;
+      const answer = event.answer;
+      const next = updateItem(s, event.fieldId, (p) =>
+        'value' in answer
+          ? {
+              ...withoutQuestion(p),
+              value: answer.value,
+              source: 'ai',
+              confidence: 0.6,
+              status: 'pending',
+              reason: answer.reason,
+              draft: {
+                ...draft,
+                ...(answer.alternatives?.length ? { alternatives: answer.alternatives } : {}),
+                ...(answer.usedFacts?.length ? { usedFacts: answer.usedFacts } : {}),
+              },
+            }
+          : {
+              ...p,
+              draft: {
+                ...draft,
+                error: answer.reason,
+                ...(answer.questions?.length ? { needsInput: answer.questions } : {}),
+              },
+            },
+      );
+      return { state: next, effects: [highlightOf(next)] };
     }
 
     case 'APPROVE_ALL_VAULT':
@@ -426,7 +535,8 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
         const r = byId.get(p.fieldId);
         if (!r) return p;
         if (r.status === 'filled') {
-          if (p.canonicalKey && p.value !== undefined) used[p.canonicalKey] = p.value;
+          const key = usedKey(s, p);
+          if (key && p.value !== undefined) used[key] = p.value;
           return { ...p, status: 'filled' as const, reason: p.reason };
         }
         return {

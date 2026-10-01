@@ -247,3 +247,76 @@ describe('createAiSeam', () => {
     expect(f.calls).toHaveLength(3);
   });
 });
+
+describe('generateAnswer (Phase 9)', () => {
+  const ctx = {
+    site: 'upwork.com',
+    goal: {
+      text: 'Upwork profile',
+      role: 'business consultant',
+      targetAudience: 'small businesses',
+      language: 'Hindi',
+    },
+    filled: { 'bio.headline': 'SMB Consultant', 'contact.email': 'priya@example.com' },
+    facts: [{ key: 'skills', value: ['Excel', 'SQL'] }],
+    examples: [{ question: 'About you', answer: 'I help shops.' }],
+    hint: 'shorter',
+  };
+  const overview = field({ label: 'Profile overview', inputType: 'textarea', maxLength: 200 });
+  const reply = (body: Record<string, unknown>) =>
+    json({
+      alternatives: [],
+      usedFacts: [],
+      needsInput: [],
+      charCount: 0,
+      provider: 'gemini',
+      usage: { inputTokens: 1, outputTokens: 1 },
+      ...body,
+    });
+
+  it('sends the selected facts, goal and public filled values only', async () => {
+    const f = fake(() => reply({ value: 'I use Excel and SQL.', usedFacts: ['skills'] }));
+    const seam = createAiSeam({ client: client(f), enabled: () => true });
+    const out = await seam.generateAnswer(
+      overview,
+      { kind: 'open_ended', confidence: 0, reason: '', source: 'none' },
+      ctx,
+    );
+    expect(out).toMatchObject({ value: 'I use Excel and SQL.', usedFacts: ['skills'] });
+    expect(f.calls[0]!.url).toBe('https://p.supabase.co/functions/v1/ai-generate');
+    expect(f.calls[0]!.body).toMatchObject({
+      goal: { role: 'business consultant', audience: 'small businesses', language: 'Hindi' },
+      facts: [{ key: 'skills', value: ['Excel', 'SQL'] }],
+      filled: [{ key: 'bio.headline', value: 'SMB Consultant' }],
+      examples: [{ question: 'About you', answer: 'I help shops.' }],
+      hint: 'shorter',
+    });
+    expect(JSON.stringify(f.calls[0]!.body)).not.toContain('priya@example.com');
+  });
+
+  it('re-checks the reply: an invented draft never comes back; questions do', async () => {
+    const seam = createAiSeam({
+      client: client(
+        fake(() => reply({ value: 'I worked at Google.', alternatives: ['Excel is my tool.'] })),
+      ),
+      enabled: () => true,
+    });
+    const out = await seam.generateAnswer(
+      overview,
+      { kind: 'open_ended', confidence: 0, reason: '', source: 'none' },
+      ctx,
+    );
+    expect(out).toMatchObject({ value: 'Excel is my tool.', alternatives: [] });
+    const asks = createAiSeam({
+      client: client(fake(() => reply({ needsInput: ['Which projects?'] }))),
+      enabled: () => true,
+    });
+    expect(
+      await asks.generateAnswer(
+        overview,
+        { kind: 'open_ended', confidence: 0, reason: '', source: 'none' },
+        ctx,
+      ),
+    ).toMatchObject({ needsInput: 'Which projects?', questions: ['Which projects?'] });
+  });
+});

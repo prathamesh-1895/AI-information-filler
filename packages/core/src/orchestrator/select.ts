@@ -1,0 +1,164 @@
+/**
+ * Fact selection for AI drafts (PLAYBOOK Task 9.1): the minimum relevant
+ * facts for one open-ended question, never the whole vault.
+ *
+ * Only `public` facts are eligible. `personal` (phone, address, birth date,
+ * family…) and `restricted` facts are never selected, whatever the question
+ * says, and neither is anything that looks like a never-store value.
+ * The user sees the chosen groups ("Using: Projects (3), Skills") and can
+ * untick any of them before anything is sent.
+ */
+import { detectSensitiveValue } from '../policy/deny';
+import { getKeyDef, parseKey } from '../schema/keys';
+import type { Fact, FieldDescriptor, Goal } from '../schema/records';
+import { normaliseLabel } from '../text/normalise';
+
+export interface FactGroup {
+  /** Selection id: a key group (`projects`, `skills`, `bio`…) or `custom`. */
+  id: string;
+  label: string;
+  /** Items for list groups (3 projects), facts otherwise. */
+  count: number;
+  keys: string[];
+}
+
+export interface FactSelection {
+  groups: FactGroup[];
+  keys: string[];
+}
+
+const GROUP_LABELS: Record<string, string> = {
+  bio: 'About you',
+  professional: 'Profession',
+  experience: 'Work history',
+  education: 'Education',
+  projects: 'Projects',
+  skills: 'Skills',
+  certifications: 'Certifications',
+  languages: 'Languages',
+  preferences: 'Rates and availability',
+  links: 'Links',
+  custom: 'Other details',
+};
+
+/** Question topic → key groups worth sending, most relevant first. */
+const TOPICS: Array<[RegExp, string[]]> = [
+  [/\b(?:project|portfolio|built|build|work samples?|case stud)/, ['projects', 'skills']],
+  [
+    /\b(?:challenge|overcame|overcome|achievement|proud|accomplish|problem you solved)/,
+    ['projects', 'experience'],
+  ],
+  [/\b(?:skill|stack|tools?|technolog|expertise|good at)/, ['skills', 'projects', 'professional']],
+  [
+    /\b(?:experience|employment|career|worked|job history|previous roles?)/,
+    ['experience', 'skills', 'professional'],
+  ],
+  [
+    /\b(?:education|study|studies|college|university|degree|school|course)/,
+    ['education', 'certifications'],
+  ],
+  [/\b(?:certif|licen[cs]e)/, ['certifications', 'education']],
+  [/\b(?:language|speak|fluent)/, ['languages']],
+  [
+    /\b(?:rate|price|pricing|charge|salary|budget|fee|availability|available|notice)/,
+    ['preferences', 'professional'],
+  ],
+  [
+    /\b(?:title|headline|tagline|professional role|your role|call yourself)/,
+    ['bio', 'professional', 'experience', 'skills'],
+  ],
+  [
+    /\b(?:overview|about|summary|bio|introduce|describe yourself|tell us about yourself|profile)/,
+    ['bio', 'professional', 'experience', 'skills', 'projects', 'education'],
+  ],
+  [
+    /\b(?:why|hire|fit|motivat|interest|ambassador|cover letter|join|apply|applying)/,
+    ['bio', 'professional', 'experience', 'skills', 'projects'],
+  ],
+  [/\b(?:link|website|github|linkedin|url)/, ['links']],
+];
+const DEFAULT_GROUPS = ['bio', 'professional', 'experience', 'skills'];
+
+/** At most this many items per list group, and facts overall. */
+const MAX_ITEMS_PER_GROUP = 5;
+const MAX_FACTS = 40;
+
+const groupOf = (key: string) =>
+  key.startsWith('custom.') ? 'custom' : (parseKey(key)?.group ?? key);
+
+function words(text: string): Set<string> {
+  return new Set(
+    normaliseLabel(text)
+      .split(' ')
+      .filter((w) => w.length > 2),
+  );
+}
+
+/** Key groups a question is about, most relevant first. */
+export function topicGroups(
+  field: Pick<FieldDescriptor, 'label' | 'helpText' | 'sectionHeading' | 'placeholder'>,
+): string[] {
+  const text = normaliseLabel(
+    [field.label, field.helpText, field.placeholder, field.sectionHeading]
+      .filter(Boolean)
+      .join(' '),
+  );
+  const out: string[] = [];
+  for (const [re, groups] of TOPICS)
+    if (re.test(text)) for (const g of groups) if (!out.includes(g)) out.push(g);
+  return out.length ? out : DEFAULT_GROUPS;
+}
+
+/** True when a fact may ever be sent to the AI for drafting. */
+export function isDraftable(fact: Fact): boolean {
+  if (fact.sensitivity !== 'public') return false;
+  const def = getKeyDef(fact.key);
+  if (def && def.sensitivity !== 'public') return false;
+  const values = Array.isArray(fact.value) ? fact.value : [fact.value];
+  return values.every((v) => detectSensitiveValue(v) === null);
+}
+
+export function selectFacts(
+  field: Pick<FieldDescriptor, 'label' | 'helpText' | 'sectionHeading' | 'placeholder'>,
+  facts: readonly Fact[],
+  goal?: Goal,
+): FactSelection {
+  const topics = topicGroups(field);
+  const question = words(`${field.label} ${field.helpText ?? ''} ${goal?.text ?? ''}`);
+  const eligible = facts.filter(isDraftable);
+  const groups: FactGroup[] = [];
+  let total = 0;
+
+  const add = (id: string, chosen: Fact[]) => {
+    const room = MAX_FACTS - total;
+    const keys = chosen.map((f) => f.key).slice(0, room);
+    if (!keys.length) return;
+    total += keys.length;
+    const indexes = new Set(keys.map((k) => parseKey(k)?.index).filter((i) => i !== undefined));
+    groups.push({ id, label: GROUP_LABELS[id] ?? id, count: indexes.size || keys.length, keys });
+  };
+
+  for (const group of topics) {
+    const inGroup = eligible.filter((f) => groupOf(f.key) === group);
+    // List groups: the first few items, in vault order.
+    const items = inGroup.filter((f) => (parseKey(f.key)?.index ?? 0) < MAX_ITEMS_PER_GROUP);
+    add(
+      group,
+      items.sort((a, b) => a.key.localeCompare(b.key)),
+    );
+  }
+  // The user's own custom facts only when the question names them.
+  const customs = eligible.filter((f) => {
+    if (groupOf(f.key) !== 'custom') return false;
+    const slug = words(f.key.slice('custom.'.length).replace(/_/g, ' '));
+    return [...slug].some((w) => question.has(w));
+  });
+  add('custom', customs);
+  return { groups, keys: groups.flatMap((g) => g.keys) };
+}
+
+/** Keeps only keys from `wanted` that the selection rules allow (the panel can untick, never add). */
+export function restrictSelection(selection: FactSelection, wanted: readonly string[]): string[] {
+  const allowed = new Set(selection.keys);
+  return wanted.filter((k) => allowed.has(k));
+}

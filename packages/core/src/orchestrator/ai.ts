@@ -14,11 +14,23 @@ export interface AiContext {
   title?: string;
   /** Values already used in this session, keyed by canonical key, for consistency. */
   filled: Readonly<Record<string, FactValue>>;
+  /** Facts chosen for a draft (public only; the user saw and could untick them). */
+  facts?: ReadonlyArray<{ key: string; value: FactValue }>;
+  /** Approved answers to similar questions, for style. */
+  examples?: ReadonlyArray<{ question: string; answer: string }>;
+  /** The user's instruction for this draft ("shorter", "more formal"). */
+  hint?: string;
 }
 
 export type GeneratedAnswer =
-  | { value: string; reason: string; alternatives?: string[] }
-  | { needsInput: string; reason: string };
+  | {
+      value: string;
+      reason: string;
+      alternatives?: string[];
+      /** Fact keys the draft used ("Why this"). */
+      usedFacts?: string[];
+    }
+  | { needsInput: string; reason: string; questions?: string[] };
 
 /** Which mode is active, and why it is offline. Shown in the side panel at all times. */
 export interface AiStatus {

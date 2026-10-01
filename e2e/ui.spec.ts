@@ -245,7 +245,7 @@ test('Google-Form-like form: questions, approvals and fill, all through the pane
   await dob.getByRole('button', { name: 'Use this answer' }).click();
   const why = question(panel, 'Why do you want to be a campus ambassador?');
   await why.getByRole('textbox').fill('I enjoy organising events.');
-  await why.getByLabel('Save to my vault').uncheck(); // one-off answer
+  await why.getByLabel('Save for reuse').uncheck(); // one-off answer
   await why.getByRole('button', { name: 'Use this answer' }).click();
   await expect(panel.getByTestId('question')).toHaveCount(0);
 

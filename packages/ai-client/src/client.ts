@@ -7,9 +7,12 @@
 import {
   AiErrorBodySchema,
   ClassifyResponseSchema,
+  GenerateResponseSchema,
   HealthResponseSchema,
   type ClassifyRequest,
   type ClassifyResponse,
+  type GenerateRequest,
+  type GenerateResponse,
   type HealthResponse,
 } from '@filler/core';
 import type { z } from 'zod';
@@ -81,6 +84,10 @@ export class AiClient {
 
   classify(request: ClassifyRequest): Promise<AiCall<ClassifyResponse>> {
     return this.call(AI_ENDPOINTS.classify, 'POST', request, ClassifyResponseSchema);
+  }
+
+  generate(request: GenerateRequest): Promise<AiCall<GenerateResponse>> {
+    return this.call(AI_ENDPOINTS.generate, 'POST', request, GenerateResponseSchema);
   }
 
   private async call<S extends z.ZodType>(

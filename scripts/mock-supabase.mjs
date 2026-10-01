@@ -4,7 +4,7 @@
 //                   POST /auth/v1/token?grant_type=refresh_token, POST /auth/v1/logout
 //   REST (PostgREST): /rest/v1/vault_blobs  GET (select), POST (insert), PATCH (update with version=eq.N)
 //                   /rest/v1/ai_usage     GET (the caller's own rows, like RLS)
-//   Functions:      /functions/v1/health, /functions/v1/ai-classify — the REAL handlers from
+//   Functions:      /functions/v1/health, ai-classify, ai-generate — the REAL handlers from
 //                   supabase/functions (Node runs them with type stripping), with in-memory
 //                   quota and cache, and the scripted model (supabase/tests/fake-llm.ts)
 //                   behind the real Gemini adapter.
@@ -19,6 +19,7 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { createGateway } from '../supabase/functions/_shared/ai/gateway.ts';
 import { handleClassify } from '../supabase/functions/ai-classify/handler.ts';
+import { handleGenerate } from '../supabase/functions/ai-generate/handler.ts';
 import { handleHealth } from '../supabase/functions/health/handler.ts';
 import { fakeProviderFetch } from '../supabase/tests/fake-llm.ts';
 
@@ -46,7 +47,9 @@ function aiEnv() {
     AI_PROVIDER: 'gemini',
     GEMINI_API_KEY: ai.mode === 'unconfigured' ? '' : 'mock-gemini-key',
     AI_MODEL_FAST: 'mock-flash',
+    AI_MODEL_SMART: 'mock-pro',
     LIMIT_AI_CLASSIFY_CALLS: String(ai.limitCalls),
+    LIMIT_AI_GENERATE_CALLS: String(ai.limitCalls),
     AI_RETRIES: '1',
   };
   return { get: (name) => vars[name] };
@@ -162,6 +165,7 @@ createServer(async (req, res) => {
   // Edge Functions: preflight and CORS are the handlers' own (they only answer the extension).
   if (url.pathname === '/functions/v1/health') return runFunction(req, res, handleHealth);
   if (url.pathname === '/functions/v1/ai-classify') return runFunction(req, res, handleClassify);
+  if (url.pathname === '/functions/v1/ai-generate') return runFunction(req, res, handleGenerate);
 
   if (req.method === 'OPTIONS') return json(res, 204);
 

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEven
 import { call, onPageEvent, onSessionState, requestSiteAccess } from '@/src/messaging/client';
 import { asText, keyLabel, mask, PHASE, sensitivityOf, SOURCE, STATUS } from '../format';
 import { AiChip } from '../AiChip';
+import { DraftControls, DraftDetails, GoalChips, Suggestions } from './Drafts';
 import { usePanel } from '../store';
 
 const CHOICE_TYPES = new Set([
@@ -176,6 +177,8 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
   );
   const approved = review.filter((p) => p.status === 'approved' || p.status === 'edited');
   const busy = ['SCANNING', 'MAPPING', 'PLANNING', 'FILLING', 'VERIFYING'].includes(session.phase);
+  const generalAi = usePanel((s) => s.aiStatus);
+  const aiOn = (session.ai ?? generalAi)?.mode === 'ai';
 
   // "New fields appeared" banner when fields show up after the first plan (wizard step, modal…).
   const seen = useRef<{ session: string; ids: Set<string> }>({ session: '', ids: new Set() });
@@ -219,11 +222,7 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
         </div>
         <AiChip status={session.ai} />
       </div>
-      {session.goal && (
-        <p className="rounded bg-slate-50 px-2 py-1 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-300">
-          Goal: {session.goal.text}
-        </p>
-      )}
+      <GoalChips goal={session.goal} send={send} />
 
       {busy && <Spinner label={PHASE[session.phase] ?? 'Working…'} />}
       <ErrorBanner session={session} onRetry={restart} />
@@ -258,6 +257,7 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
               field={fieldById.get(item.fieldId)}
               send={send}
               focused={focusedId === item.fieldId}
+              aiOn={aiOn}
             />
           ))}
         </section>
@@ -280,9 +280,17 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
               </Button>
             )}
           </div>
-          <ReviewList items={review} fieldById={fieldById} send={send} focusedId={focusedId} />
+          <ReviewList
+            items={review}
+            fieldById={fieldById}
+            send={send}
+            focusedId={focusedId}
+            aiOn={aiOn}
+          />
         </section>
       )}
+
+      <Suggestions session={session} send={send} aiOn={aiOn} />
 
       {notFilled.length > 0 && (
         <details
@@ -371,11 +379,13 @@ function QuestionCard({
   field,
   send,
   focused,
+  aiOn,
 }: {
   item: PlanItem;
   field: FieldDescriptor | undefined;
   send: (e: UserEvent) => Promise<unknown>;
   focused: boolean;
+  aiOn: boolean;
 }) {
   const [value, setValue] = useState<string | string[]>(
     MULTI_TYPES.has(field?.inputType ?? '') ? [] : '',
@@ -413,6 +423,9 @@ function QuestionCard({
         )}
         {item.reason && item.reason !== 'Filler does not know this field yet.' && (
           <p className="text-xs text-slate-500 dark:text-slate-400">{item.reason}</p>
+        )}
+        {item.draft && (
+          <DraftControls item={{ ...item, draft: item.draft }} send={send} aiOn={aiOn} />
         )}
         {single ? (
           <fieldset>
@@ -501,7 +514,7 @@ function QuestionCard({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <label className="flex items-center gap-1.5 text-xs">
             <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
-            Save to my vault
+            {item.kind === 'open_ended' ? 'Save for reuse' : 'Save to my vault'}
           </label>
           <div className="flex gap-1.5">
             <Button
@@ -528,11 +541,13 @@ function ReviewList({
   fieldById,
   send,
   focusedId,
+  aiOn,
 }: {
   items: PlanItem[];
   fieldById: Map<string, FieldDescriptor>;
   send: (e: UserEvent) => Promise<unknown>;
   focusedId: string | null;
+  aiOn: boolean;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
   const move = (from: HTMLElement, delta: number) => {
@@ -554,6 +569,7 @@ function ReviewList({
           send={send}
           focused={item.fieldId === focusedId}
           move={move}
+          aiOn={aiOn}
         />
       ))}
     </ul>
@@ -566,13 +582,16 @@ function ReviewRow({
   send,
   focused,
   move,
+  aiOn,
 }: {
   item: PlanItem;
   field: FieldDescriptor | undefined;
   send: (e: UserEvent) => Promise<unknown>;
   focused: boolean;
   move: (from: HTMLElement, delta: number) => void;
+  aiOn: boolean;
 }) {
+  const isDraft = item.source === 'ai' && item.draft !== undefined;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(asText(item.value));
   const sensitive = sensitivityOf(item.canonicalKey) !== 'public';
@@ -614,9 +633,11 @@ function ReviewRow({
       tabIndex={0}
       onKeyDown={onKey}
       aria-label={`${field?.label ?? 'Field'}: ${revealed ? text : 'hidden value'}. ${status.label}.`}
-      className={`rounded-md border border-slate-200 p-2 text-sm focus-visible:outline-2 focus-visible:outline-emerald-600 dark:border-slate-800 ${
-        focused ? 'ring-2 ring-emerald-600' : ''
-      }`}
+      className={`rounded-md border p-2 text-sm focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+        isDraft
+          ? 'border-amber-400 bg-amber-50/70 dark:border-amber-700 dark:bg-amber-950/30'
+          : 'border-slate-200 dark:border-slate-800'
+      } ${focused ? 'ring-2 ring-emerald-600' : ''}`}
     >
       <div className="flex items-start justify-between gap-2">
         <span className="font-medium break-words" data-testid="review-label">
@@ -680,6 +701,14 @@ function ReviewRow({
           ? ` · ${Math.round(item.confidence * 100)}% sure`
           : ''}
       </p>
+      {isDraft && !editing && (
+        <DraftDetails
+          item={{ ...item, draft: item.draft! }}
+          field={field}
+          send={send}
+          aiOn={aiOn}
+        />
+      )}
       {!editing && item.status !== 'filled' && (
         <div className="mt-1.5 flex flex-wrap justify-end gap-1">
           {canApprove && (
@@ -690,6 +719,21 @@ function ReviewRow({
             >
               <Check aria-hidden className="h-3.5 w-3.5" />
               Approve
+            </Button>
+          )}
+          {!isDraft && item.draft && aiOn && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                void send({
+                  type: 'DRAFT',
+                  fieldId: item.fieldId,
+                  keys: item.draft!.groups.flatMap((g) => g.keys),
+                })
+              }
+            >
+              Draft with AI instead
             </Button>
           )}
           {canFillOne && (

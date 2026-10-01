@@ -85,7 +85,7 @@ describe('planField', () => {
     ).toMatchObject({ status: 'skipped' });
   });
 
-  it('uses a saved overview as a draft, else asks (offline) or takes the AI draft', async () => {
+  it('uses a saved overview, else asks; drafting waits for the user (Phase 9)', async () => {
     const overview = field('Profile overview', { inputType: 'textarea' });
     const mapping = m({ kind: 'open_ended', canonicalKey: 'bio.summary_long' });
     expect(
@@ -95,14 +95,39 @@ describe('planField', () => {
       question: expect.any(String),
       reason: expect.stringContaining('Offline'),
     });
+    let called = false;
     const fakeAi: AiSeam = {
       ...offlineAi,
       mode: 'ai',
-      generateAnswer: async () => ({ value: 'Drafted', reason: 'AI draft' }),
+      generateAnswer: async () => {
+        called = true;
+        return { value: 'Drafted', reason: 'AI draft' };
+      },
     };
-    expect(await planField(overview, mapping, deps({}, fakeAi))).toMatchObject({
-      value: 'Drafted',
-      source: 'ai',
+    const facts = [
+      {
+        key: 'skills',
+        value: ['Excel'],
+        sensitivity: 'public' as const,
+        source: 'user' as const,
+        updatedAt: '2026-10-01T00:00:00.000Z',
+      },
+    ];
+    const planned = await planField(overview, mapping, { ...deps({}, fakeAi), facts });
+    expect(called).toBe(false); // nothing is sent until the user asks for a draft
+    expect(planned).toMatchObject({
+      reason: expect.stringContaining('can draft'),
+      draft: { groups: [{ id: 'skills', label: 'Skills', count: 1, keys: ['skills'] }] },
+    });
+    expect(planned).not.toHaveProperty('value');
+    // Offline with an earlier approved answer: offered as a suggestion, never pre-approved.
+    const withPast = await planField(overview, mapping, {
+      ...deps({}),
+      pastAnswer: () => ({ value: 'I run audits for SMBs.', platform: 'upwork.com' }),
+    });
+    expect(withPast).toMatchObject({
+      value: 'I run audits for SMBs.',
+      source: 'user',
       status: 'pending',
     });
   });
