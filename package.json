@@ -19,6 +19,7 @@
     "e2e:headed": "node scripts/e2e.mjs --headed"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@filler/core": "workspace:^",
     "@playwright/test": "^1.63.0",

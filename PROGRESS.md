@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 5 — Rule mapper & orchestrator (2026-10-01)
+**Last completed phase:** Phase 6 — Side panel UI (2026-10-01)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -14,7 +14,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 3 | Page Agent: scanner | ✅ COMPLETE (2026-10-01) | 7 fixtures (74 fields), scanner with shadow DOM/iframes/ARIA widgets, 8-step label resolution (74/74 labels), constraints/options/counters, robust selectors + re-find, typed panel↔background↔page messaging, scanner preview in the side panel |
 | 4 | Page Agent: filler, observer, highlighter | ✅ COMPLETE (2026-10-01) | Framework-safe fill for every control type with read-back verification and typing retry, option/date matching in core, code-enforced refusal of denied fields and submit-like buttons, debounced field-diff observer, shadow-DOM highlighter, frame-routed fill/highlight/navigation messaging |
 | 5 | Rule mapper & orchestrator | ✅ COMPLETE (2026-10-01) | 64-key dictionary with section-aware list groups, rule mapper (100% on fixture scans, no AI), lossless value formatter, pure session reducer + AI seam in core, background session host with vault, ask-once memory end to end |
-| 6 | Side panel UI | ⬜ NOT STARTED | |
+| 6 | Side panel UI | ✅ COMPLETE (2026-10-01) | Onboarding/unlock, fill session (shaped questions, keyboard review list, banners), vault manager (groups, repeat sections, deny list, encrypted backup, wipe), settings with proven behaviours, shortcuts, axe-clean light/dark UI. **Tier A complete.** |
 | 7 | Supabase: auth, database, encrypted sync | ⬜ NOT STARTED | |
 | 8 | AI gateway & field understanding | ⬜ NOT STARTED | |
 | 9 | AI answer generation & goal context | ⬜ NOT STARTED | |
@@ -31,8 +31,8 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 6, Task 6.1** (onboarding & unlock). Model: **Sonnet 5.5**; switch before saying "continue".
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5.
+- Next: **Phase 7, Task 7.1** (schema & RLS migrations). Model: **Opus 5.5**. Phase 7 has 🔑 USER CHECKPOINT A (Supabase project) before Task 7.2.
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet).
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -271,3 +271,67 @@ Tests: 484 unit (core 398, vault 54, extension 30, other 2) + 48 e2e. **Mapping 
 - Session state lives in the service worker's memory. If Chrome kills the worker mid-session the panel must start again; Phase 6 should keep a port open from the side panel (which keeps the worker alive) and handle `NO_SESSION` gracefully.
 - `preferences.hourly_rate` is stored as text; the formatter extracts numbers for number inputs only. Currency handling is basic until Phase 11 platform profiles.
 - `matchOption` aliases for country/state codes cover common Indian and international cases only.
+
+---
+
+## Phase 6 — files
+
+Created:
+- `packages/ui/src/components.tsx`: `Button`, `Badge`, `Card`, `Banner`, `TextField`, `TextArea`, `Toggle` (switch), `Spinner`
+- `apps/extension/entrypoints/sidepanel/store.ts` (Zustand), `format.ts` (labels, masking, status/source badges, passphrase strength)
+- `apps/extension/entrypoints/sidepanel/screens/`: `Onboarding.tsx`, `Unlock.tsx`, `FillView.tsx`, `VaultView.tsx`, `SettingsView.tsx`
+- `apps/extension/src/settings.ts` (+ `settings.test.ts`): settings schema, defaults, safe merge/patch, chrome.storage.local persistence
+- `e2e/ui.spec.ts` (7 tests through the real panel UI, with axe-core checks)
+
+Modified:
+- `apps/extension/entrypoints/sidepanel/App.tsx` (shell: keep-alive port, theme, vault-state routing, keyboard tabs), `style.css` (`@source` for packages/ui, class-based dark variant); removed the Phase 3/4 `ScannerPreview.tsx`
+- `apps/extension/src/session/host.ts`: settings-aware (deny phrases → policy, trusted-site auto-approve, typing mode, highlight on/off, answer language into the goal); `host.test.ts` +5 settings tests
+- `apps/extension/src/session/services.ts`: settings loading and application, `chrome.storage.session` key store for "stay unlocked", vault `resume()` after worker restarts, `updateSettings`
+- `apps/extension/src/session/router.ts`: `FACT_BATCH`, `VAULT_EXPORT`, `VAULT_IMPORT`, `VAULT_WIPE` (typed `DELETE`), `MEMORY_CLEAR_SITE`, `SETTINGS_GET/SET`; waits for `ready`
+- `apps/extension/src/messaging/protocol.ts`, `client.ts` (`call`, `vaultStatus`, `keepAlive`, `onSessionState`)
+- `apps/extension/entrypoints/background.ts` (panel keep-alive port, `start-session` command), `wxt.config.ts` (commands: Alt+Shift+F open, Alt+Shift+S start)
+- `packages/vault/src/service.ts`: `setAutoLockMinutes()`, `SessionKeyStore.enabled()` (no key bytes kept while disabled) + tests
+- `e2e/panel.spec.ts` (keeps the two background trust-boundary tests; UI tests moved to ui.spec), `e2e/smoke.spec.ts`
+- deps: zustand, lucide-react (extension); react peer (ui); @axe-core/playwright (root)
+
+Tests: 495 unit (core 398, vault 56, extension 38, other 3) + 50 e2e (7 new UI tests).
+
+## Phase 6 — design notes
+
+- **Screens:** loading → Onboarding (welcome → passphrase with strength meter, mismatch check, "cannot be recovered" acknowledgement → optional quick-start profile) / Unlock / main tabs **Fill · My details · Settings**. While the vault is locked nothing else renders. The header Lock button and auto-lock (checked on focus and every 30 s) bring the unlock screen back.
+- **Fill view:** goal box (text, role, tone) → "Start on this page". A session shows the page, a plain-language phase, an "Offline mode" chip (AI arrives in Phase 8) and the goal.
+  - **Questions** are shaped like the target field: option buttons for radios/selects/listboxes, multi-toggle chips for checkbox groups, date/month inputs, a textarea with a character counter for open-ended fields. Each has "Save to my vault" (default on) and Skip.
+  - **Review list:** source badge (Vault / Remembered / You / AI draft), status badge with text (not colour only), masked personal values with a reveal button, reason and confidence, Approve / Fill this / Edit / Skip. Keyboard: ↑/↓ move, A approve, E edit, S skip.
+  - Bulk "Approve all from vault (n)", sticky "Fill n approved" and End.
+  - "Not filled by Filler" lists denied (with a "Never filled" badge) and skipped fields with reasons.
+  - Banners: new fields appeared (tracked by field ids after the first plan, so same-URL wizard steps count), "Filler is done. Review the page and press Submit yourself.", errors with actions (Allow access / Unlock / Try again).
+  - Clicking a field on the page rings its row.
+- **My details:**
+  - Scalar facts grouped (About you, Contact, Address, Links…, "Other details (learned from forms)"), with search, privacy badge, masking + reveal, "Learned on <site>", inline edit and two-step delete.
+  - Add-a-detail form with registry keys or "Something else…" (becomes `custom.*`); the privacy choice cannot go below the key's floor.
+  - Repeating sections (education, jobs, projects, languages, certifications) as item cards with Add, Edit, Move up and Delete. **Every change rewrites the whole group** via `FACT_BATCH` (removes first, then sets), so indexes stay `0..n-1` with no gaps for the mapper to trip on.
+  - "Never filled" shows the built-in categories as locked and lets you add or remove your own phrases.
+  - Encrypted export (`filler-backup-YYYY-MM-DD.filler`, verified to contain no plaintext), import with the backup's passphrase, and wipe behind a typed `DELETE`.
+- **Settings (each proven by a test):**
+  - auto-lock minutes (`VaultService.setAutoLockMinutes`);
+  - stay unlocked for the browser session (`chrome.storage.session` key store, which keeps no key bytes at all while disabled and takes effect at the next unlock);
+  - typing mode (fill items carry `mode: 'typing'`);
+  - highlight on/off (the host sends an empty list, which clears outlines);
+  - answer language (copied into `goal.language`);
+  - trust this site (vault and memory values auto-approved via `APPROVE_ALL_VAULT`, never AI text);
+  - forget what was learned on this site (`fieldMemory.deleteBySite`);
+  - extra deny phrases (fed into the mapper's policy);
+  - theme (system / light / dark).
+  - Settings patches are strict and have **no defaults**, so a patch never resets other settings. Zod's `.partial()` on defaulted fields would have done exactly that.
+- **Service-worker lifetime:** the panel holds a `runtime.connect({name:'panel'})` port, reconnecting if dropped, which keeps the worker and its in-memory sessions alive while the panel is open. On worker start the background loads settings and tries `vault.resume()`.
+- **Keyboard and shortcuts:** `chrome.commands` — Alt+Shift+F opens Filler (`_execute_action`), Alt+Shift+S opens the panel and starts a session on the current tab (`sidePanel.open` is called synchronously inside the gesture). Tabs use roving tabindex with ←/→. Visible focus rings everywhere.
+- **Accessibility:** real labels, switches with `role="switch"`, field errors announced (`role="alert"`), status text alongside every colour, sr-only hints, reduced-motion respected on buttons. axe-core reports **no serious or critical violations** on welcome, create passphrase, unlock, the fill session, My details and Settings (light and dark).
+  - *Found and fixed:* axe flagged two buttons mid colour transition right after a theme switch. The test now waits for animations, and buttons drop transitions under `prefers-reduced-motion`.
+- **Other bugs found by the UI tests and fixed:** the shared `Badge` swallowed extra props (test ids, ARIA); the "new fields appeared" banner showed on a session's first scan; the unlock error was announced twice.
+- **Live walk:** screenshots at 360 px of welcome, an Upwork-like session (questions + review), My details and Settings in dark mode. No horizontal scroll on any screen (asserted in the tests).
+
+### Open items surfaced in Phase 6
+- Phone width is fine; very long option lists (100+ countries) render as many chips in a question card. A searchable select for long lists would be nicer (Phase 11 polish).
+- A passphrase change UI is not exposed yet (`VaultService.changePassphrase` exists); add it to Settings → Security in Phase 12's quality pass.
+- The "Offline mode" chip is static until Phase 8 provides the real AI mode and reason.
+- Real `sidePanel.open` from the Alt+Shift+S shortcut can't be driven by Playwright; verify it manually when loading the build (steps in the phase summary).

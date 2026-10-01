@@ -4,6 +4,7 @@ import type { FieldDescriptor, SessionState } from '@filler/core';
 import { createRepositories, VaultService } from '@filler/vault';
 import { describe, expect, it, vi } from 'vitest';
 import type { FillItem, PageScan } from '../messaging/protocol';
+import { DEFAULT_SETTINGS, type Settings } from '../settings';
 import { SessionHost } from './host';
 
 const snapshot = (name: string): FieldDescriptor[] =>
@@ -16,7 +17,7 @@ const snapshot = (name: string): FieldDescriptor[] =>
     ) as Array<FieldDescriptor & { ref: string }>
   ).map(({ ref: _ref, ...f }, i) => ({ ...f, id: `0:f${i}` }));
 
-async function setup(fields: FieldDescriptor[]) {
+async function setup(fields: FieldDescriptor[], settings: Partial<Settings> = {}) {
   const vault = new VaultService({
     dbName: `host-${Math.random()}`,
     kdfIterations: 1_000,
@@ -50,6 +51,7 @@ async function setup(fields: FieldDescriptor[]) {
     observeTab: vi.fn(async () => undefined),
     endTab: vi.fn(async () => undefined),
     publish: (_tab: number, s: SessionState) => void states.push(s),
+    getSettings: async () => ({ ...DEFAULT_SETTINGS, ...settings }),
   };
   return { host: new SessionHost(deps), vault, repos, filled, states, deps };
 }
@@ -203,5 +205,78 @@ describe('SessionHost', () => {
     expect(value('Institution', 'Education 2')).toBe('Fergusson College');
     expect(value('Start', 'Education 1')).toBe('2022-08');
     expect(value('LinkedIn profile')).toBe('https://linkedin.com/in/priya');
+  });
+});
+
+describe('settings change host behaviour (PLAYBOOK Task 6.4)', () => {
+  const vaultFacts = async (repos: Awaited<ReturnType<typeof setup>>['repos']) => {
+    await repos.facts.setValue('person.name.full', 'Priya Sharma');
+    await repos.facts.setValue('address.city', 'Pune');
+  };
+
+  it('trusted site: vault values are approved automatically, questions are not', async () => {
+    const { host, repos } = await setup(snapshot('simple-contact'), {
+      trustedSites: ['127.0.0.1'],
+    });
+    await vaultFacts(repos);
+    const s = await host.start(1);
+    expect(byLabel(s, 'Full name').item.status).toBe('approved');
+    expect(byLabel(s, 'City').item.status).toBe('approved');
+    expect(byLabel(s, 'Mobile number').item.status).toBe('pending');
+    const untrusted = await setup(snapshot('simple-contact'));
+    await vaultFacts(untrusted.repos);
+    expect(byLabel(await untrusted.host.start(1), 'Full name').item.status).toBe('pending');
+  });
+
+  it('typing mode: every fill item asks for key-by-key typing', async () => {
+    const { host, repos, filled } = await setup(snapshot('simple-contact'), {
+      typingMode: 'typing',
+    });
+    await vaultFacts(repos);
+    await host.start(1);
+    await host.dispatch(1, { type: 'APPROVE_ALL_VAULT' });
+    await host.dispatch(1, { type: 'FILL' });
+    expect(filled[0]!.every((i) => i.mode === 'typing')).toBe(true);
+    const fast = await setup(snapshot('simple-contact'));
+    await vaultFacts(fast.repos);
+    await fast.host.start(1);
+    await fast.host.dispatch(1, { type: 'APPROVE_ALL_VAULT' });
+    await fast.host.dispatch(1, { type: 'FILL' });
+    expect(fast.filled[0]!.some((i) => 'mode' in i)).toBe(false);
+  });
+
+  it('highlight off: the page gets an empty highlight list', async () => {
+    const off = await setup(snapshot('simple-contact'), { highlight: false });
+    await off.host.start(1);
+    expect(off.deps.highlightTab).toHaveBeenCalled();
+    expect(
+      off.deps.highlightTab.mock.calls.every(
+        (c) =>
+          (c as unknown[])[1] instanceof Array && ((c as unknown[])[1] as unknown[]).length === 0,
+      ),
+    ).toBe(true);
+    const on = await setup(snapshot('simple-contact'));
+    await on.host.start(1);
+    expect(
+      ((on.deps.highlightTab.mock.calls.at(-1) as unknown[])[1] as unknown[]).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('answer language goes into the goal unless the goal sets its own', async () => {
+    const { host } = await setup(snapshot('simple-contact'), { answerLanguage: 'Marathi' });
+    expect((await host.start(1, { text: 'Apply for an internship' })).goal?.language).toBe(
+      'Marathi',
+    );
+    expect((await host.start(1, { text: 'Apply', language: 'English' })).goal?.language).toBe(
+      'English',
+    );
+  });
+
+  it('user deny phrases stop Filler from planning matching fields', async () => {
+    const { host, repos } = await setup(snapshot('simple-contact'), { denyPatterns: ['city'] });
+    await vaultFacts(repos);
+    const s = await host.start(1);
+    expect(byLabel(s, 'City').item).toMatchObject({ kind: 'denied', status: 'skipped' });
+    expect(byLabel(s, 'City').item.value).toBeUndefined();
   });
 });

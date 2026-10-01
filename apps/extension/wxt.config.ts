@@ -21,5 +21,15 @@ export default defineConfig({
     optional_host_permissions: ['http://*/*', 'https://*/*'],
     ...(e2e ? { host_permissions: ['http://127.0.0.1/*'] } : {}),
     action: { default_title: 'Open Filler' },
+    commands: {
+      _execute_action: {
+        suggested_key: { default: 'Alt+Shift+F' },
+        description: 'Open Filler',
+      },
+      'start-session': {
+        suggested_key: { default: 'Alt+Shift+S' },
+        description: 'Start filling this page',
+      },
+    },
   },
 });

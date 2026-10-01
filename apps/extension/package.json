@@ -24,9 +24,12 @@
   },
   "dependencies": {
     "@filler/core": "workspace:^",
+    "@filler/ui": "workspace:^",
     "@filler/vault": "workspace:^",
+    "lucide-react": "^1.49.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "zustand": "^5.0.15"
   }
 }

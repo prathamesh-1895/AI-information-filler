@@ -49,6 +49,8 @@ export interface SessionKeyStore {
   get(): Promise<{ key: string; lastActivity: number } | null>;
   set(entry: { key: string; lastActivity: number }): Promise<void>;
   clear(): Promise<void>;
+  /** When this returns false the vault keeps no copy of the key bytes at all. */
+  enabled?(): boolean;
 }
 
 export interface VaultServiceOptions {
@@ -91,7 +93,7 @@ export class VaultService {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private readonly iterations: number;
-  private readonly autoLockMs: number;
+  private autoLockMs: number;
   private readonly now: () => number;
   private readonly sessionKeyStore: SessionKeyStore | undefined;
   private readonly lockListeners = new Set<() => void>();
@@ -189,6 +191,17 @@ export class VaultService {
   onLock(listener: () => void): () => void {
     this.lockListeners.add(listener);
     return () => this.lockListeners.delete(listener);
+  }
+
+  /** Changes the idle timeout (0 = never) and restarts the timer from now. */
+  setAutoLockMinutes(minutes: number): void {
+    if (!Number.isFinite(minutes) || minutes < 0)
+      throw new Error(`Invalid auto-lock minutes: ${minutes}`);
+    this.autoLockMs = minutes * 60_000;
+    if (this.key) {
+      this.lastActivity = this.now();
+      this.schedule();
+    }
   }
 
   /** Records user activity, postponing auto-lock. */
@@ -409,6 +422,10 @@ export class VaultService {
 
   private async persistSession(raw?: Uint8Array): Promise<void> {
     if (!this.sessionKeyStore || !this.key) return;
+    if (this.sessionKeyStore.enabled?.() === false) {
+      this.sessionKeyB64 = null;
+      return;
+    }
     if (raw) this.sessionKeyB64 = toBase64(raw);
     if (this.sessionKeyB64) {
       await this.sessionKeyStore.set({ key: this.sessionKeyB64, lastActivity: this.lastActivity });

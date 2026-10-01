@@ -7,6 +7,7 @@ import {
   PageEventSchema,
   PageScanSchema,
   resultSchema,
+  SessionStateMessageSchema,
   SITE_ACCESS,
   TargetTabSchema,
   type FillItem,
@@ -107,6 +108,47 @@ export function onPageEvent(tabId: number, listener: (event: PageEvent) => void)
         added: event.added.map((f) => ({ ...f, id: joinId(frameId, f.id), frameId })),
         removed: event.removed.map((id) => joinId(frameId, id)),
       });
+  };
+  browser.runtime.onMessage.addListener(handler);
+  return () => browser.runtime.onMessage.removeListener(handler);
+}
+
+// ---------------------------------------------------------------- Phase 5–6
+
+/** The background's own types are trusted; these schemas only check the envelope shape. */
+const anyData = z.unknown();
+
+export async function call<T>(message: PanelRequest): Promise<Result<T>> {
+  return (await request(message, anyData)) as Result<T>;
+}
+
+export const vaultStatus = () =>
+  request(
+    { type: 'VAULT_STATUS' },
+    z.object({ status: z.enum(['uninitialized', 'locked', 'unlocked']) }),
+  );
+
+/** Keeps the background worker (and its in-memory sessions) alive while the panel is open. */
+export function keepAlive(): () => void {
+  let port: ReturnType<typeof browser.runtime.connect> | null = null;
+  let stopped = false;
+  const connect = () => {
+    if (stopped) return;
+    port = browser.runtime.connect({ name: 'panel' });
+    port.onDisconnect.addListener(() => setTimeout(connect, 1_000));
+  };
+  connect();
+  return () => {
+    stopped = true;
+    port?.disconnect();
+  };
+}
+
+/** Subscribes to session state broadcasts for one tab. */
+export function onSessionState(tabId: number, listener: (state: unknown) => void): () => void {
+  const handler = (message: unknown) => {
+    const parsed = SessionStateMessageSchema.safeParse(message);
+    if (parsed.success && parsed.data.tabId === tabId) listener(parsed.data.state);
   };
   browser.runtime.onMessage.addListener(handler);
   return () => browser.runtime.onMessage.removeListener(handler);

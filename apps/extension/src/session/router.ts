@@ -21,7 +21,7 @@ import {
   scanTab,
 } from '../messaging/background-handler';
 import { fail, ok, PanelRequestSchema, type Result } from '../messaging/protocol';
-import { host, repos, vault } from './services';
+import { currentSettings, host, ready, repos, updateSettings, vault } from './services';
 
 function vaultFailure(error: unknown): Result<never> {
   if (error instanceof WrongPassphraseError) return fail('WRONG_PASSPHRASE', error.message);
@@ -45,6 +45,7 @@ async function vaultCall<T>(fn: () => Promise<T>): Promise<Result<T>> {
 }
 
 export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>> {
+  await ready;
   const parsed = PanelRequestSchema.safeParse(raw);
   if (!parsed.success) return fail('BAD_REQUEST', 'Unknown request.');
   const request = parsed.data;
@@ -98,6 +99,46 @@ export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>>
       });
     case 'FACT_LIST':
       return vaultCall(() => repos.facts.list());
+    case 'FACT_BATCH':
+      return vaultCall(async () => {
+        // Removals first, so moving a list item to a freed index works.
+        for (const key of request.remove) await repos.facts.delete(key);
+        const saved = [];
+        for (const f of request.set) {
+          saved.push(
+            await repos.facts.setValue(
+              f.key,
+              f.value,
+              f.sensitivity ? { sensitivity: f.sensitivity } : {},
+            ),
+          );
+        }
+        return saved;
+      });
+    case 'VAULT_EXPORT':
+      return vaultCall(async () => ({
+        json: await vault.exportBackup(),
+        filename: `filler-backup-${new Date().toISOString().slice(0, 10)}.filler`,
+      }));
+    case 'VAULT_IMPORT':
+      return vaultCall(async () => {
+        await vault.importBackup(request.json, request.passphrase);
+        await host.broadcast({ type: 'VAULT_UNLOCKED' });
+        return { status: 'unlocked' as const };
+      });
+    case 'VAULT_WIPE':
+      return vaultCall(async () => {
+        await vault.wipe();
+        return { status: 'uninitialized' as const };
+      });
+    case 'MEMORY_CLEAR_SITE':
+      return vaultCall(async () => ({
+        removed: await repos.fieldMemory.deleteBySite(request.site),
+      }));
+    case 'SETTINGS_GET':
+      return ok(currentSettings());
+    case 'SETTINGS_SET':
+      return ok(await updateSettings(request.patch));
 
     case 'SESSION_START':
       return ok(await host.start(request.tabId, request.goal));

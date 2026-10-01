@@ -1,1 +1,5 @@
 @import 'tailwindcss';
+/* Shared components live in packages/ui; let Tailwind see their classes. */
+@source '../../../../packages/ui/src';
+/* Dark mode follows a `dark` class on <html> (system or user choice, see App.tsx). */
+@custom-variant dark (&:where(.dark, .dark *));

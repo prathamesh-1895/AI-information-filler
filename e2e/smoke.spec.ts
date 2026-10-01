@@ -4,8 +4,8 @@ test('extension loads and the side panel renders', async ({ context, extensionId
   expect(extensionId).toMatch(/^[a-p]{32}$/);
   const panel = await context.newPage();
   await panel.goto(`chrome-extension://${extensionId}/sidepanel.html`);
-  await expect(panel.getByRole('heading', { name: 'Filler' })).toBeVisible();
-  await expect(panel.getByTestId('status')).toContainText('Open a form');
+  await expect(panel.getByRole('heading', { name: 'Filler', exact: true })).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Welcome to Filler' })).toBeVisible();
 });
 
 test('fixture harness serves pages and records no submits', async ({ context }) => {

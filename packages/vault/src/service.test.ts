@@ -358,3 +358,45 @@ describe('backup, import and wipe', () => {
     await expect(vault.exportBackup()).rejects.toBeInstanceOf(VaultLockedError);
   });
 });
+
+describe('setAutoLockMinutes', () => {
+  it('changes the idle timeout at runtime, including turning it off', async () => {
+    let now = 1_000_000;
+    const vault = makeVault({ autoLockMinutes: 15, now: () => now });
+    await vault.create(PASS);
+    vault.setAutoLockMinutes(1);
+    now += 61_000;
+    expect(vault.isUnlocked()).toBe(false);
+
+    await vault.unlock(PASS);
+    vault.setAutoLockMinutes(0);
+    now += 10 * 3_600_000;
+    expect(vault.isUnlocked()).toBe(true);
+    expect(() => vault.setAutoLockMinutes(-1)).toThrow();
+  });
+});
+
+describe('session key store switch', () => {
+  it('stores nothing while the store reports itself disabled', async () => {
+    let enabled = false;
+    const entries: unknown[] = [];
+    const store = {
+      get: async () => null,
+      set: async (e: unknown) => void entries.push(e),
+      clear: async () => undefined,
+      enabled: () => enabled,
+    };
+    const vault = makeVault({ sessionKeyStore: store });
+    await vault.create(PASS);
+    vault.touch();
+    expect(entries).toEqual([]);
+
+    // Turning it on takes effect at the next unlock (the key bytes are not kept around before that).
+    enabled = true;
+    vault.touch();
+    expect(entries).toEqual([]);
+    vault.lock();
+    await vault.unlock(PASS);
+    expect(entries.length).toBeGreaterThan(0);
+  });
+});

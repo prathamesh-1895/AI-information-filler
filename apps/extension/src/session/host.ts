@@ -5,6 +5,8 @@
  */
 import {
   buildPlan,
+  createPolicy,
+  siteOf,
   initialState,
   mapFields,
   offlineAi,
@@ -21,6 +23,7 @@ import {
 } from '@filler/core';
 import type { Repositories, VaultService } from '@filler/vault';
 import type { FillItem, FillResult, HighlightItem, PageScan, Result } from '../messaging/protocol';
+import { DEFAULT_SETTINGS, isTrusted, type Settings } from '../settings';
 
 export interface HostDeps {
   vault: VaultService;
@@ -33,6 +36,8 @@ export interface HostDeps {
   endTab(tabId: number): Promise<unknown>;
   /** Called with every new state (the background broadcasts it to the panel). */
   publish(tabId: number, state: SessionState): void;
+  /** Current user settings (Task 6.4). Defaults when omitted. */
+  getSettings?: () => Promise<Settings>;
   now?: () => string;
   newId?: () => string;
 }
@@ -61,14 +66,23 @@ export class SessionHost {
   }
 
   /** Starts (or restarts) the session for a tab. Resolves once the plan is ready or the start failed. */
-  start(tabId: number, goal?: SessionState['goal']): Promise<SessionState> {
+  async start(tabId: number, goal?: SessionState['goal']): Promise<SessionState> {
+    const settings = await this.settings();
+    // Generated answers use the language from Settings unless the goal says otherwise.
+    const withLanguage = goal
+      ? { ...goal, language: goal.language ?? settings.answerLanguage }
+      : undefined;
     return this.dispatch(tabId, {
       type: 'START',
       id: this.newId(),
       tabId,
-      ...(goal ? { goal } : {}),
+      ...(withLanguage ? { goal: withLanguage } : {}),
       at: this.now(),
     });
+  }
+
+  private settings(): Promise<Settings> {
+    return this.deps.getSettings?.() ?? Promise.resolve(DEFAULT_SETTINGS);
   }
 
   /**
@@ -131,8 +145,10 @@ export class SessionHost {
             this.deps.repos.facts.list(),
             this.deps.repos.fieldMemory.list(),
           ]);
+          const settings = await this.settings();
           const all = mapFields(state.fields, {
             site: state.site,
+            policy: createPolicy({ extraPatterns: settings.denyPatterns }),
             memory: new Map(memories.map((m: FieldMemory) => [m.signature, m])),
             factKeys: new Set(facts.map((f) => f.key)),
             factValues: new Map(
@@ -173,7 +189,11 @@ export class SessionHost {
               ...(state.goal ? { goal: state.goal } : {}),
             },
           });
-          return [{ type: 'PLANNED', items }];
+          // Trusted sites: vault values are approved straight away (AI text never is).
+          const trusted = isTrusted(await this.settings(), state.site || siteOf(state.url));
+          return trusted
+            ? [{ type: 'PLANNED', items }, { type: 'APPROVE_ALL_VAULT' }]
+            : [{ type: 'PLANNED', items }];
         }
         case 'SAVE_ANSWER': {
           try {
@@ -197,7 +217,11 @@ export class SessionHost {
           }
         }
         case 'FILL': {
-          const result = await this.deps.fillTab(tabId, effect.items);
+          const { typingMode } = await this.settings();
+          const items = effect.items.map((i) =>
+            typingMode === 'typing' ? { ...i, mode: 'typing' as const } : i,
+          );
+          const result = await this.deps.fillTab(tabId, items);
           const results = result.ok
             ? result.data.map((r) => ({
                 fieldId: r.fieldId,
@@ -212,7 +236,11 @@ export class SessionHost {
           return [{ type: 'FILL_RESULTS', results }];
         }
         case 'HIGHLIGHT':
-          await this.deps.highlightTab(tabId, effect.items);
+          // Highlighting off: send an empty list, which clears any outlines already shown.
+          await this.deps.highlightTab(
+            tabId,
+            (await this.settings()).highlight ? effect.items : [],
+          );
           return [];
         case 'END_PAGE':
           await this.deps.endTab(tabId);

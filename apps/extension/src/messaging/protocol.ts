@@ -11,6 +11,7 @@ import {
   type SessionState,
 } from '@filler/core';
 import { z } from 'zod';
+import { SettingsPatchSchema } from '../settings';
 
 const tabId = z.number().int().nonnegative();
 
@@ -100,6 +101,40 @@ export const FactDeleteRequestSchema = z.object({
   key: z.string().max(200),
 });
 export const FactListRequestSchema = z.object({ type: z.literal('FACT_LIST') });
+/** Several fact writes/deletes in one request (quick-start profile, reordering list items). */
+export const FactBatchRequestSchema = z.object({
+  type: z.literal('FACT_BATCH'),
+  set: z
+    .array(
+      z.object({
+        key: z.string().max(200),
+        value: FactValueSchema,
+        sensitivity: SensitivitySchema.optional(),
+      }),
+    )
+    .max(500),
+  remove: z.array(z.string().max(200)).max(500),
+});
+export const VaultExportRequestSchema = z.object({ type: z.literal('VAULT_EXPORT') });
+export const VaultImportRequestSchema = z.object({
+  type: z.literal('VAULT_IMPORT'),
+  json: z.string().max(20_000_000),
+  passphrase,
+});
+/** Typed confirmation guards the irreversible wipe. */
+export const VaultWipeRequestSchema = z.object({
+  type: z.literal('VAULT_WIPE'),
+  confirm: z.literal('DELETE'),
+});
+export const MemoryClearSiteRequestSchema = z.object({
+  type: z.literal('MEMORY_CLEAR_SITE'),
+  site: z.string().min(1).max(253),
+});
+export const SettingsGetRequestSchema = z.object({ type: z.literal('SETTINGS_GET') });
+export const SettingsSetRequestSchema = z.object({
+  type: z.literal('SETTINGS_SET'),
+  patch: SettingsPatchSchema,
+});
 
 // ---- Fill sessions (Phase 5): the orchestrator runs in the background, one session per tab.
 export const SessionStartRequestSchema = z.object({
@@ -130,6 +165,13 @@ export const PanelRequestSchema = z.discriminatedUnion('type', [
   FactSetRequestSchema,
   FactDeleteRequestSchema,
   FactListRequestSchema,
+  FactBatchRequestSchema,
+  VaultExportRequestSchema,
+  VaultImportRequestSchema,
+  VaultWipeRequestSchema,
+  MemoryClearSiteRequestSchema,
+  SettingsGetRequestSchema,
+  SettingsSetRequestSchema,
   SessionStartRequestSchema,
   SessionGetRequestSchema,
   SessionEventRequestSchema,

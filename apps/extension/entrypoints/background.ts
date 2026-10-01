@@ -36,6 +36,21 @@ export default defineBackground(() => {
     return false;
   });
 
+  // The side panel holds a port open while it is visible; an open port keeps
+  // this worker (and the in-memory session state) alive.
+  browser.runtime.onConnect.addListener((port) => {
+    if (port.name !== 'panel' || port.sender?.id !== browser.runtime.id) port.disconnect();
+  });
+
+  // Keyboard shortcut (PLAYBOOK Task 6.5): open the panel and start on this tab.
+  browser.commands.onCommand.addListener((command, tab) => {
+    if (command !== 'start-session' || tab?.id === undefined) return;
+    const tabId = tab.id;
+    // sidePanel.open must run inside the shortcut's user gesture, before any await.
+    void browser.sidePanel.open({ tabId }).catch(() => undefined);
+    void host.start(tabId);
+  });
+
   browser.tabs.onRemoved.addListener((tabId) => {
     if (!host.get(tabId)) return;
     void host.dispatch(tabId, { type: 'TAB_CLOSED' }).then(() => host.forget(tabId));
