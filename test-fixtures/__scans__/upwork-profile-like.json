@@ -1,0 +1,139 @@
+[
+  {
+    "ref": "title",
+    "frameId": 0,
+    "selector": "#title",
+    "tag": "input",
+    "inputType": "text",
+    "name": "title",
+    "label": "Your professional role",
+    "labelSource": "label-for",
+    "helpText": "e.g. Business Consultant for small businesses",
+    "sectionHeading": "Tell us about your work",
+    "required": false,
+    "maxLength": 70,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "f05190bba947d7220d596c24254df73a552063ee11fe2ae00131c10288abfbc8",
+    "domId": "title"
+  },
+  {
+    "ref": "rate",
+    "frameId": 0,
+    "selector": "#rate",
+    "tag": "input",
+    "inputType": "text",
+    "name": "hourlyRate",
+    "label": "Hourly rate",
+    "labelSource": "label-for",
+    "helpText": "Total amount the client will see.",
+    "sectionHeading": "Tell us about your work",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "266d21ace567a44cf6a9a370156f5cb4f9e7f455bbfc8586bd441d653ce931a7",
+    "domId": "rate"
+  },
+  {
+    "ref": "skills",
+    "frameId": 0,
+    "selector": "#skills-input",
+    "tag": "input",
+    "inputType": "tags",
+    "label": "Skills",
+    "labelSource": "label-for",
+    "placeholder": "Type a skill and press Enter",
+    "helpText": "Add up to 15 skills.",
+    "sectionHeading": "Tell us about your work",
+    "multiple": true,
+    "required": false,
+    "currentValue": [
+      "Excel"
+    ],
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "df96e02d97a9bb26e0b740df966daa8c9455493dfa48d6fd082901890c47347b",
+    "domId": "skills-input"
+  },
+  {
+    "ref": "overview",
+    "frameId": 0,
+    "selector": "#overview",
+    "tag": "textarea",
+    "inputType": "textarea",
+    "name": "overview",
+    "label": "Profile overview",
+    "labelSource": "label-for",
+    "helpText": "Use this space to show clients you have the skills and experience they're looking for.",
+    "sectionHeading": "Tell us about your work",
+    "required": false,
+    "maxLength": 5000,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "69cc249f5efc41bb7d6b5e33237f5dbcb24cfc4e842558c45ecea5fe17d111f5",
+    "domId": "overview"
+  },
+  {
+    "ref": "level",
+    "frameId": 0,
+    "selector": "input[type=\"radio\"][name=\"level\"]",
+    "tag": "input",
+    "inputType": "radio",
+    "name": "level",
+    "label": "Experience level",
+    "labelSource": "container",
+    "sectionHeading": "Tell us about your work",
+    "options": [
+      {
+        "value": "entry",
+        "text": "Entry level"
+      },
+      {
+        "value": "intermediate",
+        "text": "Intermediate"
+      },
+      {
+        "value": "expert",
+        "text": "Expert"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "2cffe24beac21b139d76ac4afe055a81d3f8a17e3d5abd8136ff1ba4d531ee89"
+  },
+  {
+    "ref": "english",
+    "frameId": 0,
+    "selector": "#english",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "english",
+    "label": "English proficiency",
+    "labelSource": "label-for",
+    "sectionHeading": "Tell us about your work",
+    "options": [
+      {
+        "value": "basic",
+        "text": "Basic"
+      },
+      {
+        "value": "conversational",
+        "text": "Conversational"
+      },
+      {
+        "value": "fluent",
+        "text": "Fluent"
+      },
+      {
+        "value": "native",
+        "text": "Native or bilingual"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "149a5481ed17dd734392839c14e185e3c7f02553a400a6eb8fb7e5520ef3dd72",
+    "domId": "english"
+  }
+]

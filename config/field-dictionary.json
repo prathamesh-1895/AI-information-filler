@@ -1,0 +1,523 @@
+{
+  "$comment": "Rule-based field mapping (PLAYBOOK Task 5.1). Patterns are regular expressions matched as whole words against normalised text (lowercase, punctuation folded to spaces). 'patterns' are enough on their own; 'contextPatterns' only count when the label or section heading names the key's list group (education, experience, projects, languages, certifications). Every canonical key must appear exactly once.",
+  "version": 1,
+  "groupContext": {
+    "education": "education|educational|academic|academics|qualification|qualifications|college|university|school|degree|graduation|class 1[02]|ssc|hsc",
+    "experience": "experience|employment|work|job|career|professional history|internship|employer",
+    "projects": "projects?",
+    "certifications": "certifications?|certificates?|licen[cs]es?",
+    "languages": "languages?"
+  },
+  "entries": [
+    {
+      "key": "person.name.full",
+      "patterns": [
+        "full name",
+        "your name",
+        "name",
+        "applicant name",
+        "applicant s name",
+        "candidate name",
+        "candidate s name",
+        "name of (the )?(applicant|candidate|student)",
+        "student name",
+        "legal name",
+        "name as per .*"
+      ]
+    },
+    {
+      "key": "person.name.first",
+      "patterns": ["first name", "given name", "forename", "fname", "first"]
+    },
+    {
+      "key": "person.name.middle",
+      "patterns": ["middle name", "middle initial", "mname"]
+    },
+    {
+      "key": "person.name.last",
+      "patterns": ["last name", "surname", "family name", "lname", "last"]
+    },
+    {
+      "key": "person.name.display",
+      "patterns": [
+        "display name",
+        "public name",
+        "screen name",
+        "user ?name",
+        "nick ?name",
+        "profile name"
+      ]
+    },
+    {
+      "key": "person.dob",
+      "patterns": ["date of birth", "dob", "birth ?date", "birthday", "d o b"]
+    },
+    {
+      "key": "person.gender",
+      "patterns": ["gender", "sex"]
+    },
+    {
+      "key": "person.nationality",
+      "patterns": ["nationality", "citizenship", "citizen of"]
+    },
+    {
+      "key": "family.father_name",
+      "patterns": [
+        "fathers? name",
+        "father name",
+        "name of (the )?father",
+        "fathers? full name",
+        "guardian s name"
+      ]
+    },
+    {
+      "key": "family.mother_name",
+      "patterns": ["mothers? name", "mother name", "name of (the )?mother", "mothers? full name"]
+    },
+    {
+      "key": "contact.email",
+      "patterns": [
+        "e ?mail",
+        "e ?mail address",
+        "e ?mail id",
+        "mail id",
+        "email address",
+        "your email",
+        "work email",
+        "personal email"
+      ]
+    },
+    {
+      "key": "contact.email_alt",
+      "patterns": ["(alternate|alternative|secondary|other|backup) e ?mail( address| id)?"]
+    },
+    {
+      "key": "contact.phone.mobile",
+      "patterns": [
+        "mobile",
+        "mobile (no|number|phone)",
+        "phone",
+        "phone (no|number)",
+        "contact (no|number)",
+        "cell( phone)?",
+        "telephone",
+        "tel",
+        "primary (phone|mobile)"
+      ]
+    },
+    {
+      "key": "contact.phone.alt",
+      "patterns": [
+        "(alternate|alternative|secondary|other|emergency) (phone|mobile|contact)( no| number)?",
+        "landline",
+        "alt phone"
+      ]
+    },
+    {
+      "key": "contact.whatsapp",
+      "patterns": ["whats ?app( no| number)?"]
+    },
+    {
+      "key": "address.line1",
+      "patterns": [
+        "address",
+        "street address",
+        "address line ?1",
+        "street",
+        "house (no|number)",
+        "flat (no|number)",
+        "residential address",
+        "permanent address",
+        "current address",
+        "address 1"
+      ]
+    },
+    {
+      "key": "address.line2",
+      "patterns": [
+        "address line ?2",
+        "locality",
+        "area",
+        "landmark",
+        "address 2",
+        "apartment suite",
+        "apt suite"
+      ]
+    },
+    {
+      "key": "address.city",
+      "patterns": [
+        "city",
+        "town",
+        "city town",
+        "town city",
+        "current city",
+        "home ?town",
+        "city of residence"
+      ]
+    },
+    {
+      "key": "address.district",
+      "patterns": ["district", "county", "taluka", "tehsil"]
+    },
+    {
+      "key": "address.state",
+      "patterns": [
+        "state",
+        "province",
+        "state province",
+        "region",
+        "state union territory",
+        "state ut"
+      ]
+    },
+    {
+      "key": "address.postal_code",
+      "patterns": [
+        "pin ?code",
+        "postal code",
+        "zip( code)?",
+        "post ?code",
+        "zip postal code",
+        "postal pin code"
+      ]
+    },
+    {
+      "key": "address.country",
+      "patterns": ["country", "country of residence", "nation", "country region"]
+    },
+    {
+      "key": "education[].institution",
+      "patterns": [
+        "college( name)?",
+        "university( name)?",
+        "school( name)?",
+        "institute( name)?",
+        "name of (the )?(college|university|institution|institute|school)",
+        "institution name",
+        "alma mater"
+      ],
+      "contextPatterns": ["institution", "organisation", "organization"]
+    },
+    {
+      "key": "education[].degree",
+      "patterns": [
+        "degree",
+        "highest qualification",
+        "qualification",
+        "course( name)?",
+        "programme",
+        "program"
+      ]
+    },
+    {
+      "key": "education[].field",
+      "patterns": [
+        "field of study",
+        "major",
+        "branch",
+        "specialization",
+        "specialisation",
+        "stream",
+        "discipline"
+      ]
+    },
+    {
+      "key": "education[].start",
+      "patterns": ["year of (joining|admission)", "admission year"],
+      "contextPatterns": ["start( date| month| year)?", "from", "joined", "start"]
+    },
+    {
+      "key": "education[].end",
+      "patterns": [
+        "graduation (year|month|date)",
+        "year of (passing|graduation|completion)",
+        "passing year",
+        "passed out year",
+        "batch"
+      ],
+      "contextPatterns": ["end( date| month| year)?", "to", "completed", "completion( date| year)?"]
+    },
+    {
+      "key": "education[].grade",
+      "patterns": ["cgpa", "gpa", "cgpa percentage", "sgpa"],
+      "contextPatterns": ["grade", "percentage", "marks", "score", "result", "aggregate"]
+    },
+    {
+      "key": "experience[].company",
+      "patterns": [
+        "company( name)?",
+        "employer( name)?",
+        "current (company|employer|organization|organisation)",
+        "organization name",
+        "organisation name",
+        "name of (the )?(company|employer|organization|organisation)"
+      ],
+      "contextPatterns": ["organization", "organisation"]
+    },
+    {
+      "key": "experience[].title",
+      "patterns": [
+        "job title",
+        "designation",
+        "position",
+        "current (title|designation|role|position)",
+        "job role"
+      ],
+      "contextPatterns": ["title", "role"]
+    },
+    {
+      "key": "experience[].location",
+      "patterns": ["work location", "job location", "office location"],
+      "contextPatterns": ["location", "city"]
+    },
+    {
+      "key": "experience[].start",
+      "patterns": [],
+      "contextPatterns": [
+        "start( date| month| year)?",
+        "from",
+        "start",
+        "joining date",
+        "date of joining"
+      ]
+    },
+    {
+      "key": "experience[].end",
+      "patterns": ["relieving date", "last working day", "date of leaving"],
+      "contextPatterns": ["end( date| month| year)?", "to", "till"]
+    },
+    {
+      "key": "experience[].description",
+      "patterns": ["job description", "key responsibilities", "responsibilities"],
+      "contextPatterns": ["description", "what did you do", "summary", "achievements"]
+    },
+    {
+      "key": "projects[].name",
+      "patterns": ["project (name|title)", "name of (the )?project"],
+      "contextPatterns": ["name", "title"]
+    },
+    {
+      "key": "projects[].role",
+      "patterns": ["your role in (the )?project", "role in (the )?project"],
+      "contextPatterns": ["role", "your role", "contribution"]
+    },
+    {
+      "key": "projects[].description",
+      "patterns": ["project description", "describe (the|your) project", "about the project"],
+      "contextPatterns": ["description", "details", "summary"]
+    },
+    {
+      "key": "projects[].tech",
+      "patterns": ["tech(nology)? stack", "technologies used", "tools used"],
+      "contextPatterns": ["technologies", "tools", "tech", "skills used"]
+    },
+    {
+      "key": "projects[].url",
+      "patterns": [
+        "project (link|url)",
+        "demo (link|url)",
+        "live (link|url)",
+        "repo(sitory)? (link|url)"
+      ],
+      "contextPatterns": ["link", "url"]
+    },
+    {
+      "key": "projects[].outcome",
+      "patterns": ["project (outcome|results?|impact)"],
+      "contextPatterns": ["outcome", "results?", "impact", "achievement"]
+    },
+    {
+      "key": "skills",
+      "patterns": [
+        "skills?",
+        "key skills",
+        "skill set",
+        "skills you have",
+        "your skills",
+        "expertise",
+        "areas of expertise",
+        "technical skills",
+        "top skills"
+      ]
+    },
+    {
+      "key": "languages[].language",
+      "patterns": [
+        "languages?",
+        "languages known",
+        "languages spoken",
+        "spoken languages?",
+        "language s known",
+        "mother tongue"
+      ]
+    },
+    {
+      "key": "languages[].proficiency",
+      "patterns": [
+        "proficiency",
+        "language level",
+        "language proficiency",
+        "fluency",
+        "level of (proficiency|fluency)"
+      ],
+      "contextPatterns": ["level"]
+    },
+    {
+      "key": "links.linkedin",
+      "patterns": ["linked ?in( profile| url| link)?", "linkedin profile url"]
+    },
+    {
+      "key": "links.github",
+      "patterns": ["git ?hub( profile| url| link| username)?"]
+    },
+    {
+      "key": "links.portfolio",
+      "patterns": ["portfolio( link| url| website)?", "work samples", "behance or dribbble"]
+    },
+    {
+      "key": "links.website",
+      "patterns": [
+        "website",
+        "personal website",
+        "web ?site url",
+        "homepage",
+        "blog",
+        "personal site",
+        "url"
+      ]
+    },
+    {
+      "key": "links.behance",
+      "patterns": ["behance( profile| url)?"]
+    },
+    {
+      "key": "links.dribbble",
+      "patterns": ["dribbble( profile| url)?"]
+    },
+    {
+      "key": "preferences.hourly_rate",
+      "patterns": ["hourly rate", "rate per hour", "your rate", "hourly fee", "price per hour"]
+    },
+    {
+      "key": "preferences.currency",
+      "patterns": ["currency", "preferred currency", "payment currency"]
+    },
+    {
+      "key": "preferences.availability_hours",
+      "patterns": [
+        "availability",
+        "hours per week",
+        "weekly availability",
+        "hours available",
+        "available hours"
+      ]
+    },
+    {
+      "key": "preferences.timezone",
+      "patterns": ["time ?zone"]
+    },
+    {
+      "key": "preferences.notice_period",
+      "patterns": [
+        "notice period",
+        "joining time",
+        "available to join",
+        "when can you (join|start)",
+        "earliest start date"
+      ]
+    },
+    {
+      "key": "preferences.expected_salary",
+      "patterns": [
+        "expected (salary|ctc|compensation|pay|stipend)",
+        "salary expectations?",
+        "desired salary"
+      ]
+    },
+    {
+      "key": "preferences.current_salary",
+      "patterns": ["current (salary|ctc|compensation|pay)", "present salary", "last drawn salary"]
+    },
+    {
+      "key": "bio.headline",
+      "patterns": [
+        "headline",
+        "tagline",
+        "(professional|profile|your) (title|role|headline)",
+        "professional role",
+        "your professional role",
+        "profile title",
+        "what do you do"
+      ]
+    },
+    {
+      "key": "bio.summary_short",
+      "patterns": [
+        "bio",
+        "short bio",
+        "short (summary|description)",
+        "one line (bio|summary|description)",
+        "about you in one line"
+      ]
+    },
+    {
+      "key": "bio.summary_long",
+      "patterns": [
+        "overview",
+        "profile overview",
+        "about (me|you|yourself)",
+        "tell us (about )?yourself",
+        "describe yourself",
+        "summary",
+        "profile summary",
+        "professional summary",
+        "long bio",
+        "biography",
+        "description",
+        "introduce yourself"
+      ]
+    },
+    {
+      "key": "professional.category",
+      "patterns": [
+        "occupation",
+        "your occupation",
+        "profession",
+        "(service|work|job|professional) category",
+        "category",
+        "industry",
+        "field of work"
+      ]
+    },
+    {
+      "key": "professional.years_experience",
+      "patterns": [
+        "years of experience",
+        "total experience",
+        "experience in years",
+        "work experience in years",
+        "how many years"
+      ]
+    },
+    {
+      "key": "certifications[].name",
+      "patterns": ["certification( name)?", "certificate( name)?", "license name"],
+      "contextPatterns": ["name", "title"]
+    },
+    {
+      "key": "certifications[].issuer",
+      "patterns": [
+        "issuing (organization|organisation|body|authority)",
+        "issued by",
+        "certifying (body|authority)"
+      ],
+      "contextPatterns": ["issuer", "organization", "organisation"]
+    },
+    {
+      "key": "certifications[].year",
+      "patterns": ["year (obtained|of certification)", "certification (date|year)"],
+      "contextPatterns": ["year", "issue date", "date"]
+    }
+  ]
+}

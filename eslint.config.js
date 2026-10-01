@@ -21,5 +21,12 @@ export default tseslint.config(
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...globals.webextensions },
     },
+    rules: {
+      // `const { secret: _secret, ...rest } = obj` is how fields are dropped immutably.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
+    },
   },
 );

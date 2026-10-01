@@ -1,0 +1,189 @@
+[
+  {
+    "ref": "first",
+    "frameId": 0,
+    "selector": "input[name=\"first_name\"]",
+    "tag": "input",
+    "inputType": "text",
+    "name": "first_name",
+    "label": "First Name",
+    "labelSource": "placeholder",
+    "placeholder": "First Name",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "83f10f92bb98503e5271105d0dfb451a2795b5033ed4a302b7876826ff2b1326"
+  },
+  {
+    "ref": "last",
+    "frameId": 0,
+    "selector": "input[name=\"last_name\"]",
+    "tag": "input",
+    "inputType": "text",
+    "name": "last_name",
+    "label": "Last Name",
+    "labelSource": "placeholder",
+    "placeholder": "Last Name",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "c124cbb7f74f1f0dd1a3edf5c637d7737c72da6434becfe9d2ed28a4dbd802e3"
+  },
+  {
+    "ref": "display",
+    "frameId": 0,
+    "selector": "input[name=\"display_name\"]",
+    "tag": "input",
+    "inputType": "text",
+    "name": "display_name",
+    "label": "Display Name",
+    "labelSource": "container",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "ec3c120d3b699fbe8a612a09a5208e4c2b33a1f0d14ee566ecadc4c180fcb2e6"
+  },
+  {
+    "ref": "avatar",
+    "frameId": 0,
+    "selector": "input[name=\"avatar\"]",
+    "tag": "input",
+    "inputType": "file",
+    "name": "avatar",
+    "label": "Profile Picture",
+    "labelSource": "container",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "08fedf6cab1fb9eb92b20e48b016bdb84fc71186d76cb7dceb418da1c1ce7a9f"
+  },
+  {
+    "ref": "description",
+    "frameId": 0,
+    "selector": "textarea[name=\"description\"]",
+    "tag": "textarea",
+    "inputType": "textarea",
+    "name": "description",
+    "label": "Description",
+    "labelSource": "container",
+    "placeholder": "Share a bit about your work experience, cool projects you've completed, and your area of expertise.",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "maxLength": 600,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "29b44032032d079ad6c47f0148616b9d5b3c71b3876675921702a0f772d470bc"
+  },
+  {
+    "ref": "language",
+    "frameId": 0,
+    "selector": "select[name=\"language\"]",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "language",
+    "label": "Language",
+    "labelSource": "aria",
+    "sectionHeading": "Personal Info",
+    "options": [
+      {
+        "value": "English",
+        "text": "English"
+      },
+      {
+        "value": "Hindi",
+        "text": "Hindi"
+      },
+      {
+        "value": "Marathi",
+        "text": "Marathi"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "d77e562d2569597f1642b6c048b12d2517e07109b0d9fdbaaf1f9d39e7cf83dc"
+  },
+  {
+    "ref": "language-level",
+    "frameId": 0,
+    "selector": "select[name=\"language_level\"]",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "language_level",
+    "label": "Language Level",
+    "labelSource": "aria",
+    "sectionHeading": "Personal Info",
+    "options": [
+      {
+        "value": "basic",
+        "text": "Basic"
+      },
+      {
+        "value": "conversational",
+        "text": "Conversational"
+      },
+      {
+        "value": "fluent",
+        "text": "Fluent"
+      },
+      {
+        "value": "native",
+        "text": "Native/Bilingual"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "89ae4862f1d619905a09e2fd32c93a1b06d7e12ba0e645ea476a88e255676544"
+  },
+  {
+    "ref": "occupation",
+    "frameId": 0,
+    "selector": "#seller > div:nth-of-type(6) > div:nth-of-type(2) > div:nth-of-type(1)",
+    "tag": "div",
+    "inputType": "aria-combobox",
+    "label": "Your Occupation",
+    "labelSource": "aria",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "a67e7c85a0685e862364735852bf64f6f19fcd9c893cd8bdf1fbb2f434df9c05"
+  },
+  {
+    "ref": "website",
+    "frameId": 0,
+    "selector": "input[name=\"website\"]",
+    "tag": "input",
+    "inputType": "url",
+    "name": "website",
+    "label": "Personal Website",
+    "labelSource": "container",
+    "placeholder": "Provide a link to your own professional website",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "7953bd44571eec129ed81efc52ab564c005701f13083f6149b9bfb9a5975d948"
+  },
+  {
+    "ref": "email",
+    "frameId": 0,
+    "selector": "input[name=\"email\"]",
+    "tag": "input",
+    "inputType": "email",
+    "name": "email",
+    "label": "Email",
+    "labelSource": "container",
+    "sectionHeading": "Personal Info",
+    "required": false,
+    "currentValue": "priya@example.com",
+    "isVisible": true,
+    "isDisabled": true,
+    "signature": "c2fb93b606da52516e39de6cf977ce98f8dc11b4f6f6f0f3a8e3a2b7de3c525b"
+  }
+]

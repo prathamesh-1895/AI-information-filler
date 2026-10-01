@@ -43,7 +43,7 @@
       "label": "Short code",
       "inputType": "text",
       "maxLength": 6,
-      "kind": "skip",
+      "kind": "fact",
       "canonicalKey": null
     },
     {

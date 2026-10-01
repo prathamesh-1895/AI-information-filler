@@ -1,0 +1,243 @@
+[
+  {
+    "ref": "name",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(1) > input:nth-of-type(1)",
+    "tag": "input",
+    "inputType": "text",
+    "label": "Full name",
+    "labelSource": "aria",
+    "sectionHeading": "Campus Ambassador Application",
+    "required": true,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "a79c4ca4d77d94a488a77db5a5b7dd0d2904fcf34b375f2fcd95eae50ab61d72"
+  },
+  {
+    "ref": "email",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(2) > input:nth-of-type(1)",
+    "tag": "input",
+    "inputType": "email",
+    "label": "Email address",
+    "labelSource": "container",
+    "sectionHeading": "Campus Ambassador Application",
+    "required": true,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "759150eb7631124f654d60a2d811d0c27dc8fc007c54756ad9e52ccdc2b27183"
+  },
+  {
+    "ref": "phone",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(3) > input:nth-of-type(1)",
+    "tag": "input",
+    "inputType": "text",
+    "label": "Phone number",
+    "labelSource": "container",
+    "helpText": "We'll only call you about this application.",
+    "sectionHeading": "Campus Ambassador Application",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "111ba5cf82b2ee110a85dce8556b83a19503fe17de3dacf82a0d07fc541607fb"
+  },
+  {
+    "ref": "year",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(2)",
+    "tag": "div",
+    "inputType": "aria-radiogroup",
+    "label": "Which year are you in?",
+    "labelSource": "aria",
+    "sectionHeading": "Campus Ambassador Application",
+    "options": [
+      {
+        "value": "First year",
+        "text": "First year"
+      },
+      {
+        "value": "Second year",
+        "text": "Second year"
+      },
+      {
+        "value": "Third year",
+        "text": "Third year"
+      },
+      {
+        "value": "Final year",
+        "text": "Final year"
+      },
+      {
+        "value": "__other_option__",
+        "text": "Other:"
+      }
+    ],
+    "required": true,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "141fec061b990dfdbccf4291caa1c52b9a00ba2ff76cc8553f83ec61a9ec2bda"
+  },
+  {
+    "ref": "year-other",
+    "frameId": 0,
+    "selector": "input[aria-label=\"Other\\ response\"]",
+    "tag": "input",
+    "inputType": "text",
+    "label": "Other response",
+    "labelSource": "aria",
+    "sectionHeading": "Campus Ambassador Application",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "cc5b45a2e1ebabdf66b05e0b8707770bb356264ba0cea87421831b562edf45e1"
+  },
+  {
+    "ref": "skills",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2)",
+    "tag": "div",
+    "inputType": "aria-checkbox-group",
+    "label": "Skills you have",
+    "labelSource": "aria",
+    "sectionHeading": "Campus Ambassador Application",
+    "options": [
+      {
+        "value": "Excel",
+        "text": "Excel"
+      },
+      {
+        "value": "SQL",
+        "text": "SQL"
+      },
+      {
+        "value": "Python",
+        "text": "Python"
+      },
+      {
+        "value": "Public speaking",
+        "text": "Public speaking"
+      }
+    ],
+    "multiple": true,
+    "required": false,
+    "currentValue": [
+      "SQL"
+    ],
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "30008d4bfad72e8a1501f722af48d94751d224670a6e8c97fa8596de8b15d4fc"
+  },
+  {
+    "ref": "city",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(6) > div:nth-of-type(2)",
+    "tag": "div",
+    "inputType": "aria-listbox",
+    "label": "Preferred city",
+    "labelSource": "aria",
+    "sectionHeading": "Campus Ambassador Application",
+    "options": [
+      {
+        "value": "Pune",
+        "text": "Pune"
+      },
+      {
+        "value": "Mumbai",
+        "text": "Mumbai"
+      },
+      {
+        "value": "Bengaluru",
+        "text": "Bengaluru"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "46998f3216e3f1a3b9a1479fff44af5cb0ba3ed5d967c638b50a763f5a6550b9"
+  },
+  {
+    "ref": "grid-communication",
+    "frameId": 0,
+    "selector": "div[aria-label=\"Communication\"]",
+    "tag": "div",
+    "inputType": "aria-radiogroup",
+    "label": "Rate yourself: Communication",
+    "labelSource": "aria",
+    "sectionHeading": "Campus Ambassador Application",
+    "options": [
+      {
+        "value": "Poor",
+        "text": "Poor"
+      },
+      {
+        "value": "Good",
+        "text": "Good"
+      },
+      {
+        "value": "Excellent",
+        "text": "Excellent"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "482d8f2d9ed2847ba9c6e795b76fea47c28cd2e68cdf4ffb7e2f30928ab2102e"
+  },
+  {
+    "ref": "grid-teamwork",
+    "frameId": 0,
+    "selector": "div[aria-label=\"Teamwork\"]",
+    "tag": "div",
+    "inputType": "aria-radiogroup",
+    "label": "Rate yourself: Teamwork",
+    "labelSource": "aria",
+    "sectionHeading": "Campus Ambassador Application",
+    "options": [
+      {
+        "value": "Poor",
+        "text": "Poor"
+      },
+      {
+        "value": "Good",
+        "text": "Good"
+      },
+      {
+        "value": "Excellent",
+        "text": "Excellent"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "78d12efba622dc59f17c492b9ec5d1aecaccd8c22fb5c66c0ba3c2bb0ae7639e"
+  },
+  {
+    "ref": "dob",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(8) > input:nth-of-type(1)",
+    "tag": "input",
+    "inputType": "date",
+    "label": "Date of birth",
+    "labelSource": "container",
+    "sectionHeading": "Campus Ambassador Application",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "d0cf10b3024d64fe6bf18ee449abbf408b580382a738f1d632adc3bf6be1c59c"
+  },
+  {
+    "ref": "why",
+    "frameId": 0,
+    "selector": "#gform > div:nth-of-type(2) > div:nth-of-type(9) > textarea:nth-of-type(1)",
+    "tag": "textarea",
+    "inputType": "textarea",
+    "label": "Why do you want to be a campus ambassador?",
+    "labelSource": "container",
+    "sectionHeading": "Campus Ambassador Application",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "3cc3801450fa64dafb26186ae6463e83c492da32edf6752bc369719433c159bd"
+  }
+]

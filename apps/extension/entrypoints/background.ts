@@ -1,14 +1,60 @@
-import { handlePanelMessage } from '@/src/messaging/background-handler';
+import { PageEventSchema } from '@/src/messaging/protocol';
+import { handlePanelMessage } from '@/src/session/router';
+import { host } from '@/src/session/services';
 
 export default defineBackground(() => {
   // Toolbar icon opens the side panel.
   void browser.sidePanel?.setPanelBehavior({ openPanelOnActionClick: true });
 
+  const extensionOrigin = browser.runtime.getURL('');
+
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    // Only Filler's own extension pages may drive the background (never web pages or page scripts).
-    if (sender.id !== browser.runtime.id || !sender.url?.startsWith(browser.runtime.getURL('')))
-      return false;
-    void handlePanelMessage(message).then(sendResponse);
-    return true; // async response
+    if (sender.id !== browser.runtime.id) return false;
+
+    // Filler's own extension pages (the side panel) drive everything.
+    if (sender.url?.startsWith(extensionOrigin) && !sender.tab?.url?.startsWith('http')) {
+      void handlePanelMessage(message).then(sendResponse);
+      return true; // async response
+    }
+
+    // Page agents (isolated world of a web page) may only *report* page changes.
+    // They can never request scans, fills or vault access.
+    const tabId = sender.tab?.id;
+    if (tabId === undefined || !host.get(tabId)) return false;
+    const parsed = PageEventSchema.safeParse(message);
+    if (parsed.success && parsed.data.type === 'FIELDS_CHANGED') {
+      const frameId = sender.frameId ?? 0;
+      const event = parsed.data;
+      void host.dispatch(tabId, {
+        type: 'FIELDS_CHANGED',
+        url: event.url,
+        added: event.added.map((f) => ({ ...f, id: `${frameId}:${f.id}`, frameId })),
+        removed: event.removed.map((id) => `${frameId}:${id}`),
+        at: new Date().toISOString(),
+      });
+    }
+    return false;
+  });
+
+  browser.tabs.onRemoved.addListener((tabId) => {
+    if (!host.get(tabId)) return;
+    void host.dispatch(tabId, { type: 'TAB_CLOSED' }).then(() => host.forget(tabId));
+  });
+
+  // A full page load ends the page agent; rescan on the same site, end the session elsewhere.
+  browser.tabs.onUpdated.addListener((tabId, change, tab) => {
+    const session = host.get(tabId);
+    if (
+      !session ||
+      change.status !== 'complete' ||
+      session.phase === 'ENDED' ||
+      session.phase === 'SCANNING'
+    )
+      return;
+    void host.dispatch(tabId, {
+      type: 'NAVIGATED',
+      url: tab.url ?? session.url,
+      at: new Date().toISOString(),
+    });
   });
 });

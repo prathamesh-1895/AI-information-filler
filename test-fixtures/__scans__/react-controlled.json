@@ -1,0 +1,89 @@
+[
+  {
+    "ref": "first",
+    "frameId": 0,
+    "selector": "input[name=\"firstName\"]",
+    "tag": "input",
+    "inputType": "text",
+    "name": "firstName",
+    "label": "First name",
+    "labelSource": "label-for",
+    "sectionHeading": "Sign up for updates",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "99f8449ab1650b6cc9db091d0030c1f22a48374158a5f27def6f580bfef15787"
+  },
+  {
+    "ref": "last",
+    "frameId": 0,
+    "selector": "input[name=\"lastName\"]",
+    "tag": "input",
+    "inputType": "text",
+    "name": "lastName",
+    "label": "Last name",
+    "labelSource": "label-for",
+    "sectionHeading": "Sign up for updates",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "1b027f6242f5d2c78ada22bcb05f80060dbf682e70b3667a657eff90ff817530"
+  },
+  {
+    "ref": "email",
+    "frameId": 0,
+    "selector": "#signup > div:nth-of-type(3) > input:nth-of-type(1)",
+    "tag": "input",
+    "inputType": "email",
+    "label": "Email",
+    "labelSource": "label-for",
+    "sectionHeading": "Sign up for updates",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "19ffa9abe76ce6a603d506957c82dd275fed1ede6f5beb4ab56c092fb3828eac"
+  },
+  {
+    "ref": "country",
+    "frameId": 0,
+    "selector": "select[name=\"country\"]",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "country",
+    "label": "Country",
+    "labelSource": "label-for",
+    "sectionHeading": "Sign up for updates",
+    "options": [
+      {
+        "value": "IN",
+        "text": "India"
+      },
+      {
+        "value": "US",
+        "text": "United States"
+      },
+      {
+        "value": "GB",
+        "text": "United Kingdom"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "6108029b2b4a03da576fc5a111d25784981e8f90c6a14f4e42fe5bdf25a6cebe"
+  },
+  {
+    "ref": "newsletter",
+    "frameId": 0,
+    "selector": "#signup > div:nth-of-type(5) > label:nth-of-type(1) > input:nth-of-type(1)",
+    "tag": "input",
+    "inputType": "checkbox",
+    "label": "Send me the newsletter",
+    "labelSource": "label-wrap",
+    "sectionHeading": "Sign up for updates",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "257213fd7be1ded2c827a13060e60a6c47cadd0690baa533415294a483c1913f"
+  }
+]

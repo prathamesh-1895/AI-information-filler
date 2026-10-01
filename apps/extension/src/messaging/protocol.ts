@@ -2,7 +2,14 @@
  * Messages between the side panel, the background worker and the page agent.
  * Every message and response is validated with Zod on receipt.
  */
-import { FactValueSchema, FieldDescriptorSchema } from '@filler/core';
+import {
+  FactValueSchema,
+  FieldDescriptorSchema,
+  GoalSchema,
+  SensitivitySchema,
+  UserEventSchema,
+  type SessionState,
+} from '@filler/core';
 import { z } from 'zod';
 
 const tabId = z.number().int().nonnegative();
@@ -76,6 +83,37 @@ export const NavButtonSchema = z.object({
 });
 export type NavButton = z.infer<typeof NavButtonSchema>;
 
+// ---- Vault (Phase 5): the vault lives in the background worker only.
+const passphrase = z.string().min(1).max(1_000);
+export const VaultStatusRequestSchema = z.object({ type: z.literal('VAULT_STATUS') });
+export const VaultCreateRequestSchema = z.object({ type: z.literal('VAULT_CREATE'), passphrase });
+export const VaultUnlockRequestSchema = z.object({ type: z.literal('VAULT_UNLOCK'), passphrase });
+export const VaultLockRequestSchema = z.object({ type: z.literal('VAULT_LOCK') });
+export const FactSetRequestSchema = z.object({
+  type: z.literal('FACT_SET'),
+  key: z.string().max(200),
+  value: FactValueSchema,
+  sensitivity: SensitivitySchema.optional(),
+});
+export const FactDeleteRequestSchema = z.object({
+  type: z.literal('FACT_DELETE'),
+  key: z.string().max(200),
+});
+export const FactListRequestSchema = z.object({ type: z.literal('FACT_LIST') });
+
+// ---- Fill sessions (Phase 5): the orchestrator runs in the background, one session per tab.
+export const SessionStartRequestSchema = z.object({
+  type: z.literal('SESSION_START'),
+  tabId,
+  goal: GoalSchema.optional(),
+});
+export const SessionGetRequestSchema = z.object({ type: z.literal('SESSION_GET'), tabId });
+export const SessionEventRequestSchema = z.object({
+  type: z.literal('SESSION_EVENT'),
+  tabId,
+  event: UserEventSchema,
+});
+
 export const PanelRequestSchema = z.discriminatedUnion('type', [
   GetTargetTabRequestSchema,
   ScanRequestSchema,
@@ -85,6 +123,16 @@ export const PanelRequestSchema = z.discriminatedUnion('type', [
   EndSessionRequestSchema,
   NavListRequestSchema,
   NavClickRequestSchema,
+  VaultStatusRequestSchema,
+  VaultCreateRequestSchema,
+  VaultUnlockRequestSchema,
+  VaultLockRequestSchema,
+  FactSetRequestSchema,
+  FactDeleteRequestSchema,
+  FactListRequestSchema,
+  SessionStartRequestSchema,
+  SessionGetRequestSchema,
+  SessionEventRequestSchema,
 ]);
 export type PanelRequest = z.infer<typeof PanelRequestSchema>;
 
@@ -156,6 +204,13 @@ export const ERROR_CODES = [
   'SCAN_FAILED',
   /** Filler refused on safety grounds (e.g. a submit-like button). */
   'REFUSED',
+  'VAULT_LOCKED',
+  'VAULT_MISSING',
+  'VAULT_EXISTS',
+  'WRONG_PASSPHRASE',
+  /** A vault write was refused (denied value, weak passphrase, invalid fact). */
+  'INVALID',
+  'NO_SESSION',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
@@ -179,3 +234,16 @@ export const fail = <T = never>(code: ErrorCode, message: string): Result<T> => 
 
 /** Optional host permissions the user can grant from the panel (manifest optional_host_permissions). */
 export const SITE_ACCESS = { origins: ['http://*/*', 'https://*/*'] };
+
+/** Broadcast from the background to the panel after every session change. */
+export interface SessionStateMessage {
+  type: 'SESSION_STATE';
+  tabId: number;
+  state: SessionState;
+}
+
+export const SessionStateMessageSchema = z.object({
+  type: z.literal('SESSION_STATE'),
+  tabId,
+  state: z.object({ id: z.string(), phase: z.string(), plan: z.array(z.unknown()) }).loose(),
+});

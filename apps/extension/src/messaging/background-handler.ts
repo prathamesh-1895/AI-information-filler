@@ -3,7 +3,6 @@ import {
   fail,
   joinId,
   ok,
-  PanelRequestSchema,
   SITE_ACCESS,
   splitId,
   type FillItem,
@@ -265,26 +264,7 @@ export async function clickNavigationTab(
   }
 }
 
-export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>> {
-  const parsed = PanelRequestSchema.safeParse(raw);
-  if (!parsed.success) return fail('BAD_REQUEST', 'Unknown request.');
-  const request = parsed.data;
-  switch (request.type) {
-    case 'GET_TARGET_TAB':
-      return getTargetTab(request.selfTabId);
-    case 'SCAN_REQUEST':
-      return scanTab(request.tabId);
-    case 'FILL_REQUEST':
-      return fillTab(request.tabId, request.items);
-    case 'HIGHLIGHT_REQUEST':
-      return highlightTab(request.tabId, request.items);
-    case 'OBSERVE_REQUEST':
-      return everyFrame(request.tabId, 'observe');
-    case 'END_SESSION_REQUEST':
-      return everyFrame(request.tabId, 'stop');
-    case 'NAV_LIST_REQUEST':
-      return listNavigationTab(request.tabId);
-    case 'NAV_CLICK_REQUEST':
-      return clickNavigationTab(request.tabId, request.buttonId);
-  }
-}
+export const observeTab = (tabId: number) => everyFrame(tabId, 'observe');
+
+/** Stops watching and removes highlights in every frame of the tab. */
+export const endSessionTab = (tabId: number) => everyFrame(tabId, 'stop');

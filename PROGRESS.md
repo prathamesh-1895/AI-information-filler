@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 4 — Page Agent: filler, observer, highlighter (2026-10-01)
+**Last completed phase:** Phase 5 — Rule mapper & orchestrator (2026-10-01)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -13,7 +13,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 2 | Encrypted vault | ✅ COMPLETE (2026-10-01) | PBKDF2 (600k) + AES-256-GCM with per-record IV and AAD, Dexie store, Fact/Document/FieldMemory/Answer repos, lock/unlock/auto-lock/session resume, atomic passphrase change, encrypted backup/import, wipe |
 | 3 | Page Agent: scanner | ✅ COMPLETE (2026-10-01) | 7 fixtures (74 fields), scanner with shadow DOM/iframes/ARIA widgets, 8-step label resolution (74/74 labels), constraints/options/counters, robust selectors + re-find, typed panel↔background↔page messaging, scanner preview in the side panel |
 | 4 | Page Agent: filler, observer, highlighter | ✅ COMPLETE (2026-10-01) | Framework-safe fill for every control type with read-back verification and typing retry, option/date matching in core, code-enforced refusal of denied fields and submit-like buttons, debounced field-diff observer, shadow-DOM highlighter, frame-routed fill/highlight/navigation messaging |
-| 5 | Rule mapper & orchestrator | ⬜ NOT STARTED | |
+| 5 | Rule mapper & orchestrator | ✅ COMPLETE (2026-10-01) | 64-key dictionary with section-aware list groups, rule mapper (100% on fixture scans, no AI), lossless value formatter, pure session reducer + AI seam in core, background session host with vault, ask-once memory end to end |
 | 6 | Side panel UI | ⬜ NOT STARTED | |
 | 7 | Supabase: auth, database, encrypted sync | ⬜ NOT STARTED | |
 | 8 | AI gateway & field understanding | ⬜ NOT STARTED | |
@@ -31,8 +31,8 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 5, Task 5.1** (keyword dictionary). Model: **Opus 5.5**.
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5.
+- Next: **Phase 6, Task 6.1** (onboarding & unlock). Model: **Sonnet 5.5**; switch before saying "continue".
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5.
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -227,3 +227,47 @@ Tests: 335 unit (core 255, vault 54, extension 24, other 2) + 35 e2e. Scanner la
 - The observer diff is per frame. A brand-new iframe added mid-session needs the agent injected into it (the panel can rescan). Automatic injection into new frames is left for Phase 6/11.
 - Highlights for fields that appear later are not added automatically in the dev preview; the Phase 6 session UI will re-highlight after every plan update.
 - Checkbox groups are cleared to exactly the wanted set. That is right for a plan the user approved, but Phase 5/6 must show unticks in the review list.
+
+---
+
+## Phase 5 — files
+
+Created:
+- `config/field-dictionary.json`: 64 entries (every canonical key), `patterns` and list-group `contextPatterns`, `groupContext` regexes
+- `packages/core/src/mapper/dictionary.ts` (loader and registry validation), `map.ts` (`mapField`, `mapFields`), `format.ts` (`formatForField`, `formatPhone`, `formatDateText`, `questionFor`)
+- `packages/core/src/orchestrator/ai.ts` (AI seam + `offlineAi`), `plan.ts` (`planField`, `buildPlan`), `session.ts` (`reduce`, `initialState`, `UserEventSchema`, event and effect types)
+- Tests: `map.test.ts` (generalisation, 70+ cases), `format.test.ts` (38), `mapper.fixtures.test.ts` (accuracy on real scans), `plan.test.ts`, `session.test.ts` (16 transitions)
+- `apps/extension/src/session/host.ts` (`SessionHost`: runs reducer effects), `services.ts` (background singletons: vault, repos, host), `router.ts` (validated routing of every panel request), `host.test.ts` (6, real vault on fake IndexedDB)
+- `e2e/scan-snapshots.spec.ts` + `test-fixtures/__scans__/*.json` (10 real scanner snapshots; `UPDATE_SCANS=1` rewrites them), `e2e/session.spec.ts` (3)
+
+Modified:
+- `apps/extension/entrypoints/background.ts`: routes panel requests; accepts only `FIELDS_CHANGED` from page agents; tab close/reload → session events
+- `apps/extension/src/messaging/protocol.ts`: `VAULT_*`, `FACT_*`, `SESSION_*` requests, vault error codes, `SESSION_STATE` broadcast
+- `apps/extension/src/messaging/background-handler.ts`: routing moved to `router.ts`; exports `observeTab` and `endSessionTab`
+- `packages/core/src/index.ts` (exports), `apps/extension/package.json` (`@filler/vault`, `fake-indexeddb`)
+- `eslint.config.js` (`_`-prefixed and rest-sibling unused vars allowed), `.prettierignore`, `test-fixtures/fill-lab.expected.json` ("Short code" is `fact`, not `skip`)
+
+Tests: 484 unit (core 398, vault 54, extension 30, other 2) + 48 e2e. **Mapping accuracy 91/91 (100%) on the fixture scans with no AI** (target ≥ 85%); scanner labels 84/84.
+
+## Phase 5 — design notes
+
+- **Mapper order:** policy → skip rules (file, single checkbox, "Other" text, promo/referral codes, disabled) → field memory (exact signature) → HTML `autocomplete` → the user's own `custom.*` fact with exactly this label → split-date sections (Day/Month/Year under "Date of birth") → dictionary → option sets (countries, Indian states, genders, language levels) → unresolved.
+- **Dictionary scoring:** a whole-word regex match scores `0.6 + 0.4 × coverage`, multiplied by the source (label 1.0, placeholder 0.85, name 0.8, id 0.75), and gets +0.15 when the section or label names the key's list group. That is why "Company" under "Add employment" becomes `experience[0].company`, "Title" alone stays unmapped, and "Alternate phone" beats "phone". `contextPatterns` (Start, End, Title, Description, Institution, Grade…) only count inside their group's context.
+- **List indexes:** from the `name` (`education[1][degree]`, `edu_2_x`), from a number *next to the group word* ("Education 2", "Project 2 title"; "Step 2 of 3" doesn't count), from a vault language named in the label ("Hindi proficiency" → the vault's Hindi entry), else by document order per section.
+- **Kinds:** radio/checkbox groups → `choice`; selects/listboxes/comboboxes → `fact` if mapped else `choice`; `bio.summary_*` (goal-dependent pitch) and unmapped multi-line fields → `open_ended`; everything else → `fact`. Disabled fields keep their key but are skipped.
+- **Overfitting guard:** the fixture score is 100% because the dictionary was tuned on them, so `map.test.ts` checks 70+ labels and cases the fixtures never contain (Indian phrasing, autocomplete, memory, custom facts, option sets, indexes, safety).
+- **Formatting never invents.** Names are split or joined only when lossless (a one-word full name gives no last name). Phones choose between international and national forms by `maxlength`, `pattern` and placeholder, keeping the country code when it fits. Dates go to ISO for date/month inputs, follow `DD/MM/YYYY`-style hints for text inputs, and split into selects by option numbers or month names. Option values match by value, text, code↔name (IN↔India, MH↔Maharashtra, USA→United States), prefix or fuzzy. Number inputs get bare numbers; url inputs get `https://`. Text that is too long becomes a question, never a truncation.
+- **The orchestrator is a pure reducer** (`reduce(state, event) → {state, effects}`) in `packages/core`: no I/O, fully serialisable state, and reusable by the future Android app. The host runs effects (SCAN, MAP, PLAN, SAVE_ANSWER, FILL, HIGHLIGHT, END_PAGE) and feeds results back as events, per tab, strictly in order. Phases: `IDLE → SCANNING → MAPPING → PLANNING → AWAITING_REVIEW → FILLING → VERIFYING → READY_TO_SUBMIT`, plus `ERROR` (recoverable) and `ENDED`.
+- **Safety in the reducer:** denied items can't be answered, edited or filled; only `approved`/`edited` items with values are filled; nothing is filled automatically (vault values wait for approval or "approve all from vault"); events after `ENDED` are ignored.
+- **Ask once (Task 5.5):** an answer becomes a fact (canonical key, or `custom.<label slug>`) plus field memory for that signature, with `learnedOn` = site. Next time, memory maps the field and the vault supplies the value, so there is no question. "Use once, don't save" skips both writes. A sensitive answer (card number etc.) is refused by the vault and the question comes back with the reason.
+- **Vault lock mid-session:** vault-sourced values are cleared from the plan (the user's own answers stay) and the phase becomes `ERROR/VAULT_LOCKED`. Unlocking re-plans everything not answered by the user.
+- **Navigation:** a full load on the same site rescans; another site ends the session; a closed tab ends it. SPA changes come from the page observer as `FIELDS_CHANGED` and only the new fields are mapped and planned.
+- **Background trust boundary:** extension pages may send any request. Page agents may only send `FIELDS_CHANGED` (and only for a tab with a session), which can trigger planning but never a fill or a vault read. The e2e suite proves an isolated-world script asking for `FACT_LIST` gets no reply.
+- **The AI seam** (`resolveUnmapped`, `generateAnswer`) is wired into MAP and PLAN; `offlineAi` returns nothing or "ask the user". Phases 8–9 swap in real implementations with no reducer changes.
+- JSON imports use `with { type: 'json' }` so `@filler/core` loads under Node (Playwright), Vite and Deno alike.
+
+### Open items surfaced in Phase 5
+- No panel UI for sessions yet: Phase 6 builds onboarding, the vault manager, questions and review on top of these messages. The e2e tests drive the same messages the UI will send.
+- Session state lives in the service worker's memory. If Chrome kills the worker mid-session the panel must start again; Phase 6 should keep a port open from the side panel (which keeps the worker alive) and handle `NO_SESSION` gracefully.
+- `preferences.hourly_rate` is stored as text; the formatter extracts numbers for number inputs only. Currency handling is basic until Phase 11 platform profiles.
+- `matchOption` aliases for country/state codes cover common Indian and international cases only.

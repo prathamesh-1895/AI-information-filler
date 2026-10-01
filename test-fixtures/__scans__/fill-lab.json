@@ -1,0 +1,190 @@
+[
+  {
+    "ref": "nick",
+    "frameId": 0,
+    "selector": "#nick",
+    "tag": "input",
+    "inputType": "text",
+    "name": "nickname",
+    "label": "Nickname",
+    "labelSource": "label-for",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "b85d8480c5f4fbe7538b6e933b63b75ee5d7f14ec5b84280d1ed952aa93363af",
+    "domId": "nick"
+  },
+  {
+    "ref": "pin",
+    "frameId": 0,
+    "selector": "#pin",
+    "tag": "input",
+    "inputType": "text",
+    "name": "pin",
+    "label": "Pin code",
+    "labelSource": "label-for",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "f32a6ba1fa909a74b4a4cd35aa4c16c65a515b6c149033f9bef912587ac15bb6",
+    "domId": "pin"
+  },
+  {
+    "ref": "langs",
+    "frameId": 0,
+    "selector": "#langs",
+    "tag": "select",
+    "inputType": "select-multiple",
+    "name": "languages",
+    "label": "Languages known",
+    "labelSource": "label-for",
+    "sectionHeading": "Fill lab",
+    "options": [
+      {
+        "value": "English",
+        "text": "English"
+      },
+      {
+        "value": "Hindi",
+        "text": "Hindi"
+      },
+      {
+        "value": "Marathi",
+        "text": "Marathi"
+      },
+      {
+        "value": "Tamil",
+        "text": "Tamil"
+      }
+    ],
+    "multiple": true,
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "5b9731cab375be31b85c291cbd07bec4bde34daca43810a7a5363a090c713706",
+    "domId": "langs"
+  },
+  {
+    "ref": "join",
+    "frameId": 0,
+    "selector": "#join",
+    "tag": "input",
+    "inputType": "date",
+    "label": "Joining date",
+    "labelSource": "label-for",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "d714ec7c63794bc9e05361e1c9deaeee47354d6070ede8911dc89e539258d084",
+    "domId": "join"
+  },
+  {
+    "ref": "grad",
+    "frameId": 0,
+    "selector": "#grad",
+    "tag": "input",
+    "inputType": "month",
+    "label": "Graduation month",
+    "labelSource": "label-for",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "cab091bf3a908824737cdc61afa50738c23290bec364ebb6369030118de23faf",
+    "domId": "grad"
+  },
+  {
+    "ref": "code",
+    "frameId": 0,
+    "selector": "#code",
+    "tag": "input",
+    "inputType": "text",
+    "name": "code",
+    "label": "Short code",
+    "labelSource": "label-for",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "maxLength": 6,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "b3a7edd3d8b00c451a4452a3d759f75097e3b1e2c88e75caf6aafe1b937b8766",
+    "domId": "code"
+  },
+  {
+    "ref": "bio",
+    "frameId": 0,
+    "selector": "#lab > div:nth-of-type(7) > div:nth-of-type(1)",
+    "tag": "div",
+    "inputType": "contenteditable",
+    "label": "Bio",
+    "labelSource": "aria",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "216cfac477fa85bd2d65b4e660cde620957e9b31aca9597025a984074610a9c3"
+  },
+  {
+    "ref": "city",
+    "frameId": 0,
+    "selector": "#city",
+    "tag": "input",
+    "inputType": "text",
+    "name": "city",
+    "label": "Current city",
+    "labelSource": "label-for",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "ff5775956cfa21294eba796a443557c8d740e2339eeb905d507aafa841d8d5cf",
+    "domId": "city"
+  },
+  {
+    "ref": "mode",
+    "frameId": 0,
+    "selector": "input[type=\"radio\"][name=\"mode\"]",
+    "tag": "input",
+    "inputType": "radio",
+    "name": "mode",
+    "label": "Work mode",
+    "labelSource": "container",
+    "sectionHeading": "Fill lab",
+    "options": [
+      {
+        "value": "remote",
+        "text": "Remote"
+      },
+      {
+        "value": "hybrid",
+        "text": "Hybrid"
+      },
+      {
+        "value": "onsite",
+        "text": "On-site"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "cea2ef407d5b196dbb879bd49c7c1948236c2122ef3ed5da2d19b9793b62cf2d"
+  },
+  {
+    "ref": "contact",
+    "frameId": 0,
+    "selector": "input[name=\"contact_ok\"]",
+    "tag": "input",
+    "inputType": "checkbox",
+    "name": "contact_ok",
+    "label": "You may contact me about openings",
+    "labelSource": "label-wrap",
+    "sectionHeading": "Fill lab",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "77539f776a064ccb1291d0b260f5b11139bb9bc0e3e0dfffa0a8fc507f3dbc0c"
+  }
+]

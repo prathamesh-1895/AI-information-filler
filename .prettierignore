@@ -5,3 +5,4 @@ node_modules
 pnpm-lock.yaml
 docs
 .output-e2e
+test-fixtures/__scans__

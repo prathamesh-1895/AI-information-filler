@@ -1,0 +1,47 @@
+[
+  {
+    "ref": "exp-company",
+    "frameId": 0,
+    "selector": "#exp-company",
+    "tag": "input",
+    "inputType": "text",
+    "label": "Company",
+    "labelSource": "label-for",
+    "sectionHeading": "Add employment",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "f2b12eaabe85179ffdbac61d9a2fd0e6b9368fca5a2b23bba23f4776d19ce565",
+    "domId": "exp-company"
+  },
+  {
+    "ref": "exp-title",
+    "frameId": 0,
+    "selector": "#exp-title-input",
+    "tag": "input",
+    "inputType": "text",
+    "label": "Title",
+    "labelSource": "label-for",
+    "sectionHeading": "Add employment",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "500192054111dbdc4302f46c6449ab81c1e3afe598c2a184ff59355addacc302",
+    "domId": "exp-title-input"
+  },
+  {
+    "ref": "exp-desc",
+    "frameId": 0,
+    "selector": "#exp-desc",
+    "tag": "textarea",
+    "inputType": "textarea",
+    "label": "Description",
+    "labelSource": "label-for",
+    "sectionHeading": "Add employment",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "95487418abb365f2bfb6ea4ef8a70e90b77053ef6b448277d67e9c54298ccedf",
+    "domId": "exp-desc"
+  }
+]
