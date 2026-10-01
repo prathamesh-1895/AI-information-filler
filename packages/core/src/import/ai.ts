@@ -1,0 +1,90 @@
+/**
+ * The AI `extract` contract (PLAYBOOK Task 11.1). The résumé text goes to
+ * the AI only after contact details were removed on the device
+ * (`withoutContacts`); the reply is checked so it can only return real
+ * vault keys, nothing on the never-store list, and nothing that is not in
+ * the text.
+ */
+import { z } from 'zod';
+import { AiUsageSchema } from '../ai/contract';
+import { inventedClaims } from '../ai/draft';
+import { detectSensitiveValue } from '../policy/deny';
+import { getKeyDef, isValidFactKey } from '../schema/keys';
+import { FactValueSchema, type FactValue } from '../schema/records';
+import type { Candidate } from './extract';
+
+export const EXTRACT_MAX_TEXT = 30_000;
+
+export const ExtractRequestSchema = z
+  .object({ text: z.string().min(20).max(EXTRACT_MAX_TEXT) })
+  .strict();
+export type ExtractRequest = z.infer<typeof ExtractRequestSchema>;
+
+export const ExtractOutputSchema = z
+  .object({
+    facts: z
+      .array(
+        z
+          .object({
+            key: z.string().max(80),
+            value: FactValueSchema,
+            confidence: z.number().min(0).max(1),
+          })
+          .strict(),
+      )
+      .max(200),
+  })
+  .strict();
+
+export const ExtractResponseSchema = z.object({
+  facts: z.array(
+    z.object({ key: z.string(), value: FactValueSchema, confidence: z.number().min(0).max(1) }),
+  ),
+  rejected: z.number().int().nonnegative(),
+  provider: z.string().nullable(),
+  usage: AiUsageSchema,
+});
+export type ExtractResponse = z.infer<typeof ExtractResponseSchema>;
+
+/** Keys the AI may never return: contact details are found on the device only. */
+const LOCAL_ONLY = /^(?:contact\.|person\.dob$|address\.(?:line1|line2|postal_code)$|family\.)/;
+
+const valueText = (v: FactValue) => (Array.isArray(v) ? v.join(', ') : v);
+
+/**
+ * Nothing that is not in the résumé: names and numbers must appear in it.
+ * Dates may be reformatted (only the year must appear); fixed-choice values
+ * (language levels) come from Filler's own list.
+ */
+function invented(key: string, value: FactValue, source: string): boolean {
+  const def = getKeyDef(key);
+  if (def?.valueType === 'enum') return !(def.options ?? []).includes(valueText(value));
+  if (def?.valueType === 'date') {
+    const year = /\b(?:19|20)\d{2}\b/.exec(valueText(value))?.[0];
+    return !year || !source.includes(year);
+  }
+  return inventedClaims(valueText(value), source).length > 0;
+}
+
+export function guardExtract(
+  facts: ReadonlyArray<{ key: string; value: FactValue; confidence: number }>,
+  sourceText: string,
+): { facts: Candidate[]; rejected: number } {
+  let rejected = 0;
+  const out: Candidate[] = [];
+  for (const f of facts) {
+    const values = Array.isArray(f.value) ? f.value : [f.value];
+    const bad =
+      !isValidFactKey(f.key) ||
+      LOCAL_ONLY.test(f.key) ||
+      out.some((o) => o.key === f.key) ||
+      values.some((v) => !v.trim() || detectSensitiveValue(v) !== null) ||
+      invented(f.key, f.value, sourceText);
+    if (bad) {
+      rejected++;
+      continue;
+    }
+    out.push({ key: f.key, value: f.value, confidence: Math.min(0.9, f.confidence), source: 'ai' });
+  }
+  return { facts: out, rejected };
+}

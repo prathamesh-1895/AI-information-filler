@@ -1,0 +1,93 @@
+/**
+ * Session history (PLAYBOOK Task 11.4): what a session filled, skipped or
+ * never filled, per site, so the user can look back and re-use answers.
+ * Values are stored encrypted in the vault and shown masked.
+ */
+import type { FactValue, HistoryEntry, PlanItem } from '../schema/records';
+import type { SessionState } from './session';
+
+type HistoryItem = HistoryEntry['items'][number];
+
+function statusOf(item: PlanItem): HistoryItem['status'] {
+  if (item.kind === 'denied') return 'never';
+  if (item.status === 'filled') return 'filled';
+  if (item.status === 'skipped') return 'skipped';
+  return 'not_filled';
+}
+
+/** The current page's outcome as history items (merged by signature across pages by the caller). */
+export function historyItems(state: SessionState): HistoryItem[] {
+  return state.plan.flatMap((p) => {
+    const field = state.fields.find((f) => f.id === p.fieldId);
+    if (!field) return [];
+    const status = statusOf(p);
+    return [
+      {
+        label: field.label.slice(0, 2_000),
+        signature: field.signature,
+        ...(p.canonicalKey ? { key: p.canonicalKey } : {}),
+        ...(status === 'filled' && p.value !== undefined ? { value: p.value } : {}),
+        status,
+        ...(p.source ? { source: p.source } : {}),
+      },
+    ];
+  });
+}
+
+/**
+ * Values from an earlier session for fields of this page that still need
+ * an answer: matched by field signature, else by exact label. Never for
+ * never-fill fields, and never for fields that already have a value.
+ */
+export function reusableValues(state: SessionState, last: HistoryEntry): Record<string, FactValue> {
+  const out: Record<string, FactValue> = {};
+  const filled = last.items.filter((i) => i.status === 'filled' && i.value !== undefined);
+  for (const p of state.plan) {
+    if (p.kind === 'denied' || p.value !== undefined || p.status !== 'pending') continue;
+    const field = state.fields.find((f) => f.id === p.fieldId);
+    if (!field) continue;
+    const match =
+      filled.find((i) => i.signature === field.signature) ??
+      filled.find((i) => i.label.trim().toLowerCase() === field.label.trim().toLowerCase());
+    if (match?.value !== undefined) out[p.fieldId] = match.value;
+  }
+  return out;
+}
+
+/** A plain-text summary of the session the user can copy (personal values masked by the caller). */
+export function sessionSummary(state: SessionState, show: (item: PlanItem) => string): string {
+  const lines = [`${state.title || state.site}`, `${state.url}`, ''];
+  const label = (p: PlanItem) => state.fields.find((f) => f.id === p.fieldId)?.label ?? p.fieldId;
+  const group = (title: string, items: PlanItem[], value: boolean) => {
+    if (!items.length) return;
+    lines.push(`${title}:`);
+    for (const p of items) lines.push(`- ${label(p)}${value ? `: ${show(p)}` : ''}`);
+    lines.push('');
+  };
+  group(
+    'Filled',
+    state.plan.filter((p) => p.status === 'filled'),
+    true,
+  );
+  group(
+    'Approved, not filled yet',
+    state.plan.filter((p) => p.status === 'approved' || p.status === 'edited'),
+    true,
+  );
+  group(
+    'Still to answer',
+    state.plan.filter((p) => p.status === 'pending'),
+    false,
+  );
+  group(
+    'Skipped',
+    state.plan.filter((p) => p.status === 'skipped' && p.kind !== 'denied'),
+    false,
+  );
+  group(
+    'Never filled by Filler',
+    state.plan.filter((p) => p.kind === 'denied'),
+    false,
+  );
+  return lines.join('\n').trim();
+}

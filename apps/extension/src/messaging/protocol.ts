@@ -3,6 +3,7 @@
  * Every message and response is validated with Zod on receipt.
  */
 import {
+  FactKeySchema,
   FactValueSchema,
   FieldDescriptorSchema,
   GoalSchema,
@@ -184,6 +185,23 @@ export const VisionRelabelRequestSchema = z.object({
   tabId,
   labels: z.record(z.string(), z.string().trim().min(1).max(200)),
 });
+// ---- Session history (Phase 11)
+export const HistoryListRequestSchema = z.object({
+  type: z.literal('HISTORY_LIST'),
+  site: z.string().min(1).max(253),
+});
+export const HistoryReuseRequestSchema = z.object({ type: z.literal('HISTORY_REUSE'), tabId });
+// ---- Résumé import (Phase 11)
+export const ImportAnalyzeRequestSchema = z.object({
+  type: z.literal('IMPORT_ANALYZE'),
+  text: z.string().max(200_000),
+});
+export const ImportSaveRequestSchema = z.object({
+  type: z.literal('IMPORT_SAVE'),
+  facts: z.array(z.object({ key: FactKeySchema, value: FactValueSchema })).max(400),
+  text: z.string().max(200_000),
+  fileName: z.string().max(255),
+});
 export const ExplainRequestSchema = z.object({
   type: z.literal('EXPLAIN'),
   tabId,
@@ -246,6 +264,10 @@ export const PanelRequestSchema = z.discriminatedUnion('type', [
   VisionReadRequestSchema,
   VisionRelabelRequestSchema,
   ExplainRequestSchema,
+  ImportAnalyzeRequestSchema,
+  ImportSaveRequestSchema,
+  HistoryListRequestSchema,
+  HistoryReuseRequestSchema,
   SessionStartRequestSchema,
   SessionGetRequestSchema,
   SessionEventRequestSchema,

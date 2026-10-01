@@ -92,8 +92,8 @@ test('AI on: fields the rules could not place are understood, filled from the va
   // Previously unmapped questions now come from the vault.
   await expect(row(panel, 'Where are you based these days?')).toContainText('Pune');
   await expect(row(panel, "What's your go-to stack?")).toContainText('React');
-  // Facts the vault lacks are asked the AI's way, once.
-  await expect(question(panel, 'Team name')).toContainText('What is your team called?');
+  // Facts the vault lacks are asked the AI's way, once. ("Team name" is placed by the events
+  // profile now, without an AI call.)
   await expect(question(panel, 'Favourite tools')).toContainText(
     'Which tools do you like using most?',
   );

@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 10 — Screen Share & vision mode (2026-10-01; verified with scripted vision replies; screen-share manual check and 🔑 checkpoints A and B pending)
+**Last completed phase:** Phase 11 — Résumé import & platform profiles (2026-10-02; live-site and screen-share manual checks and 🔑 checkpoints A and B pending)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -19,7 +19,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 8 | AI gateway & field understanding | ✅ COMPLETE (2026-10-01, mocked providers; 🔑 checkpoint B pending, live provider not configured) | Gemini/Groq/OpenRouter/Ollama adapters with retry, timeout, fallback and token caps; safety envelope (redaction, delimited untrusted data, strict output, per-item guard, policy re-check, metadata-only logs); `ai-classify` with chunking and cache; typed client + AI seam with offline fallback, AI field memory, mode chip; per-user and global daily limits; Test AI connection and usage panel. Rules + classify on fixtures: kind 100%, key 99% |
 | 9 | AI answer generation & goal context | ✅ COMPLETE (2026-10-01, scripted model; live drafting waits for checkpoints A and B) | User-triggered drafts from public facts only ("Using" chips with untick), `ai-generate` with prompt rules, length/option/invention checks and one corrective retry, yellow draft cards (counter, why, alternatives, Regenerate with hint), approved drafts saved for reuse, goal parsing + editable goal chips, cross-page consistency, strengthen suggestions, offline reuse of earlier answers |
 | 10 | Screen Share & vision mode | ✅ COMPLETE (2026-10-01, scripted vision; manual screen-share check pending) | Tab snapshot (up to 3 screens) and screen/window share with a persistent Sharing badge; on-device blackout of never-fill fields plus user-drawn areas, baked into the JPEG; alignment guard blocks sending when boxes may be off; `ai-vision` with the same envelope (denied stays denied); tier 1 relabel of DOM fields, tier 2 copy list; "What is this?" with source, offline in DOM mode. Label match 93.8% on scripted recordings |
-| 11 | Résumé import & platform profiles | ⬜ NOT STARTED | |
+| 11 | Résumé import & platform profiles | ✅ COMPLETE (2026-10-02; manual live-site check pending user) | PDF/DOCX/text résumé import read on the device, contacts never sent, AI extract checked against the text, review with new/same/different/adds and duplicate matching; validated platform profiles by family (freelance, jobs, forms, events, college/govt) + Upwork, detected by host or content, adding only tips, length windows and more-confident fields; goal templates; encrypted per-site session history with re-use and copyable summary. Rules 99%, with profiles 100% on fixtures |
 | 12 | Hardening, docs & release | ⬜ NOT STARTED | |
 
 ## Checkpoints
@@ -31,8 +31,8 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 11, Task 11.1** (résumé import). Model: **Sonnet 5.5** (playbook §0.7). Still open: checkpoints A (Supabase project) and B (free AI key, vision-capable model for Phase 10), and the manual screen-share check in `docs/MANUAL_TESTS.md`.
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet) · Phase 10 — Opus 5.5 (the playbook suggested Sonnet).
+- Next: **Phase 12, Task 12.1** (security audit). Model: **Opus 5.5** (playbook §0.7). Still open: checkpoints A (Supabase) and B (AI key), the manual screen-share check and the live-site-per-family check (`docs/MANUAL_TESTS.md`).
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet) · Phase 10 — Opus 5.5 (the playbook suggested Sonnet) · Phase 11 — Opus 5.5 (the playbook suggested Sonnet).
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -614,3 +614,72 @@ Tests: 682 unit (core 458, vault 66, extension 43, ai-client 17, supabase 97, ui
 - Hiding by drag needs a pointer. A keyboard way to hide an area (or "hide the whole picture") would help accessibility; the picture itself has an aria-label.
 - Live vision accuracy is unknown until checkpoint B. Small text in downscaled 1600 px images may read poorly; segment captures help on long pages.
 - Sticky headers or content that moves between scan and capture could still shift boxes slightly (6 px padding). The 3% shape check catches resizes, not small scroll-linked movement.
+
+---
+
+## Phase 11 — files
+
+Created:
+- `packages/core/src/import/extract.ts` (`extractContacts`, `withoutContacts`, `extractLocally`), `merge.ts` (`mergeCandidates`, `planImport`), `ai.ts` (extract contract, `guardExtract`), `import.test.ts`
+- `packages/core/src/platforms/profile.ts` (schema, `compileProfiles`, `detectProfile`, `applyProfile`, `neverClickByProfile`), `profile.test.ts`
+- `packages/core/src/orchestrator/history.ts` (`historyItems`, `reusableValues`, `sessionSummary`), `history.test.ts`
+- `config/platforms/`: `freelance.json`, `upwork.json`, `jobs.json`, `forms.json`, `events.json`, `personal-details.json`
+- `supabase/functions/_shared/ai/extract.ts`, `supabase/functions/ai-extract/handler.ts` + `index.ts`, `supabase/tests/extract.test.ts`
+- `apps/extension/src/import/ops.ts`, `read-file.ts` (+ test), `modules.d.ts`; `src/platforms/profiles.ts`, `templates.ts`
+- `apps/extension/entrypoints/sidepanel/screens/Import.tsx`, `History.tsx`
+- `test-fixtures/resumes/` (3 synthetic résumés + PDF and DOCX of one), `test-fixtures/college-form-like.html` + `.expected.json`
+- `scripts/make-resume-files.mjs`; `e2e/import.spec.ts` (2), `e2e/platforms.spec.ts` (3)
+
+Modified:
+- vault: `db.ts` (v3 `history` table), `service.ts` (backups/snapshots carry `history`, defaulting to empty for old ones), `repositories.ts` (`HistoryRepo`) + test
+- core: `schema/records.ts` (`HistoryEntry`), `mapper/map.ts` (`source: 'profile'`), `orchestrator/session.ts` (`profile`, `constraints`, `REUSE`, `DRAFTED.ai`, profile goal defaults), `suggest.ts` (length windows), `ai/draft.ts` (`lengthWindow`), `orchestrator/ai.ts`, `index.ts`
+- `packages/ai-client` (`extract`, `lengthWindow` in drafts); `supabase/functions/_shared/ai/generate.ts` (length window in the prompt)
+- extension: `session/host.ts` (profiles in MAP, history recording, length window to drafts, AI status after drafts), `session/router.ts` (`IMPORT_*`, `HISTORY_*`, profile never-click on `NAV_CLICK`), `messaging/protocol.ts`, `settings.ts` (`platformProfiles`), `sidepanel/screens/FillView.tsx` (templates, past sessions, re-use, tips, copy summary), `Drafts.tsx`, `VaultView.tsx`, `SettingsView.tsx`; deps `pdfjs-dist`, `mammoth` (+ dev `jszip`)
+- `supabase/tests/fake-llm.ts` (scripted extract), `scripts/mock-supabase.mjs` (`ai-extract`), fixture accuracy tests (college form added), `test-fixtures/__ai__/*`, `e2e/scan-snapshots.spec.ts`, `e2e/ai.spec.ts`, `e2e/drafts.spec.ts`, `docs/MANUAL_TESTS.md`, `supabase/README.md`
+
+Tests: 718 unit (core 487, vault 67, extension 44, ai-client 17, supabase 102, ui 1) + 69 e2e.
+
+## Phase 11 — design notes
+
+- **Résumé import (11.1).** PDF (pdfjs-dist, worker bundled), DOCX (mammoth) or pasted text are read in the panel. The file never leaves the device.
+  - Contact details (email, phone, LinkedIn/GitHub/other links, name, city/state, date of birth) are found by pattern on the device. `withoutContacts` removes them before any AI call.
+  - The offline extractor reads sections and entries in three layouts: blank-line entries, all-caps with no blank lines, and pasted LinkedIn text. With AI help on, `ai-extract` adds its reading.
+  - Every AI fact must use a real key, must not be contact/never-store data, and must appear in the text (invention check; dates only need their year in the text; language levels come from Filler's list).
+  - The review screen groups rows by section with New / Already saved / Different from saved / Adds to saved.
+    - New is ticked; changes to saved values are never pre-ticked.
+    - Skills and tech lists are merged.
+    - Jobs, degrees and projects are matched to saved items by their identity fields, and new ones are appended after them.
+  - Saved facts are marked `resume_import`. The text (not the file) is kept as an encrypted document.
+  - PDFs drop blank lines, so the reader turns large vertical gaps back into blank lines; mammoth's paragraph spacing is collapsed for Word.
+  - After importing the synthetic résumé, the Upwork-like page asked 2 questions (hourly rate, experience level).
+- **Platform profiles (11.2).** JSON in `config/platforms/`, validated strictly by `compileProfiles` (bad regex, unknown key, extra field or duplicate id throws). Detection is by host (site-specific first, subdomains count), else by content signals in title, labels and headings, with a minimum per family.
+  - A profile only adds:
+    - overrides where its rule is more confident (a kind-only rule also drops a misread key);
+    - length windows and tips;
+    - tone and audience defaults that fill gaps in the goal;
+    - extra never-click button texts, checked in the background before any navigation click.
+  - A profile never touches a denied field or one the user's deny phrases refuse.
+- **Families (11.3):** freelance (+ Upwork-specific), jobs, online forms, hackathon/events, college/scholarship/government-style. Each family's fixture is recognised by content, and the generic pages (simple contact, React, tricky, fill lab) get no profile.
+  - A new scholarship-form fixture covers parent names, split date of birth, category, an Aadhaar field (never filled) and an address block.
+  - Generic rules misread "Category" as job category; the personal-details profile corrects it to the user's choice.
+  - **Accuracy:** rules alone 99/100 and with profiles 100/100 on the fixtures; rules + classify 119/120 kind, 118/120 key (120 fields).
+  - With profiles off (Settings → "Use site profiles"), every family fixture still plans every field.
+- **Templates and history (11.4).**
+  - Templates: Upwork profile, Fiverr gig, job application, college/government personal details, event registration. They fill goal text, role, tone, platform and audience; everything stays editable.
+  - Each session's outcome is stored per site in a new encrypted vault table, newest 10 per site, synced and backed up with the rest. It is merged across pages by field signature.
+  - The start screen lists past sessions on the site with personal values masked. In a session, "Re-use them" offers last time's answers for fields still waiting, as pending suggestions; never-fill fields are never included.
+  - "Copy summary" puts a plain-text summary on the clipboard (filled / still to answer / skipped / never filled, personal values masked).
+- **Interplay fixed along the way:**
+  - When a profile resolves every field, no AI call happens, so the chip only learns the AI is down when a draft fails. Drafts now report the AI status, and the reason stays visible after the Draft button disappears.
+  - The length window is sent as its own field, not appended to the user's hint.
+- **Live walk:** 360 px, light and dark. Import review, start screen with a template, session with tips and the "strengthen" suggestion. axe clean on all three in both themes, no console errors, no horizontal scroll. Found and fixed: the profile tip showed twice on a question card.
+
+### 🔎 Manual live-site check — pending user check
+`docs/MANUAL_TESTS.md` → "Live sites, one per family" has a 6-row table: freelance, jobs, forms, events, college/government, generic. Results are recorded here when the user sends them.
+
+### Open items surfaced in Phase 11
+- Manual checks pending: live sites per family (above), plus Phase 10's screen share.
+- The synthetic PDF puts the summary on one line wider than the page, and pdf.js returned it cut short. Real résumés wrap lines, but very wide text in real PDFs could lose words; the review screen shows what was read.
+- The import review lists every detail (47 rows for a full résumé). Collapsible sections or "tick all in section" would help.
+- Profiles are built in. User-editable profiles (or downloading new ones) would need signing or review, because profiles influence mapping.
+- AI extraction is checked against the text, but the scripted model uses the same patterns as the local extractor. Real AI value is unmeasured until checkpoint B.

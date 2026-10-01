@@ -7,6 +7,7 @@ import {
   DocumentRecordSchema,
   FactSchema,
   FieldMemorySchema,
+  HistoryEntrySchema,
   classifyRisk,
   detectSensitiveValue,
   getKeyDef,
@@ -19,6 +20,7 @@ import {
   type Fact,
   type FactValue,
   type FieldMemory,
+  type HistoryEntry,
   type Sensitivity,
 } from '@filler/core';
 import type { ZodType } from 'zod';
@@ -259,6 +261,45 @@ export class AnswerRepo {
   }
 }
 
+/** Past sessions per site (Phase 11). Keeps the newest few per site. */
+export class HistoryRepo {
+  static readonly PER_SITE = 10;
+
+  constructor(private readonly vault: VaultService) {}
+
+  async add(entry: HistoryEntry): Promise<HistoryEntry> {
+    const parsed = parseOrThrow(
+      HistoryEntrySchema,
+      { ...entry, site: siteOf(entry.site) },
+      'history',
+    );
+    await this.vault.writeRecord('history', parsed.id, parsed);
+    const older = (await this.forSite(parsed.site)).slice(HistoryRepo.PER_SITE);
+    if (older.length)
+      await this.vault.deleteRecords(
+        'history',
+        older.map((h) => h.id),
+      );
+    return parsed;
+  }
+
+  async list(): Promise<HistoryEntry[]> {
+    return (await this.vault.readAll<unknown>('history'))
+      .map((v) => parseOrThrow(HistoryEntrySchema, v, 'history'))
+      .sort((a, b) => b.endedAt.localeCompare(a.endedAt));
+  }
+
+  /** Newest first. */
+  async forSite(site: string): Promise<HistoryEntry[]> {
+    const target = siteOf(site);
+    return (await this.list()).filter((h) => h.site === target);
+  }
+
+  delete(id: string): Promise<void> {
+    return this.vault.deleteRecord('history', id);
+  }
+}
+
 /** All repositories over one vault. */
 export function createRepositories(vault: VaultService) {
   return {
@@ -266,6 +307,7 @@ export function createRepositories(vault: VaultService) {
     documents: new DocumentRepo(vault),
     fieldMemory: new FieldMemoryRepo(vault),
     answers: new AnswerRepo(vault),
+    history: new HistoryRepo(vault),
   };
 }
 export type Repositories = ReturnType<typeof createRepositories>;

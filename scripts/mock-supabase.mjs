@@ -4,7 +4,7 @@
 //                   POST /auth/v1/token?grant_type=refresh_token, POST /auth/v1/logout
 //   REST (PostgREST): /rest/v1/vault_blobs  GET (select), POST (insert), PATCH (update with version=eq.N)
 //                   /rest/v1/ai_usage     GET (the caller's own rows, like RLS)
-//   Functions:      /functions/v1/health, ai-classify, ai-generate, ai-vision — the REAL handlers from
+//   Functions:      /functions/v1/health, ai-classify, ai-generate, ai-vision, ai-extract — the REAL handlers from
 //                   supabase/functions (Node runs them with type stripping), with in-memory
 //                   quota and cache, and the scripted model (supabase/tests/fake-llm.ts)
 //                   behind the real Gemini adapter.
@@ -21,6 +21,7 @@ import { createGateway } from '../supabase/functions/_shared/ai/gateway.ts';
 import { handleClassify } from '../supabase/functions/ai-classify/handler.ts';
 import { handleGenerate } from '../supabase/functions/ai-generate/handler.ts';
 import { handleVision } from '../supabase/functions/ai-vision/handler.ts';
+import { handleExtract } from '../supabase/functions/ai-extract/handler.ts';
 import { handleHealth } from '../supabase/functions/health/handler.ts';
 import { fakeProviderFetch } from '../supabase/tests/fake-llm.ts';
 
@@ -176,6 +177,7 @@ createServer(async (req, res) => {
   if (url.pathname === '/functions/v1/ai-classify') return runFunction(req, res, handleClassify);
   if (url.pathname === '/functions/v1/ai-generate') return runFunction(req, res, handleGenerate);
   if (url.pathname === '/functions/v1/ai-vision') return runFunction(req, res, handleVision);
+  if (url.pathname === '/functions/v1/ai-extract') return runFunction(req, res, handleExtract);
 
   if (req.method === 'OPTIONS') return json(res, 204);
 

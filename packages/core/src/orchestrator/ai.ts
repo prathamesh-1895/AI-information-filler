@@ -20,6 +20,8 @@ export interface AiContext {
   examples?: ReadonlyArray<{ question: string; answer: string }>;
   /** The user's instruction for this draft ("shorter", "more formal"). */
   hint?: string;
+  /** Length the platform rewards for this field (from a platform profile). */
+  lengthWindow?: [number, number];
 }
 
 export type GeneratedAnswer =

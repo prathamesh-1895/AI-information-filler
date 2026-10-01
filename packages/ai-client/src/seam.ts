@@ -171,7 +171,11 @@ export function generateRequest(field: FieldDescriptor, ctx: AiContext): Generat
     .filter(Boolean)
     .slice(0, 100);
   return {
-    field: { ...toAiField(field), ...(options?.length ? { options } : {}) },
+    field: {
+      ...toAiField(field),
+      ...(options?.length ? { options } : {}),
+      ...(ctx.lengthWindow ? { lengthWindow: ctx.lengthWindow } : {}),
+    },
     page: { host: ctx.site.slice(0, 253) || 'unknown' },
     goal: {
       ...(goal?.text ? { text: goal.text.slice(0, 500) } : {}),

@@ -29,6 +29,7 @@ const CASES: Array<{ scan: string; expected: () => Expected[] }> = [
     'tricky',
     'job-application-like',
     'fill-lab',
+    'college-form-like',
   ].map((n) => ({
     scan: n,
     expected: () => read<{ fields: Expected[] }>(`${n}.expected.json`).fields,

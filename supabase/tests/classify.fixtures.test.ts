@@ -42,6 +42,7 @@ const CASES: Array<{ scan: string; expected: () => Expected[] }> = [
     'tricky',
     'job-application-like',
     'fill-lab',
+    'college-form-like',
     'ai-understanding',
   ].map((n) => ({
     scan: n,

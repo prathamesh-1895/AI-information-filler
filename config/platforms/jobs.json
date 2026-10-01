@@ -1,0 +1,64 @@
+{
+  "id": "jobs",
+  "name": "Job or internship application",
+  "family": "jobs",
+  "match": {
+    "hosts": [
+      "linkedin.com",
+      "naukri.com",
+      "internshala.com",
+      "indeed.com",
+      "indeed.co.in",
+      "wellfound.com",
+      "myworkdayjobs.com",
+      "greenhouse.io",
+      "lever.co",
+      "smartrecruiters.com",
+      "instahyre.com",
+      "foundit.in"
+    ],
+    "signals": [
+      "\\bapply\\b|\\bapplication\\b",
+      "\\bresume\\b|\\bcv\\b",
+      "\\bcover letter\\b",
+      "\\bnotice period\\b",
+      "\\b(expected|current) ctc\\b|\\bsalary\\b",
+      "\\bjob title\\b",
+      "\\bcgpa\\b|\\bpercentage\\b"
+    ],
+    "minSignals": 3
+  },
+  "fields": [
+    {
+      "label": "\\bnotice period\\b",
+      "canonicalKey": "preferences.notice_period",
+      "confidence": 0.96
+    },
+    {
+      "label": "\\bexpected (ctc|salary|compensation)\\b",
+      "canonicalKey": "preferences.expected_salary",
+      "confidence": 0.96
+    },
+    {
+      "label": "\\bcurrent (ctc|salary|compensation)\\b",
+      "canonicalKey": "preferences.current_salary",
+      "confidence": 0.96
+    },
+    {
+      "label": "\\bcover letter\\b|\\bwhy (do you want to|should we) (work|hire)\\b",
+      "kind": "open_ended",
+      "confidence": 0.9,
+      "lengthWindow": [800, 2500],
+      "tip": "Name the role and company, and one result that matches the job post."
+    },
+    { "label": "\\bhow did you hear\\b", "kind": "choice", "confidence": 0.9 }
+  ],
+  "navigation": {
+    "neverClick": ["Submit application", "Apply", "Easy Apply", "Send application"]
+  },
+  "goal": { "tone": "professional", "audience": "recruiters and hiring managers" },
+  "tips": [
+    "Résumé uploads stay with you: Filler never attaches files.",
+    "Repeating education and work sections are filled in your vault's order."
+  ]
+}

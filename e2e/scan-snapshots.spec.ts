@@ -32,6 +32,7 @@ const CASES: Case[] = [
     'job-application-like',
     'fill-lab',
     'ai-understanding',
+    'college-form-like',
   ].map((n) => ({ name: n, fixture: `${n}.html` })),
   {
     name: 'upwork-profile-like.step2',

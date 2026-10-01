@@ -196,10 +196,14 @@ test('AI down: the Upwork-like wizard still completes through questions', async 
   await mockAi({ mode: 'down', clearCache: true });
   const { page, panel } = await setup(context, extensionId);
   await start(panel, 'Create my Upwork profile as a business consultant');
-  await expect(panel.getByTestId('ai-chip').first()).toContainText('Offline mode');
 
+  // The freelance profile placed every field, so no AI call has failed yet. Asking
+  // for a draft fails with a reason; the chip switches to offline and the Draft
+  // button goes away. The user writes the answer instead.
   const overview = question(panel, 'Profile overview');
-  await expect(overview).toContainText('Offline mode: Filler needs you to write this one.');
+  await overview.getByRole('button', { name: 'Draft with AI' }).click();
+  await expect(overview.getByTestId('draft-error')).toContainText('AI provider unavailable');
+  await expect(panel.getByTestId('ai-chip').first()).toContainText('Offline mode');
   await expect(overview.getByRole('button', { name: 'Draft with AI' })).toHaveCount(0);
   await overview.getByRole('textbox').fill('I help small businesses tidy up their books.');
   await expect(overview.getByLabel('Save for reuse')).toBeChecked();

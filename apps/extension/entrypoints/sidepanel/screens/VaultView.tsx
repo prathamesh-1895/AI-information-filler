@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { call } from '@/src/messaging/client';
 import { asText, keyLabel, mask } from '../format';
 import { usePanel } from '../store';
+import { ImportCard } from './Import';
 
 const GROUP_TITLES: Record<string, string> = {
   person: 'About you',
@@ -110,6 +111,7 @@ export function VaultView() {
 
   return (
     <div className="space-y-4">
+      <ImportCard onSaved={() => void reload()} />
       <TextField
         label="Search your details"
         type="search"

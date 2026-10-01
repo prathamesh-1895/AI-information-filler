@@ -19,6 +19,8 @@ export type FactRow = EncryptedRow;
 export type FieldMemoryRow = EncryptedRow;
 export type DocumentRow = EncryptedRow;
 export type AnswerRow = EncryptedRow;
+/** Past fill sessions (Phase 11): site, values and outcome, all encrypted. */
+export type HistoryRow = EncryptedRow;
 
 export interface VaultMetaRow {
   id: 'vault';
@@ -31,7 +33,7 @@ export interface VaultMetaRow {
   updatedAt: string;
 }
 
-export const DATA_TABLES = ['facts', 'documents', 'fieldMemory', 'answers'] as const;
+export const DATA_TABLES = ['facts', 'documents', 'fieldMemory', 'answers', 'history'] as const;
 export type DataTable = (typeof DATA_TABLES)[number];
 
 /** Remembers deletions so sync does not bring deleted records back (Phase 7). */
@@ -57,6 +59,7 @@ export type VaultDb = Dexie & {
   documents: EntityTable<DocumentRow, 'id'>;
   fieldMemory: EntityTable<FieldMemoryRow, 'id'>;
   answers: EntityTable<AnswerRow, 'id'>;
+  history: EntityTable<HistoryRow, 'id'>;
   tombstones: EntityTable<TombstoneRow, 'id'>;
   sync: EntityTable<SyncStateRow, 'id'>;
 };
@@ -75,5 +78,7 @@ export function openVaultDb(name: string = VAULT_DB_NAME): VaultDb {
     tombstones: 'id, table, deletedAt',
     sync: 'id',
   });
+  // v3 (Phase 11): session history. Existing data is untouched.
+  db.version(3).stores({ history: 'id, updatedAt' });
   return db;
 }

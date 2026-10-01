@@ -7,6 +7,9 @@ import { asText, keyLabel, mask, PHASE, sensitivityOf, SOURCE, STATUS } from '..
 import { AiChip } from '../AiChip';
 import { DraftControls, DraftDetails, GoalChips, Suggestions } from './Drafts';
 import { ExplainButton } from './Explain';
+import { CopySummary, PastSessions, ProfileTips, ReuseBanner } from './History';
+import { GOAL_TEMPLATES } from '@/src/platforms/templates';
+import type { FieldConstraint } from '@filler/core';
 import { usePanel } from '../store';
 
 const CHOICE_TYPES = new Set([
@@ -53,6 +56,7 @@ export function FillView() {
       <StartPanel
         tabId={target.tabId}
         title={target.title ?? target.url ?? ''}
+        url={target.url}
         ended={session?.endReason}
       />
     );
@@ -65,16 +69,34 @@ export function FillView() {
 function StartPanel({
   tabId,
   title,
+  url,
   ended,
 }: {
   tabId: number;
   title: string;
+  url?: string | undefined;
   ended?: string | undefined;
 }) {
   const setSession = usePanel((s) => s.setSession);
   const [goal, setGoal] = useState('');
   const [role, setRole] = useState('');
   const [tone, setTone] = useState('professional');
+  const [templateId, setTemplateId] = useState('');
+  const [blanks, setBlanks] = useState<Record<string, string>>({});
+  const [extra, setExtra] = useState<{ platform?: string; targetAudience?: string }>({});
+  const template = GOAL_TEMPLATES.find((t) => t.id === templateId);
+  const applyTemplate = (id: string, values: Record<string, string>) => {
+    const t = GOAL_TEMPLATES.find((x) => x.id === id);
+    if (!t) return;
+    const g = t.build(values);
+    setGoal(g.text);
+    setRole(g.role ?? '');
+    if (g.tone) setTone(g.tone);
+    setExtra({
+      ...(g.platform ? { platform: g.platform } : {}),
+      ...(g.targetAudience ? { targetAudience: g.targetAudience } : {}),
+    });
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +105,7 @@ function StartPanel({
     setBusy(true);
     setError(null);
     const goalValue = goal.trim()
-      ? { text: goal.trim(), ...(role.trim() ? { role: role.trim() } : {}), tone }
+      ? { text: goal.trim(), ...(role.trim() ? { role: role.trim() } : {}), tone, ...extra }
       : undefined;
     const result = await call<SessionState>({
       type: 'SESSION_START',
@@ -107,6 +129,45 @@ function StartPanel({
       <p className="truncate text-xs text-slate-500 dark:text-slate-400" data-testid="target">
         Page: {title}
       </p>
+      <div className="space-y-1">
+        <label
+          htmlFor="template"
+          className="block text-xs font-medium text-slate-700 dark:text-slate-300"
+        >
+          Start from a template (optional)
+        </label>
+        <select
+          id="template"
+          value={templateId}
+          onChange={(e) => {
+            setTemplateId(e.target.value);
+            setBlanks({});
+            if (e.target.value) applyTemplate(e.target.value, {});
+            else setExtra({});
+          }}
+          className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-950"
+        >
+          <option value="">None</option>
+          {GOAL_TEMPLATES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        {template?.inputs.map((input) => (
+          <TextField
+            key={input.id}
+            label={input.label}
+            placeholder={input.placeholder}
+            value={blanks[input.id] ?? ''}
+            onChange={(e) => {
+              const next = { ...blanks, [input.id]: e.target.value };
+              setBlanks(next);
+              applyTemplate(template.id, next);
+            }}
+          />
+        ))}
+      </div>
       <TextArea
         label="What are we doing? (optional)"
         placeholder="e.g. Create my Upwork profile as a business consultant"
@@ -137,6 +198,7 @@ function StartPanel({
             <option value="professional">Professional</option>
             <option value="friendly">Friendly</option>
             <option value="confident">Confident</option>
+            <option value="formal">Formal</option>
           </select>
         </div>
       </div>
@@ -149,6 +211,7 @@ function StartPanel({
         <Wand2 aria-hidden className="h-4 w-4" />
         {busy ? 'Reading the page…' : 'Start on this page'}
       </Button>
+      <PastSessions url={url} />
     </form>
   );
 }
@@ -224,6 +287,8 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
         <AiChip status={session.ai} />
       </div>
       <GoalChips goal={session.goal} send={send} />
+      <ProfileTips session={session} />
+      {session.phase === 'AWAITING_REVIEW' && <ReuseBanner session={session} />}
 
       {busy && <Spinner label={PHASE[session.phase] ?? 'Working…'} />}
       <ErrorBanner session={session} onRetry={restart} />
@@ -260,6 +325,7 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
               focused={focusedId === item.fieldId}
               aiOn={aiOn}
               tabId={session.tabId}
+              constraint={session.constraints?.[item.fieldId]}
             />
           ))}
         </section>
@@ -336,6 +402,7 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
         >
           Fill {approved.length > 0 ? `${approved.length} approved` : 'approved'}
         </Button>
+        <CopySummary session={session} />
         <Button variant="secondary" onClick={() => void send({ type: 'END' })}>
           End
         </Button>
@@ -391,6 +458,7 @@ function QuestionCard({
   focused,
   aiOn,
   tabId,
+  constraint,
 }: {
   item: PlanItem;
   field: FieldDescriptor | undefined;
@@ -398,6 +466,7 @@ function QuestionCard({
   focused: boolean;
   aiOn: boolean;
   tabId?: number;
+  constraint?: FieldConstraint | undefined;
 }) {
   const [value, setValue] = useState<string | string[]>(
     MULTI_TYPES.has(field?.inputType ?? '') ? [] : '',
@@ -435,6 +504,14 @@ function QuestionCard({
         )}
         {item.reason && item.reason !== 'Filler does not know this field yet.' && (
           <p className="text-xs text-slate-500 dark:text-slate-400">{item.reason}</p>
+        )}
+        {constraint?.tip && !item.reason.includes(constraint.tip) && (
+          <p className="text-xs text-sky-900 dark:text-sky-200" data-testid="field-tip">
+            Tip: {constraint.tip}
+            {constraint.lengthWindow
+              ? ` Aim for ${constraint.lengthWindow[0].toLocaleString('en-IN')}–${constraint.lengthWindow[1].toLocaleString('en-IN')} characters.`
+              : ''}
+          </p>
         )}
         {item.draft && (
           <DraftControls item={{ ...item, draft: item.draft }} send={send} aiOn={aiOn} />

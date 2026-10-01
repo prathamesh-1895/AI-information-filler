@@ -151,6 +151,13 @@
       "confidence": 0.86,
       "reason": "Pick an experience level",
       "question": "Which experience level fits you?"
+    },
+    "annual family income (₹)": {
+      "kind": "fact",
+      "newKeySuggestion": "custom.annual_family_income",
+      "confidence": 0.8,
+      "reason": "Asks for yearly household income",
+      "question": "What is your annual family income?"
     }
   }
 }

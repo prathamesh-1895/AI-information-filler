@@ -47,3 +47,29 @@ Automated tests give the build `<all_urls>` because Playwright cannot click the 
    - Expected: it works (the click granted `activeTab`).
 2. Open a new tab with a different site. Switch to it **without** clicking the toolbar button, then use **Snapshot this tab** from the open panel.
    - Expected: either it works (site access granted earlier), or the readable message "Click Filler's toolbar button on the tab first, or use Share a screen or window".
+
+## Live sites, one per family (PLAYBOOK Task 11.3)
+
+Check one real site per family. **Never press the final Submit / Publish / Apply / Pay button.** Use your own account: you sign in yourself, Filler never does. If you don't use a site, pick another from the same family, or write "skipped".
+
+For each site:
+1. Sign in to the site yourself and open the profile or form page.
+2. Click Filler's toolbar button, then **Start on this page**.
+3. Note:
+   - **a.** Does "Tips for …" show the right family, or none (fine for "Generic")?
+   - **b.** How many fields were planned, and how many asked as questions?
+   - **c.** Were any fields wrong (wrong value, or wrong field)? Write the label.
+   - **d.** Were password, OTP, card, Aadhaar, PAN or other ID fields shown under "Not filled by Filler" with **Never filled**, and left empty?
+4. Approve and **Fill** one or two harmless fields (for example your city), check they stuck, then undo them on the site if you like.
+5. Close the tab without submitting.
+
+| Family | Suggested site | Profile shown (a) | Planned / asked (b) | Wrong fields (c) | Never-fill OK (d) | Date |
+|---|---|---|---|---|---|---|
+| Freelance | Upwork or Fiverr profile edit page | | | | | |
+| Jobs / internships | LinkedIn Easy Apply, Naukri, Internshala or a Workday/Greenhouse/Lever careers page | | | | | |
+| Online forms | Any Google Form you own (make a test one) | | | | | |
+| Hackathon / event | Devfolio or Unstop registration | | | | | |
+| College / scholarship / government | A college admission or scholarship form (personal-details step only) | | | | | |
+| Generic (no profile) | Any other site's "edit profile" page | | | | | |
+
+Send the filled table back (or paste it into chat) and it will be recorded in `PROGRESS.md`.

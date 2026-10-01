@@ -22,3 +22,8 @@ export * from './orchestrator/suggest';
 export * from './vision/contract';
 export * from './vision/match';
 export * from './vision/explain';
+export * from './import/extract';
+export * from './import/merge';
+export * from './import/ai';
+export * from './platforms/profile';
+export * from './orchestrator/history';

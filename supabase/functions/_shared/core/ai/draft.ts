@@ -18,6 +18,8 @@ const text = (max: number) => z.string().max(max);
 
 export const GenerateFieldSchema = AiFieldSchema.extend({
   options: z.array(text(200)).max(100).optional(),
+  /** The length the platform rewards (from a platform profile), e.g. [1000, 5000]. */
+  lengthWindow: z.tuple([z.number().int().nonnegative(), z.number().int().positive()]).optional(),
 });
 
 export const GenerateGoalSchema = z

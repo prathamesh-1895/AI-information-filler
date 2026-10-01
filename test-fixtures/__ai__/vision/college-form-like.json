@@ -1,0 +1,186 @@
+{
+  "title": "Scholarship application – personal details",
+  "response": {
+    "formPurpose": "Scholarship application – personal details",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "Student's full name (as on marksheet)",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.full"
+      },
+      {
+        "id": "f2",
+        "label": "Father'S Name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "family.father_name"
+      },
+      {
+        "id": "f3",
+        "label": "Mother's name *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "family.mother_name"
+      },
+      {
+        "id": "f4",
+        "label": "Day",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.dob"
+      },
+      {
+        "id": "f5",
+        "label": "Month",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.dob"
+      },
+      {
+        "id": "f6",
+        "label": "Year",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 340,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.dob"
+      },
+      {
+        "id": "f7",
+        "label": "Aadhaar number *",
+        "kind": "denied",
+        "bbox": {
+          "x": 40,
+          "y": 396,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f8",
+        "label": "Annual family income (₹)",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 452,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f9",
+        "label": "Address line 1",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 508,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.line1"
+      },
+      {
+        "id": "f10",
+        "label": "City / Village",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 564,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.city"
+      },
+      {
+        "id": "f11",
+        "label": "District *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 620,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.district"
+      },
+      {
+        "id": "f12",
+        "label": "State",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 676,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.state"
+      },
+      {
+        "id": "f13",
+        "label": "PIN code",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 732,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.postal_code"
+      },
+      {
+        "id": "f14",
+        "label": "Mobile Number",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 788,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.phone.mobile"
+      },
+      {
+        "id": "f15",
+        "label": "I declare that the above information is true *",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 844,
+          "width": 400,
+          "height": 36
+        }
+      }
+    ]
+  }
+}

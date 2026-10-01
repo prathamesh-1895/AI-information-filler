@@ -296,3 +296,43 @@ describe('encryption at rest', () => {
       expect(raw).not.toContain(secret);
   });
 });
+
+describe('HistoryRepo (Phase 11)', () => {
+  const entry = (id: string, site: string, endedAt: string) => ({
+    id,
+    site,
+    url: `https://${site}/form`,
+    title: 'Form',
+    startedAt: '2026-10-01T10:00:00.000Z',
+    endedAt,
+    items: [
+      {
+        label: 'City',
+        signature: 'a'.repeat(64),
+        key: 'address.city',
+        value: 'Pune',
+        status: 'filled' as const,
+        source: 'vault' as const,
+      },
+      { label: 'Password', signature: 'b'.repeat(64), status: 'never' as const },
+    ],
+  });
+
+  it('keeps sessions per site, newest first, encrypted, and prunes old ones', async () => {
+    const { repos } = await setup();
+    await repos.history.add(entry('h1', 'www.upwork.com', '2026-10-01T10:05:00.000Z'));
+    await repos.history.add(entry('h2', 'upwork.com', '2026-10-02T10:05:00.000Z'));
+    await repos.history.add(entry('h3', 'fiverr.com', '2026-10-03T10:05:00.000Z'));
+    expect((await repos.history.forSite('https://upwork.com/x')).map((h) => h.id)).toEqual([
+      'h2',
+      'h1',
+    ]);
+    for (let i = 0; i < 12; i++)
+      await repos.history.add(
+        entry(`p${i}`, 'upwork.com', `2026-11-${String(10 + i).padStart(2, '0')}T00:00:00.000Z`),
+      );
+    const kept = await repos.history.forSite('upwork.com');
+    expect(kept).toHaveLength(10);
+    expect(kept[0]!.id).toBe('p11');
+  });
+});

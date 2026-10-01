@@ -1,0 +1,74 @@
+{
+  "id": "freelance",
+  "name": "Freelance marketplace",
+  "family": "freelance",
+  "match": {
+    "hosts": [
+      "fiverr.com",
+      "freelancer.com",
+      "freelancer.in",
+      "peopleperhour.com",
+      "contra.com",
+      "toptal.com",
+      "guru.com",
+      "truelancer.com"
+    ],
+    "signals": [
+      "\\bhourly rate\\b",
+      "\\b(profile )?overview\\b",
+      "\\bprofessional role\\b|\\boccupation\\b",
+      "\\bbecome a seller\\b|\\bseller\\b",
+      "\\bgig\\b",
+      "\\bcreate your profile\\b",
+      "\\bdisplay name\\b",
+      "\\blanguage level\\b|\\benglish proficiency\\b"
+    ],
+    "minSignals": 2
+  },
+  "fields": [
+    {
+      "label": "^(your )?(professional )?(role|title|headline)$",
+      "canonicalKey": "bio.headline",
+      "confidence": 0.93,
+      "lengthWindow": [30, 70],
+      "tip": "Clients scan the title first: name the outcome you deliver, not just your job."
+    },
+    {
+      "label": "\\b(profile )?overview\\b|\\babout (you|me)\\b",
+      "canonicalKey": "bio.summary_long",
+      "kind": "open_ended",
+      "confidence": 0.93,
+      "lengthWindow": [1000, 5000],
+      "tip": "Open with the client's problem, show 2–3 results, end with how to start."
+    },
+    {
+      "label": "\\bhourly rate\\b|\\brate per hour\\b",
+      "canonicalKey": "preferences.hourly_rate",
+      "confidence": 0.96
+    },
+    {
+      "label": "\\bgig (title|description)\\b|\\bservice description\\b",
+      "kind": "open_ended",
+      "confidence": 0.85,
+      "lengthWindow": [600, 1200],
+      "tip": "Say what the buyer gets, how fast, and what you need from them."
+    },
+    {
+      "label": "^(your )?occupation$",
+      "canonicalKey": "professional.category",
+      "confidence": 0.85
+    },
+    {
+      "label": "^experience level$",
+      "kind": "choice",
+      "confidence": 0.9,
+      "tip": "Pick the level you can back up with your portfolio."
+    }
+  ],
+  "navigation": { "neverClick": ["Submit profile", "Publish gig", "Publish", "Submit for review"] },
+  "goal": { "tone": "professional", "audience": "clients hiring freelancers" },
+  "tips": [
+    "Fill your profile in the order the site asks; Filler follows each step after you click Next.",
+    "Portfolio uploads and identity checks stay with you: Filler never attaches files or IDs."
+  ]
+}

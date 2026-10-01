@@ -1,0 +1,42 @@
+Asha Verma
+Business Consultant | Process Improvement for Small Businesses
+asha.verma@example.com | +91 98220 11223 | linkedin.com/in/asha-verma-demo | github.com/ashaverma-demo
+Location: Pune, Maharashtra
+Date of birth: 14 May 1996
+
+Summary
+I help small retail and service businesses fix their operations: cleaner books, faster month-end close and dashboards owners actually read. 6 years of experience across retail and logistics.
+
+Experience
+
+Operations Analyst, Sahyadri Retail Pvt Ltd (Jul 2019 – Present)
+- Cut month-end close from 9 days to 4 by rebuilding the reconciliation workbook.
+- Built a weekly sales dashboard used by 40 store managers.
+
+Junior Analyst, Konkan Logistics (Jun 2017 – Jun 2019)
+- Automated route cost reports in Excel and SQL.
+
+Education
+
+MBA in Operations, Symbiosis Institute of Business Management (2015 – 2017)
+CGPA 8.4
+
+B.Com in Accounting, Fergusson College (2012 – 2015)
+72%
+
+Projects
+
+GST Automation – Automated GST filing reconciliation for 40 shops.
+Tech: Excel, Power Query
+
+Inventory Dashboard – Live stock dashboard for a 3-store chain.
+Tech: Power BI, SQL
+
+Skills
+Excel, SQL, Power BI, Process mapping, Financial modelling
+
+Certifications
+Lean Six Sigma Green Belt - KPMG, 2020
+
+Languages
+English (Fluent), Hindi (Native), Marathi (Native)

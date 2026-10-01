@@ -29,6 +29,7 @@ export interface MapResult {
     | 'custom'
     | 'options'
     | 'ai'
+    | 'profile'
     | 'none';
   /** How to ask the user for this field (AI classifications may phrase it better than the label). */
   question?: string;

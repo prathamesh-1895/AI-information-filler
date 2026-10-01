@@ -23,3 +23,8 @@ export * from './orchestrator/suggest.ts';
 export * from './vision/contract.ts';
 export * from './vision/match.ts';
 export * from './vision/explain.ts';
+export * from './import/extract.ts';
+export * from './import/merge.ts';
+export * from './import/ai.ts';
+export * from './platforms/profile.ts';
+export * from './orchestrator/history.ts';

@@ -24,8 +24,9 @@ import { z } from 'zod';
 import { fail, ok, PanelRequestSchema, type Result } from '../messaging/protocol';
 import { aiUsageToday, testAiConnection } from '../cloud/ai-ops';
 import { captureTab } from '../vision/capture';
+import { analyzeImport, saveImport, type ImportDeps } from '../import/ops';
 import { explainSessionField, readScreen, type VisionDeps } from '../vision/ops';
-import { createPolicy } from '@filler/core';
+import { createPolicy, neverClickByProfile, reusableValues } from '@filler/core';
 import { supabase } from '../cloud/supabase';
 import {
   ai,
@@ -80,6 +81,8 @@ const visionDeps: VisionDeps = {
   session: (tabId) => host.get(tabId),
 };
 
+const importDeps: ImportDeps = { aiClient, vault, repos, settings: currentSettings };
+
 export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>> {
   await ready;
   const parsed = PanelRequestSchema.safeParse(raw);
@@ -100,8 +103,25 @@ export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>>
       return endSessionTab(request.tabId);
     case 'NAV_LIST_REQUEST':
       return listNavigationTab(request.tabId);
-    case 'NAV_CLICK_REQUEST':
+    case 'NAV_CLICK_REQUEST': {
+      // A platform profile can only add buttons Filler must never click.
+      const profile = host.get(request.tabId)?.profile;
+      if (profile?.neverClick.length) {
+        const buttons = await listNavigationTab(request.tabId);
+        const button = buttons.ok
+          ? buttons.data.find((b) => b.buttonId === request.buttonId)
+          : undefined;
+        if (
+          !button ||
+          neverClickByProfile({ navigation: { neverClick: profile.neverClick } }, button.text)
+        )
+          return fail(
+            'REFUSED',
+            `Filler never clicks "${button?.text ?? 'that button'}" on ${profile.name} pages. Click it yourself when you are ready.`,
+          );
+      }
       return clickNavigationTab(request.tabId, request.buttonId);
+    }
 
     case 'VAULT_STATUS':
       return ok({ status: await vault.status() });
@@ -219,6 +239,29 @@ export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>>
       if (!host.get(request.tabId))
         return fail('NO_SESSION', 'There is no Filler session on this tab. Start one first.');
       return ok(await host.dispatch(request.tabId, { type: 'RELABEL', labels: request.labels }));
+    case 'HISTORY_LIST':
+      return vaultCall(() => repos.history.forSite(request.site));
+    case 'HISTORY_REUSE':
+      return vaultCall(async () => {
+        const state = host.get(request.tabId);
+        if (!state) throw new Error('There is no Filler session on this tab.');
+        const [last] = (await repos.history.forSite(state.site)).filter((h) => h.id !== state.id);
+        if (!last) return state;
+        const values = reusableValues(state, last);
+        if (!Object.keys(values).length) return state;
+        return host.dispatch(request.tabId, {
+          type: 'REUSE',
+          values,
+          from: new Date(last.endedAt).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+          }),
+        });
+      });
+    case 'IMPORT_ANALYZE':
+      return analyzeImport(importDeps, request.text).catch(vaultFailure);
+    case 'IMPORT_SAVE':
+      return saveImport(importDeps, request).catch(vaultFailure);
     case 'EXPLAIN':
       return explainSessionField(visionDeps, request.tabId, request.fieldId);
     case 'SETTINGS_GET':

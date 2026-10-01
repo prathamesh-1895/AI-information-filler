@@ -36,7 +36,15 @@ const OPEN = '<<<DRAFT_DATA';
 const CLOSE = 'DRAFT_DATA>>>';
 
 /** What length to aim for, in plain words for the prompt. */
-export function lengthGuide(maxLength: number | undefined, inputType: string): string {
+export function lengthGuide(
+  maxLength: number | undefined,
+  inputType: string,
+  window?: [number, number],
+): string {
+  if (window) {
+    const top = maxLength ? Math.min(window[1], maxLength) : window[1];
+    return `Aim for ${window[0]}-${top} characters; never more than ${maxLength ?? top}.`;
+  }
   const long = /textarea|contenteditable|aria-textbox/.test(inputType);
   if (!maxLength) return long ? 'Aim for 600-1200 characters.' : 'Keep it short: one line.';
   if (!long || maxLength <= 160) return `Keep it under ${maxLength} characters.`;
@@ -47,6 +55,7 @@ export function buildGenerateMessages(req: GenerateRequest): ChatMessage[] {
   const field = {
     ...sanitiseField(req.field),
     ...(req.field.options ? { options: req.field.options.map(redactText) } : {}),
+    ...(req.field.lengthWindow ? { lengthWindow: req.field.lengthWindow } : {}),
   };
   const data = encodeData({
     field,
@@ -61,7 +70,7 @@ export function buildGenerateMessages(req: GenerateRequest): ChatMessage[] {
   return [
     {
       role: 'user',
-      content: `Draft the answer for the field in DRAFT_DATA. Write in ${language}. ${lengthGuide(req.field.maxLength, req.field.inputType)}\n${OPEN}\n${data}\n${CLOSE}`,
+      content: `Draft the answer for the field in DRAFT_DATA. Write in ${language}. ${lengthGuide(req.field.maxLength, req.field.inputType, req.field.lengthWindow)}\n${OPEN}\n${data}\n${CLOSE}`,
     },
   ];
 }

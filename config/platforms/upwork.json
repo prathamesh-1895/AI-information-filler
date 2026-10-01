@@ -1,0 +1,29 @@
+{
+  "id": "upwork",
+  "name": "Upwork",
+  "family": "freelance",
+  "specific": true,
+  "match": { "hosts": ["upwork.com"] },
+  "fields": [
+    {
+      "label": "^(your )?(professional )?(role|title)$",
+      "canonicalKey": "bio.headline",
+      "confidence": 0.95,
+      "lengthWindow": [40, 70],
+      "tip": "Upwork titles are cut at 70 characters."
+    },
+    {
+      "label": "\\b(profile )?overview\\b",
+      "canonicalKey": "bio.summary_long",
+      "kind": "open_ended",
+      "confidence": 0.95,
+      "lengthWindow": [1000, 5000],
+      "tip": "The first 200 characters show in search results."
+    },
+    { "label": "\\bhourly rate\\b", "canonicalKey": "preferences.hourly_rate", "confidence": 0.97 }
+  ],
+  "wizardSteps": ["Work", "Location", "Review"],
+  "navigation": { "neverClick": ["Submit profile", "Review profile", "Submit proposal"] },
+  "goal": { "tone": "professional", "audience": "Upwork clients" },
+  "tips": ["Upwork reviews new profiles; submit only when every step reads well."]
+}

@@ -1,0 +1,27 @@
+RAHUL IYER
+Software Engineering Intern
+Email: rahul.iyer.demo@example.org
+Phone: 9876501234
+Portfolio: https://rahul-iyer-demo.dev
+
+EDUCATION
+B.Tech in Computer Science, National Institute of Technology Trichy | 2021 - 2025 | CGPA: 8.9
+Class XII, Kendriya Vidyalaya Chennai | 2019 - 2021 | 94%
+
+EXPERIENCE
+Backend Intern | Zephyr Labs | May 2024 - Jul 2024
+• Wrote a rate limiter in Go that cut API errors by 30%.
+• Added tracing to 12 services.
+Teaching Assistant | NIT Trichy | Aug 2023 - Apr 2024
+• Ran weekly data structures labs for 60 students.
+
+PROJECTS
+Campus Ride Share: Carpooling app for students, 800 users. Tech: React Native, Firebase
+Exam Seat Planner: Seat allocation tool used by the exam cell. Tech: Python, OR-Tools. https://github.com/rahul-iyer-demo/seat-planner
+
+SKILLS
+Languages: Go, Python, TypeScript
+Tools: Docker, PostgreSQL, Git
+
+LANGUAGES
+English - Fluent; Tamil - Native; Hindi - Conversational

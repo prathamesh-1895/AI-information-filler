@@ -15,6 +15,7 @@
 import { z } from 'zod';
 import type { MapResult } from '../mapper/map.ts';
 import type { AiStatus, GeneratedAnswer } from './ai.ts';
+import type { FieldConstraint, PlatformFamily } from '../platforms/profile.ts';
 import { parseGoal, platformOf } from './goal.ts';
 import { customKeyFor } from '../schema/keys.ts';
 import {
@@ -62,9 +63,23 @@ export interface SessionState {
   error?: { code: SessionErrorCode; message: string };
   /** AI mode reported by the latest mapping that needed the AI (Phase 8). */
   ai?: AiStatus;
+  /** The platform profile in use, if any (Phase 11). Filler works the same without one. */
+  profile?: ActiveProfile;
+  /** Per-field length windows and tips from the profile. */
+  constraints?: Record<string, FieldConstraint>;
   endReason?: string;
   startedAt: string;
   updatedAt: string;
+}
+
+export interface ActiveProfile {
+  id: string;
+  name: string;
+  family: PlatformFamily;
+  by: 'host' | 'content';
+  tips: string[];
+  neverClick: string[];
+  goal: { tone?: string; audience?: string };
 }
 
 export interface FillResultLite {
@@ -89,6 +104,12 @@ export const UserEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('SKIP'), fieldId: z.string() }),
   z.object({ type: z.literal('FILL'), fieldIds: z.array(z.string()).optional() }),
   z.object({ type: z.literal('RESCAN') }),
+  /** Re-use answers from the last session on this site (Phase 11); values were approved then. */
+  z.object({
+    type: z.literal('REUSE'),
+    values: z.record(z.string(), FactValueSchema),
+    from: z.string().max(40),
+  }),
   /** Better labels for fields, read from the screen and accepted by the user (Phase 10). */
   z.object({
     type: z.literal('RELABEL'),
@@ -110,10 +131,16 @@ export type SystemEvent =
   | { type: 'START'; id: string; tabId: number; goal?: Goal; at: string }
   | { type: 'SCANNED'; url: string; title: string; fields: FieldDescriptor[]; at: string }
   | { type: 'SCAN_FAILED'; code: SessionErrorCode; message: string }
-  | { type: 'MAPPED'; mappings: Record<string, MapResult>; ai?: AiStatus }
+  | {
+      type: 'MAPPED';
+      mappings: Record<string, MapResult>;
+      ai?: AiStatus;
+      profile?: ActiveProfile;
+      constraints?: Record<string, FieldConstraint>;
+    }
   | { type: 'PLANNED'; items: PlanItem[] }
   | { type: 'ANSWER_REJECTED'; fieldId: string; reason: string }
-  | { type: 'DRAFTED'; fieldId: string; answer: GeneratedAnswer }
+  | { type: 'DRAFTED'; fieldId: string; answer: GeneratedAnswer; ai?: AiStatus }
   | { type: 'FILL_RESULTS'; results: FillResultLite[] }
   | { type: 'FIELDS_CHANGED'; url: string; added: FieldDescriptor[]; removed: string[]; at: string }
   | { type: 'VAULT_LOCKED' }
@@ -311,6 +338,22 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
           phase: 'PLANNING',
           mappings: { ...s.mappings, ...event.mappings },
           ...(event.ai ? { ai: event.ai } : {}),
+          ...(event.profile ? { profile: event.profile } : {}),
+          ...(event.constraints ? { constraints: { ...s.constraints, ...event.constraints } } : {}),
+          // The profile's tone and audience fill gaps in the goal; the user's own words win.
+          ...(s.goal && event.profile
+            ? {
+                goal: {
+                  ...s.goal,
+                  ...(!s.goal.tone && event.profile.goal.tone
+                    ? { tone: event.profile.goal.tone }
+                    : {}),
+                  ...(!s.goal.targetAudience && event.profile.goal.audience
+                    ? { targetAudience: event.profile.goal.audience }
+                    : {}),
+                },
+              }
+            : {}),
         },
         effects: [{ type: 'PLAN', fieldIds: ids }],
       };
@@ -421,6 +464,31 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
       };
     }
 
+    case 'REUSE': {
+      const ids = new Set(Object.keys(event.values));
+      const next = {
+        ...s,
+        plan: s.plan.map((p): PlanItem => {
+          if (
+            !ids.has(p.fieldId) ||
+            p.kind === 'denied' ||
+            p.value !== undefined ||
+            p.status !== 'pending'
+          )
+            return p;
+          const { question: _q, ...rest } = p;
+          return {
+            ...rest,
+            value: event.values[p.fieldId]!,
+            source: 'memory',
+            confidence: 0.85,
+            reason: `From your last session here (${event.from})`,
+          };
+        }),
+      };
+      return { state: next, effects: [highlightOf(next)] };
+    }
+
     case 'RELABEL': {
       // Never-fill fields keep their label: a screen reading must not talk Filler out of a denial.
       const deniedIds = new Set(s.plan.filter((p) => p.kind === 'denied').map((p) => p.fieldId));
@@ -501,7 +569,8 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
               },
             },
       );
-      return { state: next, effects: [highlightOf(next)] };
+      const withAi = event.ai ? { ...next, ai: event.ai } : next;
+      return { state: withAi, effects: [highlightOf(withAi)] };
     }
 
     case 'APPROVE_ALL_VAULT':

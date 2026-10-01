@@ -1,0 +1,119 @@
+{
+  "fixture": "college-form-like.html",
+  "$comment": "Phase 11 personal-details family. 'Category' is the social category (a choice), which the generic rules misread as a job category; the personal-details profile corrects it.",
+  "fields": [
+    {
+      "ref": "name",
+      "label": "Student's full name (as on marksheet)",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "person.name.full"
+    },
+    {
+      "ref": "father",
+      "label": "Father's name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "family.father_name"
+    },
+    {
+      "ref": "mother",
+      "label": "Mother's name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "family.mother_name"
+    },
+    {
+      "ref": "dob-day",
+      "label": "Day",
+      "inputType": "select-one",
+      "kind": "fact",
+      "canonicalKey": "person.dob"
+    },
+    {
+      "ref": "dob-month",
+      "label": "Month",
+      "inputType": "select-one",
+      "kind": "fact",
+      "canonicalKey": "person.dob"
+    },
+    {
+      "ref": "dob-year",
+      "label": "Year",
+      "inputType": "select-one",
+      "kind": "fact",
+      "canonicalKey": "person.dob"
+    },
+    {
+      "ref": "category",
+      "label": "Category",
+      "inputType": "select-one",
+      "kind": "choice",
+      "canonicalKey": null,
+      "options": ["General", "OBC", "SC", "ST", "EWS"]
+    },
+    {
+      "ref": "aadhaar",
+      "label": "Aadhaar number",
+      "inputType": "text",
+      "kind": "denied",
+      "canonicalKey": null
+    },
+    {
+      "ref": "income",
+      "label": "Annual family income (₹)",
+      "inputType": "number",
+      "kind": "fact",
+      "canonicalKey": null
+    },
+    {
+      "ref": "addr1",
+      "label": "Address line 1",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.line1"
+    },
+    {
+      "ref": "city",
+      "label": "City / Village",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.city"
+    },
+    {
+      "ref": "district",
+      "label": "District",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.district"
+    },
+    {
+      "ref": "state",
+      "label": "State",
+      "inputType": "select-one",
+      "kind": "fact",
+      "canonicalKey": "address.state"
+    },
+    {
+      "ref": "pin",
+      "label": "PIN code",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.postal_code"
+    },
+    {
+      "ref": "mobile",
+      "label": "Mobile number",
+      "inputType": "tel",
+      "kind": "fact",
+      "canonicalKey": "contact.phone.mobile"
+    },
+    {
+      "ref": "declare",
+      "label": "I declare that the above information is true",
+      "inputType": "checkbox",
+      "kind": "skip",
+      "canonicalKey": null
+    }
+  ]
+}

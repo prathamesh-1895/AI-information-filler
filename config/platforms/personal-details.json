@@ -1,0 +1,44 @@
+{
+  "id": "personal-details",
+  "name": "College, scholarship or government-style form",
+  "family": "personal_details",
+  "match": {
+    "hosts": ["scholarships.gov.in", "nic.in", "gov.in"],
+    "signals": [
+      "\\bfathers?\\b",
+      "\\bmothers?\\b",
+      "\\bguardian\\b",
+      "\\bcategory\\b|\\bcaste\\b",
+      "\\baadhaa?r\\b",
+      "\\bdomicile\\b",
+      "\\bscholarship\\b",
+      "\\badmission\\b",
+      "\\bannual (family )?income\\b",
+      "\\bdistrict\\b"
+    ],
+    "minSignals": 3
+  },
+  "fields": [
+    { "label": "\\bfathers?\\b", "canonicalKey": "family.father_name", "confidence": 0.96 },
+    { "label": "\\bmothers?\\b", "canonicalKey": "family.mother_name", "confidence": 0.96 },
+    {
+      "label": "^(social )?(category|caste)\\b",
+      "kind": "choice",
+      "confidence": 0.97,
+      "tip": "Category is yours to choose; Filler never guesses it."
+    },
+    {
+      "label": "\\bannual (family )?income\\b",
+      "canonicalKey": "custom.annual_family_income",
+      "confidence": 0.9
+    }
+  ],
+  "navigation": {
+    "neverClick": ["Final submit", "Submit", "Save and submit", "Pay", "Make payment"]
+  },
+  "goal": { "tone": "formal" },
+  "tips": [
+    "Filler never fills Aadhaar, PAN or any other ID number on these forms; type them yourself.",
+    "Check that names match your certificates exactly, letter for letter."
+  ]
+}

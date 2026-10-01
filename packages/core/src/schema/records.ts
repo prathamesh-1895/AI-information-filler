@@ -68,6 +68,30 @@ export const AnswerSchema = z.object({
 });
 export type Answer = z.infer<typeof AnswerSchema>;
 
+/** One past fill session on a site (Phase 11): what was filled, skipped or never filled. */
+export const HistoryEntrySchema = z.object({
+  id,
+  site: z.string().min(1).max(253),
+  url: z.string().max(2_000),
+  title: z.string().max(1_000),
+  goal: z.string().max(2_000).optional(),
+  startedAt: isoDate,
+  endedAt: isoDate,
+  items: z
+    .array(
+      z.object({
+        label: z.string().max(2_000),
+        signature: z.string().regex(/^[0-9a-f]{64}$/),
+        key: z.string().max(80).optional(),
+        value: FactValueSchema.optional(),
+        status: z.enum(['filled', 'skipped', 'never', 'not_filled']),
+        source: z.enum(['vault', 'memory', 'ai', 'user']).optional(),
+      }),
+    )
+    .max(500),
+});
+export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
+
 export const FIELD_KINDS = ['fact', 'open_ended', 'choice', 'skip', 'denied'] as const;
 export const FieldKindSchema = z.enum(FIELD_KINDS);
 export type FieldKind = z.infer<typeof FieldKindSchema>;

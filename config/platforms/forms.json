@@ -1,0 +1,40 @@
+{
+  "id": "forms",
+  "name": "Online form",
+  "family": "forms",
+  "match": {
+    "hosts": [
+      "docs.google.com",
+      "forms.gle",
+      "forms.office.com",
+      "forms.microsoft.com",
+      "typeform.com",
+      "jotform.com",
+      "tally.so"
+    ],
+    "signals": [
+      "\\byour answer\\b",
+      "\\brequired question\\b",
+      "\\brate yourself\\b",
+      "\\bother response\\b|\\bother please specify\\b",
+      "\\bcampus ambassador\\b",
+      "\\bwhy do you want to be\\b"
+    ],
+    "minSignals": 2
+  },
+  "fields": [
+    {
+      "label": "^rate yourself\\b",
+      "kind": "choice",
+      "confidence": 0.95,
+      "tip": "Self-ratings are your call; Filler does not guess them."
+    },
+    { "label": "^(other response|other please specify)$", "kind": "skip", "confidence": 0.95 }
+  ],
+  "navigation": { "neverClick": ["Submit", "Send"] },
+  "goal": { "tone": "friendly" },
+  "tips": [
+    "One-question-per-page forms: Filler fills the page you see; click Next yourself and it follows.",
+    "Grids and \"Other\" boxes are left for you unless you saved an answer."
+  ]
+}

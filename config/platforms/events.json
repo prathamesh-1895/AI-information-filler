@@ -1,0 +1,47 @@
+{
+  "id": "events",
+  "name": "Hackathon or event registration",
+  "family": "events",
+  "match": {
+    "hosts": [
+      "devfolio.co",
+      "unstop.com",
+      "meetup.com",
+      "lu.ma",
+      "eventbrite.com",
+      "eventbrite.co.in",
+      "hackerearth.com",
+      "mlh.io"
+    ],
+    "signals": [
+      "\\bhackathon\\b",
+      "\\bteam name\\b",
+      "\\btrack\\b",
+      "\\bregistration\\b|\\bregister\\b",
+      "\\bparticipant\\b",
+      "\\bevent\\b",
+      "\\bwhy do you want to (join|attend|participate)\\b",
+      "\\bt shirt size\\b"
+    ],
+    "minSignals": 2
+  },
+  "fields": [
+    { "label": "^team name$", "canonicalKey": "custom.team_name", "confidence": 0.9 },
+    { "label": "\\bt shirt size\\b", "kind": "choice", "confidence": 0.95 },
+    {
+      "label": "\\bwhich track\\b|^track$",
+      "kind": "choice",
+      "confidence": 0.95,
+      "tip": "Pick the track your idea fits; organisers read this first."
+    },
+    {
+      "label": "\\bwhy do you want to (join|attend|participate)\\b",
+      "kind": "open_ended",
+      "confidence": 0.9,
+      "lengthWindow": [200, 800]
+    }
+  ],
+  "navigation": { "neverClick": ["Register", "Submit", "Confirm registration", "Join"] },
+  "goal": { "tone": "friendly", "audience": "event organisers" },
+  "tips": ["Team invites and payments stay with you."]
+}

@@ -12,6 +12,7 @@
  */
 import scripted from '../../test-fixtures/__ai__/classify-answers.json' with { type: 'json' };
 import { readdirSync, readFileSync } from 'node:fs';
+import { extractLocally } from '../functions/_shared/core/index.ts';
 
 export interface ScriptedAnswer {
   kind: string;
@@ -44,6 +45,7 @@ export type Mode = 'honest' | 'compromised' | 'garbage' | 'fenced' | 'inventing'
 export function scriptedReply(prompt: string, mode: Mode = 'honest'): string {
   if (prompt.includes('<<<DRAFT_DATA')) return scriptedDraft(prompt, mode);
   if (prompt.includes('<<<SCREEN_DATA')) return scriptedVision(prompt, mode);
+  if (prompt.includes('<<<RESUME_TEXT')) return scriptedExtract(prompt, mode);
   const { fields } = pageDataOf(prompt);
   if (mode === 'garbage') return 'Sure! Here are the fields you asked about.';
   if (mode === 'compromised' && /ignore (all )?previous|SYSTEM:/i.test(prompt)) {
@@ -327,4 +329,23 @@ function scriptedVision(prompt: string, mode: Mode): string {
   return JSON.stringify(
     data.mode === 'region' ? { ...reply, fields: reply.fields.slice(0, 1) } : reply,
   );
+}
+
+// ------------------------------------------------------------ résumé extract (Phase 11)
+
+/**
+ * A "model" that reads the résumé with the same patterns as the on-device
+ * extractor (so tests are deterministic), returns only non-contact details,
+ * and in `inventing` mode adds an employer that is not in the text.
+ */
+function scriptedExtract(prompt: string, mode: Mode): string {
+  const m = /<<<RESUME_TEXT\n([\s\S]*?)\nRESUME_TEXT>>>/.exec(prompt);
+  const text = m ? (JSON.parse(m[1]!) as { text: string }).text : '';
+  if (mode === 'garbage') return 'Here is the résumé summary.';
+  const facts = extractLocally(text)
+    .filter((c) => !/^(?:contact|links|person\.|address)/.test(c.key))
+    .map((c) => ({ key: c.key, value: c.value, confidence: 0.9 }));
+  if (mode === 'inventing')
+    facts.push({ key: 'experience[9].company', value: 'Google', confidence: 0.99 });
+  return JSON.stringify({ facts });
 }

@@ -82,6 +82,8 @@ export const BackupSchema = z.object({
     documents: z.array(RowSchema),
     fieldMemory: z.array(RowSchema),
     answers: z.array(RowSchema),
+    // Added in Phase 11; older backups and snapshots have none.
+    history: z.array(RowSchema).default([]),
   }),
 });
 export type Backup = z.infer<typeof BackupSchema>;
@@ -97,6 +99,8 @@ export const SnapshotSchema = z.object({
     documents: z.array(RowSchema),
     fieldMemory: z.array(RowSchema),
     answers: z.array(RowSchema),
+    // Added in Phase 11; older backups and snapshots have none.
+    history: z.array(RowSchema).default([]),
   }),
   tombstones: z.array(
     z.object({ table: z.enum(DATA_TABLES), rowId: z.string().min(1), deletedAt: z.string() }),

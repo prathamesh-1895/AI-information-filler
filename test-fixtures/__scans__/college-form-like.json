@@ -1,0 +1,516 @@
+[
+  {
+    "ref": "name",
+    "frameId": 0,
+    "selector": "#sname",
+    "tag": "input",
+    "inputType": "text",
+    "name": "student_name",
+    "label": "Student's full name (as on marksheet)",
+    "labelSource": "label-for",
+    "sectionHeading": "Personal details",
+    "required": true,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "36ca0f50365dc4e08517be1e603e09a28fda1029a07248c0b89e8fb0a2a1d75d",
+    "domId": "sname"
+  },
+  {
+    "ref": "father",
+    "frameId": 0,
+    "selector": "#father",
+    "tag": "input",
+    "inputType": "text",
+    "name": "father_name",
+    "label": "Father's name",
+    "labelSource": "label-for",
+    "sectionHeading": "Personal details",
+    "required": true,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "25d8a4838832a1637a3d7d9cf65a63f53487641a32a86ac864d8f5371ff5b429",
+    "domId": "father"
+  },
+  {
+    "ref": "mother",
+    "frameId": 0,
+    "selector": "#mother",
+    "tag": "input",
+    "inputType": "text",
+    "name": "mother_name",
+    "label": "Mother's name",
+    "labelSource": "label-for",
+    "sectionHeading": "Personal details",
+    "required": true,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "b382b2c1ad2491a5e20b6aa62c5ffd4748a9ed5dc408ba718f2343fbffc29eb2",
+    "domId": "mother"
+  },
+  {
+    "ref": "dob-day",
+    "frameId": 0,
+    "selector": "#dob-d",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "dob_d",
+    "label": "Day",
+    "labelSource": "label-for",
+    "sectionHeading": "Date of birth",
+    "options": [
+      {
+        "value": "1",
+        "text": "1"
+      },
+      {
+        "value": "2",
+        "text": "2"
+      },
+      {
+        "value": "3",
+        "text": "3"
+      },
+      {
+        "value": "4",
+        "text": "4"
+      },
+      {
+        "value": "5",
+        "text": "5"
+      },
+      {
+        "value": "6",
+        "text": "6"
+      },
+      {
+        "value": "7",
+        "text": "7"
+      },
+      {
+        "value": "8",
+        "text": "8"
+      },
+      {
+        "value": "9",
+        "text": "9"
+      },
+      {
+        "value": "10",
+        "text": "10"
+      },
+      {
+        "value": "11",
+        "text": "11"
+      },
+      {
+        "value": "12",
+        "text": "12"
+      },
+      {
+        "value": "13",
+        "text": "13"
+      },
+      {
+        "value": "14",
+        "text": "14"
+      },
+      {
+        "value": "15",
+        "text": "15"
+      },
+      {
+        "value": "16",
+        "text": "16"
+      },
+      {
+        "value": "17",
+        "text": "17"
+      },
+      {
+        "value": "18",
+        "text": "18"
+      },
+      {
+        "value": "19",
+        "text": "19"
+      },
+      {
+        "value": "20",
+        "text": "20"
+      },
+      {
+        "value": "21",
+        "text": "21"
+      },
+      {
+        "value": "22",
+        "text": "22"
+      },
+      {
+        "value": "23",
+        "text": "23"
+      },
+      {
+        "value": "24",
+        "text": "24"
+      },
+      {
+        "value": "25",
+        "text": "25"
+      },
+      {
+        "value": "26",
+        "text": "26"
+      },
+      {
+        "value": "27",
+        "text": "27"
+      },
+      {
+        "value": "28",
+        "text": "28"
+      },
+      {
+        "value": "29",
+        "text": "29"
+      },
+      {
+        "value": "30",
+        "text": "30"
+      },
+      {
+        "value": "31",
+        "text": "31"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "e1e37327c6157bdb70ecb828225c1878481bc0c07b5706c59ef668abf45ec268",
+    "domId": "dob-d"
+  },
+  {
+    "ref": "dob-month",
+    "frameId": 0,
+    "selector": "#dob-m",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "dob_m",
+    "label": "Month",
+    "labelSource": "label-for",
+    "sectionHeading": "Date of birth",
+    "options": [
+      {
+        "value": "1",
+        "text": "Jan"
+      },
+      {
+        "value": "2",
+        "text": "Feb"
+      },
+      {
+        "value": "3",
+        "text": "Mar"
+      },
+      {
+        "value": "4",
+        "text": "Apr"
+      },
+      {
+        "value": "5",
+        "text": "May"
+      },
+      {
+        "value": "6",
+        "text": "Jun"
+      },
+      {
+        "value": "7",
+        "text": "Jul"
+      },
+      {
+        "value": "8",
+        "text": "Aug"
+      },
+      {
+        "value": "9",
+        "text": "Sep"
+      },
+      {
+        "value": "10",
+        "text": "Oct"
+      },
+      {
+        "value": "11",
+        "text": "Nov"
+      },
+      {
+        "value": "12",
+        "text": "Dec"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "21044db7b76b2891ff5bacc72762e23b115af580c4f03a493e4aea6f3df74306",
+    "domId": "dob-m"
+  },
+  {
+    "ref": "dob-year",
+    "frameId": 0,
+    "selector": "#dob-y",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "dob_y",
+    "label": "Year",
+    "labelSource": "label-for",
+    "sectionHeading": "Date of birth",
+    "options": [
+      {
+        "value": "1998",
+        "text": "1998"
+      },
+      {
+        "value": "1999",
+        "text": "1999"
+      },
+      {
+        "value": "2000",
+        "text": "2000"
+      },
+      {
+        "value": "2001",
+        "text": "2001"
+      },
+      {
+        "value": "2002",
+        "text": "2002"
+      },
+      {
+        "value": "2003",
+        "text": "2003"
+      },
+      {
+        "value": "2004",
+        "text": "2004"
+      },
+      {
+        "value": "2005",
+        "text": "2005"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "8df3613acc0e169151b90fed1e04071e8688e50cbfd762e07e6dbad430ebad01",
+    "domId": "dob-y"
+  },
+  {
+    "ref": "category",
+    "frameId": 0,
+    "selector": "#category",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "category",
+    "label": "Category",
+    "labelSource": "label-for",
+    "sectionHeading": "Personal details",
+    "options": [
+      {
+        "value": "General",
+        "text": "General"
+      },
+      {
+        "value": "OBC",
+        "text": "OBC"
+      },
+      {
+        "value": "SC",
+        "text": "SC"
+      },
+      {
+        "value": "ST",
+        "text": "ST"
+      },
+      {
+        "value": "EWS",
+        "text": "EWS"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "689560458f53c11a4f663952b43abf6678d3158820eb60281a252597391912f1",
+    "domId": "category"
+  },
+  {
+    "ref": "aadhaar",
+    "frameId": 0,
+    "selector": "#aadhaar",
+    "tag": "input",
+    "inputType": "text",
+    "name": "aadhaar",
+    "label": "Aadhaar number",
+    "labelSource": "label-for",
+    "sectionHeading": "Personal details",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "5d2f466bf073b58ab0adcfb9c369f7a185b951c1c21fa1376186e56f25a6089a",
+    "domId": "aadhaar"
+  },
+  {
+    "ref": "income",
+    "frameId": 0,
+    "selector": "#income",
+    "tag": "input",
+    "inputType": "number",
+    "name": "income",
+    "label": "Annual family income (₹)",
+    "labelSource": "label-for",
+    "sectionHeading": "Personal details",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "b5b4e14a024dce47996d8281510727fdf6edeac962fb56845d6f45fc7f2b6e2d",
+    "domId": "income"
+  },
+  {
+    "ref": "addr1",
+    "frameId": 0,
+    "selector": "#addr1",
+    "tag": "input",
+    "inputType": "text",
+    "name": "addr1",
+    "label": "Address line 1",
+    "labelSource": "label-for",
+    "sectionHeading": "Permanent address",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "bd56e91c632b372b906e40dc096de6367d484ab3cdda2ddb4b34f37a9b686ce9",
+    "domId": "addr1"
+  },
+  {
+    "ref": "city",
+    "frameId": 0,
+    "selector": "#village",
+    "tag": "input",
+    "inputType": "text",
+    "name": "city",
+    "label": "City / Village",
+    "labelSource": "label-for",
+    "sectionHeading": "Permanent address",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "4ba4eda0823287ccc0fd458c5fd357615558217e1f5387ca1d528cab2ee6bce9",
+    "domId": "village"
+  },
+  {
+    "ref": "district",
+    "frameId": 0,
+    "selector": "#district",
+    "tag": "input",
+    "inputType": "text",
+    "name": "district",
+    "label": "District",
+    "labelSource": "label-for",
+    "sectionHeading": "Permanent address",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "7e11affab0b54e12581c8f90bdfb446f3dc1512871e4028149a3c771f9d96043",
+    "domId": "district"
+  },
+  {
+    "ref": "state",
+    "frameId": 0,
+    "selector": "#state",
+    "tag": "select",
+    "inputType": "select-one",
+    "name": "state",
+    "label": "State",
+    "labelSource": "label-for",
+    "sectionHeading": "Permanent address",
+    "options": [
+      {
+        "value": "Maharashtra",
+        "text": "Maharashtra"
+      },
+      {
+        "value": "Karnataka",
+        "text": "Karnataka"
+      },
+      {
+        "value": "Gujarat",
+        "text": "Gujarat"
+      },
+      {
+        "value": "Tamil Nadu",
+        "text": "Tamil Nadu"
+      },
+      {
+        "value": "Kerala",
+        "text": "Kerala"
+      },
+      {
+        "value": "Goa",
+        "text": "Goa"
+      }
+    ],
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "1e9938efc2af3b7bd75294dd78ffe8ef9d65444c341c66b1f389acb82e11d16f",
+    "domId": "state"
+  },
+  {
+    "ref": "pin",
+    "frameId": 0,
+    "selector": "#pin",
+    "tag": "input",
+    "inputType": "text",
+    "name": "pin",
+    "label": "PIN code",
+    "labelSource": "label-for",
+    "sectionHeading": "Permanent address",
+    "required": false,
+    "maxLength": 6,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "f32a6ba1fa909a74b4a4cd35aa4c16c65a515b6c149033f9bef912587ac15bb6",
+    "domId": "pin"
+  },
+  {
+    "ref": "mobile",
+    "frameId": 0,
+    "selector": "#mobile",
+    "tag": "input",
+    "inputType": "tel",
+    "name": "mobile",
+    "label": "Mobile number",
+    "labelSource": "label-for",
+    "sectionHeading": "Permanent address",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "38445fac7b3d9a5ead69c4eec5fd02e2ed1188d27d44db3f51436005e97873b4",
+    "domId": "mobile"
+  },
+  {
+    "ref": "declare",
+    "frameId": 0,
+    "selector": "input[name=\"declare\"]",
+    "tag": "input",
+    "inputType": "checkbox",
+    "name": "declare",
+    "label": "I declare that the above information is true",
+    "labelSource": "label-wrap",
+    "sectionHeading": "Post-matric scholarship 2026–27",
+    "required": false,
+    "isVisible": true,
+    "isDisabled": false,
+    "signature": "d64f7612a6581f05329a5d7cc85a385b41d9dfd2c0d8be7345b93d8d7374ccf7"
+  }
+]

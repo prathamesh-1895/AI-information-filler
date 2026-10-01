@@ -10,6 +10,9 @@ import {
   GenerateResponseSchema,
   HealthResponseSchema,
   VisionResponseSchema,
+  ExtractResponseSchema,
+  type ExtractRequest,
+  type ExtractResponse,
   type VisionRequest,
   type VisionResponse,
   type ClassifyRequest,
@@ -25,6 +28,7 @@ export const AI_ENDPOINTS = {
   classify: 'ai-classify',
   generate: 'ai-generate',
   vision: 'ai-vision',
+  extract: 'ai-extract',
 } as const;
 export type AiEndpoint = (typeof AI_ENDPOINTS)[keyof typeof AI_ENDPOINTS];
 
@@ -95,6 +99,10 @@ export class AiClient {
 
   vision(request: VisionRequest): Promise<AiCall<VisionResponse>> {
     return this.call(AI_ENDPOINTS.vision, 'POST', request, VisionResponseSchema);
+  }
+
+  extract(request: ExtractRequest): Promise<AiCall<ExtractResponse>> {
+    return this.call(AI_ENDPOINTS.extract, 'POST', request, ExtractResponseSchema);
   }
 
   private async call<S extends z.ZodType>(

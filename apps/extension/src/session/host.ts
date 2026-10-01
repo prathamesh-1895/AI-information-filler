@@ -13,6 +13,11 @@ import {
   reduce,
   restrictSelection,
   selectFacts,
+  historyItems,
+  applyProfile,
+  detectProfile,
+  type ActiveProfile,
+  type FieldConstraint,
   type AiSeam,
   type Answer,
   type Effect,
@@ -27,6 +32,7 @@ import {
 import { questionSimilarity, type Repositories, type VaultService } from '@filler/vault';
 import type { FillItem, FillResult, HighlightItem, PageScan, Result } from '../messaging/protocol';
 import { DEFAULT_SETTINGS, isTrusted, type Settings } from '../settings';
+import { builtInProfiles } from '../platforms/profiles';
 
 export interface HostDeps {
   vault: VaultService;
@@ -68,6 +74,11 @@ export function bestPastAnswer(
 
 export class SessionHost {
   private readonly sessions = new Map<number, SessionState>();
+  /** History being collected per session id, merged across pages by field signature. */
+  private readonly histories = new Map<
+    string,
+    Map<string, ReturnType<typeof historyItems>[number]>
+  >();
   private readonly queues = new Map<number, Promise<unknown>>();
   private readonly ai: AiSeam;
   private readonly now: () => string;
@@ -127,6 +138,7 @@ export class SessionHost {
     if (state !== current) {
       this.sessions.set(tabId, state);
       this.deps.publish(tabId, state);
+      await this.recordHistory(current, state);
     }
     for (const effect of effects) {
       const follow = await this.run(tabId, effect);
@@ -168,9 +180,10 @@ export class SessionHost {
             this.deps.repos.fieldMemory.list(),
           ]);
           const settings = await this.settings();
+          const policy = createPolicy({ extraPatterns: settings.denyPatterns });
           const all = mapFields(state.fields, {
             site: state.site,
-            policy: createPolicy({ extraPatterns: settings.denyPatterns }),
+            policy,
             memory: new Map(memories.map((m: FieldMemory) => [m.signature, m])),
             factKeys: new Set(facts.map((f) => f.key)),
             factValues: new Map(
@@ -180,13 +193,47 @@ export class SessionHost {
             ),
           });
           const wanted = new Set(effect.fieldIds);
-          const mappings: Record<string, MapResult> = {};
+          let mappings: Record<string, MapResult> = {};
           for (const [id, m] of all) if (wanted.has(id)) mappings[id] = m;
+          // Platform profile (optional): tunes what the rules found; never required.
+          let profile: ActiveProfile | undefined;
+          let constraints: Record<string, FieldConstraint> | undefined;
+          if (settings.platformProfiles) {
+            const found = detectProfile(builtInProfiles(), {
+              url: state.url,
+              title: state.title,
+              fields: state.fields,
+            });
+            if (found) {
+              const applied = applyProfile(
+                found.profile,
+                state.fields.filter((f) => wanted.has(f.id)),
+                mappings,
+                policy,
+              );
+              mappings = applied.mappings;
+              constraints = applied.constraints;
+              const p = found.profile.profile;
+              profile = {
+                id: p.id,
+                name: p.name,
+                family: p.family,
+                by: found.by,
+                tips: p.tips,
+                neverClick: p.navigation.neverClick,
+                goal: p.goal,
+              };
+            }
+          }
+          const extra = {
+            ...(profile ? { profile } : {}),
+            ...(constraints ? { constraints } : {}),
+          };
           // Rules first; whatever they could not place goes to the AI seam (offline: nothing).
           const unmapped = state.fields.filter(
             (f) => wanted.has(f.id) && mappings[f.id]?.source === 'none',
           );
-          if (!unmapped.length) return [{ type: 'MAPPED', mappings }];
+          if (!unmapped.length) return [{ type: 'MAPPED', mappings, ...extra }];
           const byAi = await this.ai.resolveUnmapped(unmapped, {
             site: state.site,
             ...(state.title ? { title: state.title } : {}),
@@ -211,7 +258,7 @@ export class SessionHost {
                 .catch(() => undefined);
           }
           const ai = this.ai.status?.() ?? { mode: this.ai.mode };
-          return [{ type: 'MAPPED', mappings, ai }];
+          return [{ type: 'MAPPED', mappings, ai, ...extra }];
         }
         case 'PLAN': {
           if (!this.deps.vault.isUnlocked()) return [{ type: 'VAULT_LOCKED' }];
@@ -316,6 +363,9 @@ export class SessionHost {
             await this.deps.repos.answers.search(field.label, { platform, limit: 3 })
           ).map((r) => ({ question: r.answer.questionText, answer: r.answer.value }));
           const { answerLanguage } = await this.settings();
+          // The profile's length window (e.g. Upwork overviews: 1,000–5,000) guides the draft.
+          const window = state.constraints?.[fieldId]?.lengthWindow;
+          const hint = effect.hint;
           const goal = state.goal
             ? { ...state.goal, language: state.goal.language ?? answerLanguage }
             : { text: state.title || state.site || 'Fill this form', language: answerLanguage };
@@ -336,10 +386,12 @@ export class SessionHost {
                 .filter((f) => allowed.has(f.key))
                 .map((f) => ({ key: f.key, value: f.value })),
               examples,
-              ...(effect.hint ? { hint: effect.hint } : {}),
+              ...(hint ? { hint } : {}),
+              ...(window ? { lengthWindow: window } : {}),
             },
           );
-          return [{ type: 'DRAFTED', fieldId, answer }];
+          const ai = this.ai.status?.();
+          return [{ type: 'DRAFTED', fieldId, answer, ...(ai ? { ai } : {}) }];
         }
         case 'RECORD_ANSWER':
           await this.deps.repos.answers.add({
@@ -381,6 +433,36 @@ export class SessionHost {
       }
       return [];
     }
+  }
+
+  /**
+   * Session history (Task 11.4): after a fill, the page's outcome is merged
+   * into this session's record and saved (encrypted). Nothing is recorded
+   * for a session that filled nothing.
+   */
+  private async recordHistory(before: SessionState, after: SessionState): Promise<void> {
+    if (!after.id || !after.site || !this.deps.vault.isUnlocked()) return;
+    const filledNow =
+      after.phase === 'READY_TO_SUBMIT' ||
+      (after.phase === 'VERIFYING' && before.phase === 'FILLING') ||
+      after.plan.some((p, i) => p.status === 'filled' && before.plan[i]?.status !== 'filled');
+    if (!filledNow) return;
+    const items = this.histories.get(after.id) ?? new Map();
+    for (const item of historyItems(after)) items.set(item.signature, item);
+    this.histories.set(after.id, items);
+    if (![...items.values()].some((i) => i.status === 'filled')) return;
+    await this.deps.repos.history
+      .add({
+        id: after.id,
+        site: after.site,
+        url: after.url.slice(0, 2_000),
+        title: after.title.slice(0, 1_000),
+        ...(after.goal ? { goal: after.goal.text } : {}),
+        startedAt: after.startedAt,
+        endedAt: this.now(),
+        items: [...items.values()].slice(0, 500),
+      })
+      .catch(() => undefined);
   }
 
   /** Vault locked/unlocked: tell every live session. */

@@ -17,9 +17,21 @@ export function strengthenSuggestions(state: SessionState): Suggestion[] {
     if (item.kind !== 'open_ended' || typeof item.value !== 'string') continue;
     if (item.status === 'skipped' || item.status === 'failed') continue;
     const field = state.fields.find((f) => f.id === item.fieldId);
-    const max = field?.maxLength;
-    if (!field || !max || max < 300) continue;
+    if (!field) continue;
     const length = item.value.trim().length;
+    // A platform profile knows what length works on that site (e.g. 1,000–5,000).
+    const window = state.constraints?.[item.fieldId]?.lengthWindow;
+    if (window) {
+      if (length >= window[0]) continue;
+      out.push({
+        fieldId: item.fieldId,
+        label: field.label,
+        message: `${field.label} has ${length.toLocaleString('en-IN')} characters; ${state.profile?.name ?? 'this site'} works best with ${window[0].toLocaleString('en-IN')}–${window[1].toLocaleString('en-IN')}.`,
+      });
+      continue;
+    }
+    const max = field.maxLength;
+    if (!max || max < 300) continue;
     if (length >= max * 0.25) continue;
     out.push({
       fieldId: item.fieldId,

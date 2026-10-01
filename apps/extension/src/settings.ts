@@ -32,6 +32,8 @@ const fields = {
    * options and help text are sent, never your details; needs sign-in.
    */
   aiAssist: z.boolean(),
+  /** Use built-in site profiles (tips, tuned fields, length windows). Filler works without them. */
+  platformProfiles: z.boolean(),
 };
 
 export const SettingsSchema = z.object(fields);
@@ -52,6 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   cloudSync: false,
   aiAssist: true,
+  platformProfiles: true,
 };
 
 const STORAGE_KEY = 'filler.settings';

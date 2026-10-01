@@ -48,7 +48,17 @@ export function DraftControls({
       return next;
     });
 
-  if (!aiOn) return null;
+  if (!aiOn)
+    // AI went offline: no Draft button, but say why the last attempt gave nothing.
+    return draft.error ? (
+      <p
+        className="text-xs text-amber-900 dark:text-amber-200"
+        role="status"
+        data-testid="draft-error"
+      >
+        {draft.error}
+      </p>
+    ) : null;
   return (
     <div
       className="space-y-1.5 rounded-md border border-amber-300 bg-amber-50/60 p-2 dark:border-amber-800 dark:bg-amber-950/30"

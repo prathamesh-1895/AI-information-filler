@@ -76,6 +76,12 @@ export function SettingsView() {
 
       <Card className="space-y-3">
         <h3 className="text-sm font-semibold">Filling</h3>
+        <Toggle
+          label="Use site profiles"
+          description="Tips, length targets and tuned fields for kinds of sites (freelance, jobs, forms, events, college and government forms). Filler works on every site without them."
+          checked={settings.platformProfiles}
+          onChange={(v) => void update({ platformProfiles: v })}
+        />
         <div className="space-y-1">
           <label htmlFor="typing" className="block text-sm font-medium">
             How to enter values
