@@ -1,0 +1,156 @@
+{
+  "$comment": "Scripted model for tests (PLAYBOOK 0.9: tests never call a live provider). Hand-written in the exact output format the classify prompt asks for, keyed by the field label (lowercase). Not a live recording: replace with recorded replies after checkpoint B. 'Joining date' is a deliberate, realistic miss.",
+  "answers": {
+    "where are you based these days?": {
+      "kind": "fact",
+      "canonicalKey": "address.city",
+      "confidence": 0.86,
+      "reason": "Asks for the city the person lives in",
+      "question": "Which city are you based in?"
+    },
+    "what do you call yourself professionally?": {
+      "kind": "fact",
+      "canonicalKey": "bio.headline",
+      "confidence": 0.82,
+      "reason": "Asks for a professional title or headline",
+      "question": "What is your professional title?"
+    },
+    "how long have you been doing this for a living?": {
+      "kind": "fact",
+      "canonicalKey": "professional.years_experience",
+      "confidence": 0.84,
+      "reason": "Asks for years of professional experience",
+      "question": "How many years have you worked professionally?"
+    },
+    "where can we see your code?": {
+      "kind": "fact",
+      "canonicalKey": "links.github",
+      "confidence": 0.8,
+      "reason": "Asks for a code repository profile",
+      "question": "What is your GitHub profile?"
+    },
+    "what's your go-to stack?": {
+      "kind": "fact",
+      "canonicalKey": "skills",
+      "confidence": 0.74,
+      "reason": "Asks for the technologies the person uses most",
+      "question": "Which technologies do you use most?"
+    },
+    "favourite tools": {
+      "kind": "fact",
+      "newKeySuggestion": "custom.favourite_tools",
+      "confidence": 0.7,
+      "reason": "Asks for preferred tools",
+      "question": "Which tools do you like using most?"
+    },
+    "t-shirt size": {
+      "kind": "choice",
+      "confidence": 0.9,
+      "reason": "Pick a T-shirt size from the list",
+      "question": "Which T-shirt size should I pick?"
+    },
+    "spirit animal": {
+      "kind": "fact",
+      "newKeySuggestion": "custom.spirit_animal",
+      "confidence": 0.6,
+      "reason": "A light-hearted personal question",
+      "question": "What is your spirit animal?"
+    },
+    "tell us about a challenge you overcame": {
+      "kind": "open_ended",
+      "confidence": 0.92,
+      "reason": "Needs a short story in the person's own words"
+    },
+    "one sentence that sums up your work": {
+      "kind": "open_ended",
+      "canonicalKey": "bio.summary_short",
+      "confidence": 0.8,
+      "reason": "Asks for a one-line professional summary"
+    },
+    "which track will you join?": {
+      "kind": "choice",
+      "confidence": 0.88,
+      "reason": "Pick one event track",
+      "question": "Which track would you like to join?"
+    },
+    "team name": {
+      "kind": "fact",
+      "newKeySuggestion": "custom.team_name",
+      "confidence": 0.75,
+      "reason": "Asks for the name of the person's team",
+      "question": "What is your team called?"
+    },
+    "joining date": {
+      "kind": "fact",
+      "canonicalKey": "experience[].start",
+      "confidence": 0.55,
+      "reason": "Looks like a job start date",
+      "question": "When did you join?"
+    },
+    "short code": {
+      "kind": "fact",
+      "newKeySuggestion": "custom.short_code",
+      "confidence": 0.5,
+      "reason": "A short identifier the form asks for",
+      "question": "What short code should I use?"
+    },
+    "work mode": {
+      "kind": "choice",
+      "confidence": 0.85,
+      "reason": "Pick a preferred way of working",
+      "question": "Which work mode do you prefer?"
+    },
+    "which year are you in?": {
+      "kind": "choice",
+      "confidence": 0.85,
+      "reason": "Pick the current year of study",
+      "question": "Which year of study are you in?"
+    },
+    "rate yourself: communication": {
+      "kind": "choice",
+      "confidence": 0.85,
+      "reason": "A self-rating on a scale",
+      "question": "How would you rate your communication?"
+    },
+    "rate yourself: teamwork": {
+      "kind": "choice",
+      "confidence": 0.85,
+      "reason": "A self-rating on a scale",
+      "question": "How would you rate your teamwork?"
+    },
+    "why do you want to be a campus ambassador?": {
+      "kind": "open_ended",
+      "confidence": 0.93,
+      "reason": "Asks for motivation in the person's own words"
+    },
+    "cover letter": {
+      "kind": "open_ended",
+      "confidence": 0.95,
+      "reason": "A cover letter written for this application"
+    },
+    "how did you hear about us?": {
+      "kind": "choice",
+      "confidence": 0.85,
+      "reason": "Pick how the person found this opening",
+      "question": "How did you hear about this?"
+    },
+    "message": {
+      "kind": "open_ended",
+      "confidence": 0.8,
+      "reason": "A free-text message to the site"
+    },
+    "favourite colour": {
+      "kind": "fact",
+      "newKeySuggestion": "custom.favourite_colour",
+      "confidence": 0.8,
+      "reason": "Asks for a preferred colour",
+      "question": "What is your favourite colour?"
+    },
+    "experience level": {
+      "kind": "choice",
+      "confidence": 0.86,
+      "reason": "Pick an experience level",
+      "question": "Which experience level fits you?"
+    }
+  }
+}

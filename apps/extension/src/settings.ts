@@ -27,6 +27,11 @@ const fields = {
   theme: z.enum(['system', 'light', 'dark']),
   /** Sync the encrypted vault through the user's Filler account (Phase 7). Off until turned on. */
   cloudSync: z.boolean(),
+  /**
+   * Ask Filler's AI what unfamiliar fields mean (Phase 8). Only field labels,
+   * options and help text are sent, never your details; needs sign-in.
+   */
+  aiAssist: z.boolean(),
 };
 
 export const SettingsSchema = z.object(fields);
@@ -46,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
   denyPatterns: [],
   theme: 'system',
   cloudSync: false,
+  aiAssist: true,
 };
 
 const STORAGE_KEY = 'filler.settings';

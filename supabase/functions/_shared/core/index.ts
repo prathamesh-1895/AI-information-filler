@@ -12,3 +12,7 @@ export * from './mapper/format.ts';
 export * from './orchestrator/ai.ts';
 export * from './orchestrator/plan.ts';
 export * from './orchestrator/session.ts';
+export * from './ai/redact.ts';
+export * from './ai/contract.ts';
+export * from './ai/guard.ts';
+export * from './ai/convert.ts';

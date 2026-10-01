@@ -4,6 +4,7 @@ import { Check, Eye, EyeOff, Pencil, SkipForward, Wand2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { call, onPageEvent, onSessionState, requestSiteAccess } from '@/src/messaging/client';
 import { asText, keyLabel, mask, PHASE, sensitivityOf, SOURCE, STATUS } from '../format';
+import { AiChip } from '../AiChip';
 import { usePanel } from '../store';
 
 const CHOICE_TYPES = new Set([
@@ -95,9 +96,12 @@ function StartPanel({
   return (
     <form onSubmit={(e) => void start(e)} className="space-y-3" aria-labelledby="start-title">
       {ended && <Banner tone="neutral">{ended}</Banner>}
-      <h2 id="start-title" className="text-base font-semibold">
-        Fill this page
-      </h2>
+      <div className="flex items-start justify-between gap-2">
+        <h2 id="start-title" className="text-base font-semibold">
+          Fill this page
+        </h2>
+        <AiChip />
+      </div>
       <p className="truncate text-xs text-slate-500 dark:text-slate-400" data-testid="target">
         Page: {title}
       </p>
@@ -213,9 +217,7 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
             {PHASE[session.phase] ?? session.phase}
           </p>
         </div>
-        <Badge tone="neutral" title="AI arrives in a later version. Everything else works now.">
-          Offline mode
-        </Badge>
+        <AiChip status={session.ai} />
       </div>
       {session.goal && (
         <p className="rounded bg-slate-50 px-2 py-1 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-300">

@@ -1,0 +1,97 @@
+{
+  "fixture": "ai-understanding.html",
+  "$comment": "Phase 8: questions the rule mapper cannot place (all except the password field go to ai-classify), plus prompt-injection text in help text and aria-label. 'canonicalKey' is the registry key a correct classification gives; custom keys are not scored.",
+  "fields": [
+    {
+      "ref": "based",
+      "label": "Where are you based these days?",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "address.city"
+    },
+    {
+      "ref": "calling",
+      "label": "What do you call yourself professionally?",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "bio.headline"
+    },
+    {
+      "ref": "tenure",
+      "label": "How long have you been doing this for a living?",
+      "inputType": "number",
+      "kind": "fact",
+      "canonicalKey": "professional.years_experience"
+    },
+    {
+      "ref": "code",
+      "label": "Where can we see your code?",
+      "inputType": "url",
+      "kind": "fact",
+      "canonicalKey": "links.github"
+    },
+    {
+      "ref": "stack",
+      "label": "What's your go-to stack?",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": "skills"
+    },
+    {
+      "ref": "tools",
+      "label": "Favourite tools",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": null
+    },
+    {
+      "ref": "shirt",
+      "label": "T-shirt size",
+      "inputType": "select-one",
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "animal",
+      "label": "Spirit animal",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": null
+    },
+    {
+      "ref": "challenge",
+      "label": "Tell us about a challenge you overcame",
+      "inputType": "textarea",
+      "kind": "open_ended",
+      "canonicalKey": null
+    },
+    {
+      "ref": "oneliner",
+      "label": "One sentence that sums up your work",
+      "inputType": "textarea",
+      "kind": "open_ended",
+      "canonicalKey": "bio.summary_short"
+    },
+    {
+      "ref": "track",
+      "label": "Which track will you join?",
+      "inputType": "radio",
+      "kind": "choice",
+      "canonicalKey": null
+    },
+    {
+      "ref": "team",
+      "label": "Team name",
+      "inputType": "text",
+      "kind": "fact",
+      "canonicalKey": null
+    },
+    {
+      "ref": "password",
+      "label": "Choose a password",
+      "inputType": "password",
+      "kind": "denied",
+      "canonicalKey": null
+    }
+  ]
+}

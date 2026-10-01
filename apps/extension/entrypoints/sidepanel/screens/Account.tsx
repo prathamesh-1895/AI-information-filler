@@ -98,6 +98,7 @@ export function AccountCard() {
   const [sync, setSync] = useState<SyncStatus | null>(null);
   const [message, setMessage] = useState<{ tone: 'green' | 'red'; text: string } | null>(null);
   const [cloudPass, setCloudPass] = useState('');
+  const authChanged = usePanel((s) => s.authChanged);
 
   const refresh = useCallback(async () => {
     const [a, s] = await Promise.all([
@@ -138,7 +139,7 @@ export function AccountCard() {
             Sign in to keep your vault on more than one device. It is end-to-end encrypted: only
             your passphrase opens it.
           </p>
-          <SignIn onSignedIn={() => void refresh()} />
+          <SignIn onSignedIn={() => void refresh().then(authChanged)} />
         </>
       ) : (
         <>
@@ -149,7 +150,7 @@ export function AccountCard() {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => void call({ type: 'AUTH_SIGN_OUT' }).then(refresh)}
+              onClick={() => void call({ type: 'AUTH_SIGN_OUT' }).then(refresh).then(authChanged)}
             >
               Sign out
             </Button>

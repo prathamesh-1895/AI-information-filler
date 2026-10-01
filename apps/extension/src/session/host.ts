@@ -164,15 +164,32 @@ export class SessionHost {
           const unmapped = state.fields.filter(
             (f) => wanted.has(f.id) && mappings[f.id]?.source === 'none',
           );
-          if (unmapped.length) {
-            const byAi = await this.ai.resolveUnmapped(unmapped, {
-              site: state.site,
-              filled: state.used,
-              ...(state.goal ? { goal: state.goal } : {}),
-            });
-            for (const [id, m] of byAi) if (mappings[id]?.source === 'none') mappings[id] = m;
+          if (!unmapped.length) return [{ type: 'MAPPED', mappings }];
+          const byAi = await this.ai.resolveUnmapped(unmapped, {
+            site: state.site,
+            ...(state.title ? { title: state.title } : {}),
+            filled: state.used,
+            ...(state.goal ? { goal: state.goal } : {}),
+          });
+          const signatures = new Map(unmapped.map((f) => [f.id, f.signature]));
+          for (const [id, m] of byAi) {
+            if (mappings[id]?.source !== 'none') continue;
+            mappings[id] = m;
+            // Remember the AI's reading of this field, so the same field never costs a second call.
+            const signature = signatures.get(id);
+            if (signature && m.kind !== 'denied')
+              await this.deps.repos.fieldMemory
+                .upsert({
+                  signature,
+                  site: state.site,
+                  via: 'ai',
+                  kind: m.kind,
+                  ...(m.canonicalKey ? { canonicalKey: m.canonicalKey } : {}),
+                })
+                .catch(() => undefined);
           }
-          return [{ type: 'MAPPED', mappings }];
+          const ai = this.ai.status?.() ?? { mode: this.ai.mode };
+          return [{ type: 'MAPPED', mappings, ai }];
         }
         case 'PLAN': {
           if (!this.deps.vault.isUnlocked()) return [{ type: 'VAULT_LOCKED' }];

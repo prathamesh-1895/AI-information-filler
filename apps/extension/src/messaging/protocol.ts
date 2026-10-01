@@ -149,6 +149,14 @@ export const SyncUseCloudRequestSchema = z.object({
   passphrase,
 });
 export const SyncReplaceCloudRequestSchema = z.object({ type: z.literal('SYNC_REPLACE_CLOUD') });
+// ---- AI (Phase 8)
+export const AiStatusRequestSchema = z.object({
+  type: z.literal('AI_STATUS'),
+  /** Re-check the backend now instead of using a recent answer. */
+  refresh: z.boolean().optional(),
+});
+export const AiTestRequestSchema = z.object({ type: z.literal('AI_TEST') });
+export const AiUsageRequestSchema = z.object({ type: z.literal('AI_USAGE') });
 export const SettingsGetRequestSchema = z.object({ type: z.literal('SETTINGS_GET') });
 export const SettingsSetRequestSchema = z.object({
   type: z.literal('SETTINGS_SET'),
@@ -199,6 +207,9 @@ export const PanelRequestSchema = z.discriminatedUnion('type', [
   SyncNowRequestSchema,
   SyncUseCloudRequestSchema,
   SyncReplaceCloudRequestSchema,
+  AiStatusRequestSchema,
+  AiTestRequestSchema,
+  AiUsageRequestSchema,
   SessionStartRequestSchema,
   SessionGetRequestSchema,
   SessionEventRequestSchema,
@@ -318,3 +329,27 @@ export const SessionStateMessageSchema = z.object({
   tabId,
   state: z.object({ id: z.string(), phase: z.string(), plan: z.array(z.unknown()) }).loose(),
 });
+
+/** Result of Settings → "Test AI connection". */
+export const AiTestResultSchema = z.object({
+  ok: z.boolean(),
+  message: z.string(),
+  provider: z.string().nullable(),
+  latencyMs: z.number().nonnegative(),
+});
+export type AiTestResult = z.infer<typeof AiTestResultSchema>;
+
+/** Today's AI usage for the signed-in user, per endpoint, with the limits. */
+export const AiUsageSchema = z.object({
+  day: z.string(),
+  endpoints: z.array(
+    z.object({
+      endpoint: z.string(),
+      calls: z.number().int().nonnegative(),
+      tokens: z.number().int().nonnegative(),
+      maxCalls: z.number().int().nonnegative().optional(),
+      maxTokens: z.number().int().nonnegative().optional(),
+    }),
+  ),
+});
+export type AiUsage = z.infer<typeof AiUsageSchema>;

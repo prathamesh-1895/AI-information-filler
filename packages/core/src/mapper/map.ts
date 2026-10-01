@@ -21,7 +21,17 @@ export interface MapResult {
   /** Plain-language explanation shown in the review list. */
   reason: string;
   source:
-    'policy' | 'rule' | 'memory' | 'autocomplete' | 'dictionary' | 'custom' | 'options' | 'none';
+    | 'policy'
+    | 'rule'
+    | 'memory'
+    | 'autocomplete'
+    | 'dictionary'
+    | 'custom'
+    | 'options'
+    | 'ai'
+    | 'none';
+  /** How to ask the user for this field (AI classifications may phrase it better than the label). */
+  question?: string;
 }
 
 export interface MapContext {
@@ -247,7 +257,20 @@ function result(
 const describeKey = (key: string) =>
   getKeyDef(key)?.label ?? key.replace(/^custom\./, '').replace(/_/g, ' ');
 
+const KIND_WORDS: Record<FieldKind, string> = {
+  fact: 'a detail about you',
+  open_ended: 'a question to answer in your own words',
+  choice: 'a choice for you to make',
+  skip: 'not needed',
+  denied: 'never filled',
+};
+
 /** Index for a single field mapped on its own: explicit numbering, else the first item. */
+export function concreteKeyFor(template: string, field: FieldDescriptor): string {
+  if (!template.includes('[]')) return template;
+  return defaultIndex(template, field);
+}
+
 function defaultIndex(template: string, field: FieldDescriptor): string {
   const group = template.split('[')[0] as ListGroup;
   return template.replace('[]', `[${explicitIndex(field, group) ?? 0}]`);
@@ -299,8 +322,20 @@ export function mapField(
       ? { ...m, kind: 'skip', reason: 'This field is disabled on the page.', confidence: 1 }
       : m;
 
-  // 1. Field memory: this exact field, answered before.
+  // 1. Field memory: this exact field, answered before (or understood by the AI before).
   const memory = ctx.memory?.get(field.signature);
+  if (memory?.via === 'ai') {
+    const kind = memory.kind ?? kindFor(field, memory.canonicalKey);
+    return finish({
+      kind,
+      ...(memory.canonicalKey ? { canonicalKey: memory.canonicalKey } : {}),
+      confidence: 0.8,
+      reason: memory.canonicalKey
+        ? `Understood earlier by Filler's AI: ${describeKey(memory.canonicalKey)}`
+        : `Understood earlier by Filler's AI: ${KIND_WORDS[kind]}`,
+      source: 'memory',
+    });
+  }
   if (memory?.canonicalKey) {
     return finish(
       result(

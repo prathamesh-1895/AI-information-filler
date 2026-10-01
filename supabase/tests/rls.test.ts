@@ -168,6 +168,68 @@ describe('ai_usage and the quota function', () => {
   });
 });
 
+describe('consume_ai_call and record_ai_tokens (Phase 8)', () => {
+  const call = (user: string, maxCalls: number, maxTokens: number, gCalls: number, gTokens = 0) =>
+    as(db, 'service_role', null, () =>
+      rows(`select public.consume_ai_call($1, 'ai-classify', $2, $3, $4, $5) as v`, [
+        user,
+        maxCalls,
+        maxTokens,
+        gCalls,
+        gTokens,
+      ]),
+    ).then((r) => (r[0] as { v: string }).v);
+  const tokens = (user: string, n: number) =>
+    as(db, 'service_role', null, () =>
+      rows(`select public.record_ai_tokens($1, 'ai-classify', $2)`, [user, n]),
+    );
+
+  it('counts allowed calls only, and says whose limit was reached', async () => {
+    expect([await call(A, 2, 0, 100), await call(A, 2, 0, 100), await call(A, 2, 0, 100)]).toEqual([
+      'ok',
+      'ok',
+      'user_limit',
+    ]);
+    // The refused call was not counted.
+    expect(await rows(`select calls from public.ai_usage where user_id = $1`, [A])).toEqual([
+      { calls: 2 },
+    ]);
+    // Global limit: B is under their own limit but everyone together has used 2 of 3.
+    expect(await call(B, 10, 0, 3)).toBe('ok');
+    expect(await call(B, 10, 0, 3)).toBe('global_limit');
+    expect(await rows(`select calls from public.ai_usage_global`)).toEqual([{ calls: 3 }]);
+  });
+
+  it('records real token usage per user and globally; the token limit applies to the next call', async () => {
+    expect(await call(A, 10, 1000, 100)).toBe('ok');
+    await tokens(A, 1200);
+    expect(await call(A, 10, 1000, 100)).toBe('user_limit');
+    await tokens(A, 0); // ignored
+    expect(await rows(`select calls, tokens from public.ai_usage where user_id = $1`, [A])).toEqual(
+      [{ calls: 1, tokens: 1200 }],
+    );
+    expect(await rows(`select tokens from public.ai_usage_global`)).toEqual([{ tokens: 1200 }]);
+    expect(await call(B, 10, 0, 100, 1000)).toBe('global_limit');
+  });
+
+  it('users cannot call either function or see the global counter', async () => {
+    for (const sql of [
+      `select public.consume_ai_call($1, 'ai-classify', 9, 9, 9, 9)`,
+      `select public.record_ai_tokens($1, 'ai-classify', 5)`,
+      `select * from public.ai_usage_global`,
+    ]) {
+      expect(
+        await as(db, 'authenticated', A, () =>
+          fails(() => rows(sql, sql.includes('$1') ? [A] : [])),
+        ),
+      ).toBe(true);
+      expect(
+        await as(db, 'anon', null, () => fails(() => rows(sql, sql.includes('$1') ? [A] : []))),
+      ).toBe(true);
+    }
+  });
+});
+
 describe('ai_cache and feedback', () => {
   it('the AI cache is invisible to users and writable only by the service role', async () => {
     const hash = 'a'.repeat(64);
@@ -222,10 +284,12 @@ describe('schema hygiene', () => {
       `select relname, relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' order by relname`,
     );
     expect(tables).toEqual(
-      ['ai_cache', 'ai_usage', 'feedback', 'profiles', 'vault_blobs'].map((relname) => ({
-        relname,
-        relrowsecurity: true,
-      })),
+      ['ai_cache', 'ai_usage', 'ai_usage_global', 'feedback', 'profiles', 'vault_blobs'].map(
+        (relname) => ({
+          relname,
+          relrowsecurity: true,
+        }),
+      ),
     );
   });
 

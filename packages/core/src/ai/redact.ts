@@ -1,0 +1,36 @@
+/**
+ * PII redaction for text sent to an AI provider (PLAYBOOK Task 8.2). Page
+ * text such as labels, help text and option lists sometimes carries personal
+ * data (a pre-filled example email, a support phone number, an ID shown on
+ * the page). Classification never needs it, so it is replaced with a
+ * placeholder before anything leaves the device or the Edge Function.
+ */
+
+const RULES: Array<[RegExp, string]> = [
+  // Email addresses.
+  [/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]'],
+  // Card numbers, Aadhaar (4-4-4), and other grouped digit runs (13+ digits with separators).
+  [/\b\d{4}[\s-]\d{4}[\s-]\d{4}(?:[\s-]\d{1,7})?\b/g, '[number]'],
+  // US SSN shape.
+  [/\b\d{3}-\d{2}-\d{4}\b/g, '[id]'],
+  // Indian PAN shape (AAAAA9999A).
+  [/\b[A-Z]{5}\d{4}[A-Z]\b/g, '[id]'],
+  // Passport-like shapes (one letter + 7 digits).
+  [/\b[A-Z]\d{7}\b/g, '[id]'],
+  // Phone numbers: optional +country code, 8+ digits with spaces, dots, dashes or brackets.
+  [/(?:\+\d{1,3}[\s.-]?)?(?:\(\d{2,5}\)[\s.-]?)?\d(?:[\s.-]?\d){7,}/g, '[phone]'],
+  // Any other long digit run.
+  [/\d{6,}/g, '[number]'],
+];
+
+/** Replaces emails, phone numbers, long digit runs and ID-like patterns with placeholders. */
+export function redactText(text: string): string {
+  let out = text;
+  for (const [re, placeholder] of RULES) out = out.replace(re, placeholder);
+  return out;
+}
+
+/** True when `redactText` would change the text. */
+export function containsPii(text: string): boolean {
+  return redactText(text) !== text;
+}

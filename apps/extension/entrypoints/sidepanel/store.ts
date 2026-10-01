@@ -1,5 +1,5 @@
 /** Panel state shared across screens (Zustand). The background stays the source of truth. */
-import type { SessionState } from '@filler/core';
+import type { AiStatus, SessionState } from '@filler/core';
 import { create } from 'zustand';
 import { call, getTargetTab, vaultStatus } from '@/src/messaging/client';
 import type { TargetTab } from '@/src/messaging/protocol';
@@ -14,7 +14,13 @@ interface PanelStore {
   view: View;
   target: TargetTab | null;
   session: SessionState | null;
+  /** AI mode outside a session (Settings, start screen). */
+  aiStatus: AiStatus | null;
+  /** Bumped on sign-in/sign-out so account-dependent views reload. */
+  authVersion: number;
+  authChanged(): void;
   setView(view: View): void;
+  refreshAi(refresh?: boolean): Promise<void>;
   setSession(session: SessionState | null): void;
   refreshVault(): Promise<VaultState>;
   refreshTarget(): Promise<TargetTab | null>;
@@ -28,7 +34,17 @@ export const usePanel = create<PanelStore>((set, get) => ({
   view: 'fill',
   target: null,
   session: null,
+  aiStatus: null,
+  authVersion: 0,
+  authChanged() {
+    set({ authVersion: get().authVersion + 1 });
+    void get().refreshAi();
+  },
   setView: (view) => set({ view }),
+  async refreshAi(refresh = false) {
+    const result = await call<AiStatus>({ type: 'AI_STATUS', refresh });
+    if (result.ok) set({ aiStatus: result.data });
+  },
   setSession: (session) => set({ session }),
   async refreshVault() {
     const result = await vaultStatus();
@@ -51,5 +67,6 @@ export const usePanel = create<PanelStore>((set, get) => ({
     set({ settings: { ...get().settings, ...patch } }); // optimistic
     const result = await call<Settings>({ type: 'SETTINGS_SET', patch });
     if (result.ok) set({ settings: result.data });
+    if (patch.aiAssist !== undefined) await get().refreshAi(true);
   },
 }));

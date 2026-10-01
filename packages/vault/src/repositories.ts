@@ -155,13 +155,21 @@ export class FieldMemoryRepo {
     site: string;
     canonicalKey?: string;
     lastAnswerId?: string;
+    /** 'ai' for classifications (Phase 8); anything the user answered is 'user'. */
+    via?: 'user' | 'ai';
+    kind?: FieldMemory['kind'];
   }): Promise<FieldMemory> {
     const existing = await this.get(entry.signature);
+    const via = entry.via ?? 'user';
+    // The user's own mapping always wins over a later AI guess for the same field.
+    if (via === 'ai' && existing && existing.via !== 'ai' && existing.canonicalKey) return existing;
+    const { kind: _k, ...kept } = existing ?? {};
     const next = parseOrThrow(
       FieldMemorySchema,
       {
-        ...existing,
+        ...(via === 'ai' ? existing : kept),
         ...entry,
+        via,
         site: siteOf(entry.site),
         timesUsed: (existing?.timesUsed ?? 0) + 1,
         updatedAt: new Date().toISOString(),

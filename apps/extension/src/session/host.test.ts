@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { readFileSync } from 'node:fs';
-import type { FieldDescriptor, SessionState } from '@filler/core';
+import type { AiSeam, FieldDescriptor, MapResult, SessionState } from '@filler/core';
 import { createRepositories, VaultService } from '@filler/vault';
 import { describe, expect, it, vi } from 'vitest';
 import type { FillItem, PageScan } from '../messaging/protocol';
@@ -17,7 +17,7 @@ const snapshot = (name: string): FieldDescriptor[] =>
     ) as Array<FieldDescriptor & { ref: string }>
   ).map(({ ref: _ref, ...f }, i) => ({ ...f, id: `0:f${i}` }));
 
-async function setup(fields: FieldDescriptor[], settings: Partial<Settings> = {}) {
+async function setup(fields: FieldDescriptor[], settings: Partial<Settings> = {}, ai?: AiSeam) {
   const vault = new VaultService({
     dbName: `host-${Math.random()}`,
     kdfIterations: 1_000,
@@ -52,6 +52,7 @@ async function setup(fields: FieldDescriptor[], settings: Partial<Settings> = {}
     endTab: vi.fn(async () => undefined),
     publish: (_tab: number, s: SessionState) => void states.push(s),
     getSettings: async () => ({ ...DEFAULT_SETTINGS, ...settings }),
+    ...(ai ? { ai } : {}),
   };
   return { host: new SessionHost(deps), vault, repos, filled, states, deps };
 }
@@ -278,5 +279,43 @@ describe('settings change host behaviour (PLAYBOOK Task 6.4)', () => {
     const s = await host.start(1);
     expect(byLabel(s, 'City').item).toMatchObject({ kind: 'denied', status: 'skipped' });
     expect(byLabel(s, 'City').item.value).toBeUndefined();
+  });
+
+  it('AI seam: unresolved fields get AI mappings, field memory, and the mode in the session (Phase 8)', async () => {
+    const seen: string[][] = [];
+    let mode: 'ai' | 'offline' = 'ai';
+    const ai: AiSeam = {
+      get mode() {
+        return mode;
+      },
+      status: () => (mode === 'ai' ? { mode } : { mode, reason: 'daily AI limit reached' }),
+      async resolveUnmapped(fields) {
+        seen.push(fields.map((f) => f.label));
+        const out = new Map<string, MapResult>();
+        for (const f of fields)
+          if (f.label === 'Message')
+            out.set(f.id, {
+              kind: 'open_ended',
+              confidence: 0.8,
+              reason: 'A free-text message',
+              source: 'ai',
+            });
+        return out;
+      },
+      generateAnswer: async () => ({ needsInput: 'Write it', reason: 'offline' }),
+    };
+    const { host, repos } = await setup(snapshot('simple-contact'), {}, ai);
+    const s = await host.start(1);
+    expect(seen).toEqual([['Message']]); // only what the rules could not place
+    expect(s.ai).toEqual({ mode: 'ai' });
+    expect(s.mappings[byLabel(s, 'Message').field.id]).toMatchObject({ source: 'ai' });
+    const memory = await repos.fieldMemory.get(byLabel(s, 'Message').field.signature);
+    expect(memory).toMatchObject({ via: 'ai', kind: 'open_ended', site: '127.0.0.1' });
+
+    // Next time the same field is mapped from memory, with no AI call at all.
+    mode = 'offline';
+    const again = await host.start(1);
+    expect(seen).toHaveLength(1);
+    expect(again.mappings[byLabel(again, 'Message').field.id]).toMatchObject({ source: 'memory' });
   });
 });

@@ -9,6 +9,7 @@ export type ErrorCode =
   | 'METHOD_NOT_ALLOWED'
   | 'BAD_REQUEST'
   | 'RATE_LIMITED'
+  | 'AI_NOT_CONFIGURED'
   | 'PROVIDER_UNAVAILABLE'
   | 'INTERNAL';
 
@@ -18,6 +19,7 @@ const STATUS: Record<ErrorCode, number> = {
   METHOD_NOT_ALLOWED: 405,
   BAD_REQUEST: 400,
   RATE_LIMITED: 429,
+  AI_NOT_CONFIGURED: 503,
   PROVIDER_UNAVAILABLE: 503,
   INTERNAL: 500,
 };
@@ -60,8 +62,13 @@ export function json(body: unknown, status = 200, origin: string | null = null):
   });
 }
 
-export function fail(code: ErrorCode, message: string, origin: string | null = null): Response {
-  return json({ error: { code, message } }, STATUS[code], origin);
+export function fail(
+  code: ErrorCode,
+  message: string,
+  origin: string | null = null,
+  extra: Record<string, string> = {},
+): Response {
+  return json({ error: { code, message, ...extra } }, STATUS[code], origin);
 }
 
 /**

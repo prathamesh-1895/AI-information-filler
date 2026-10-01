@@ -14,7 +14,7 @@
       "patterns": [
         "full name",
         "your name",
-        "name",
+        "(?<!(?:team|company|organi[sz]ation|project|business|brand|store|shop|school|college|university|institute|course|event|pet|product|app|file|user|display|nick|first|last|middle|father s|mother s|father|mother|bank|account) )name",
         "applicant name",
         "applicant s name",
         "candidate name",

@@ -38,13 +38,18 @@ describe('health function', () => {
       env: env(),
       verifyToken: verify,
     });
-    expect(await off.json()).toEqual({ ok: true, providerConfigured: false, provider: null });
+    expect(await off.json()).toMatchObject({ ok: true, providerConfigured: false, provider: null });
     const on = await handleHealth(req({ token: 'good-token' }), {
-      env: env({ AI_PROVIDER: 'gemini', GEMINI_API_KEY: secret }),
+      env: env({ AI_PROVIDER: 'gemini', GEMINI_API_KEY: secret, AI_MODEL_FAST: 'm' }),
       verifyToken: verify,
     });
     const text = await on.text();
-    expect(JSON.parse(text)).toEqual({ ok: true, providerConfigured: true, provider: 'gemini' });
+    expect(JSON.parse(text)).toMatchObject({
+      ok: true,
+      providerConfigured: true,
+      provider: 'gemini',
+    });
+    expect(JSON.parse(text).limits['ai-classify']).toEqual({ maxCalls: 200, maxTokens: 400_000 });
     expect(text).not.toContain(secret);
     expect(on.headers.get('access-control-allow-origin')).toBe(EXT);
   });
@@ -58,6 +63,15 @@ describe('health function', () => {
       configured: false,
       provider: null,
     });
+    // A key without a model is not usable either; a usable fallback counts.
+    expect(providerConfigured(env({ AI_PROVIDER: 'gemini', GEMINI_API_KEY: 'k' })).configured).toBe(
+      false,
+    );
+    expect(
+      providerConfigured(
+        env({ AI_PROVIDER: 'gemini,groq', GROQ_API_KEY: 'q', GROQ_MODEL_FAST: 'llama' }),
+      ),
+    ).toEqual({ configured: true, provider: 'groq' });
   });
 
   it('answers CORS preflight for the extension and refuses web pages', async () => {

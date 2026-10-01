@@ -22,7 +22,11 @@ import {
 } from '../messaging/background-handler';
 import { z } from 'zod';
 import { fail, ok, PanelRequestSchema, type Result } from '../messaging/protocol';
+import { aiUsageToday, testAiConnection } from '../cloud/ai-ops';
+import { supabase } from '../cloud/supabase';
 import {
+  ai,
+  aiClient,
   auth,
   cloud,
   currentSettings,
@@ -164,10 +168,15 @@ export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>>
         return { sent: true };
       });
     case 'AUTH_VERIFY':
-      return cloudCall(() => auth.verify(request.email, request.code));
+      return cloudCall(async () => {
+        const status = await auth.verify(request.email, request.code);
+        await ai.refreshStatus(true);
+        return status;
+      });
     case 'AUTH_SIGN_OUT':
       return cloudCall(async () => {
         await auth.signOut();
+        await ai.refreshStatus(true);
         return auth.status();
       });
     case 'SYNC_STATUS':
@@ -182,6 +191,12 @@ export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>>
       });
     case 'SYNC_REPLACE_CLOUD':
       return cloudCall(() => cloud.replaceCloudCopy());
+    case 'AI_STATUS':
+      return ok(await ai.refreshStatus(request.refresh ?? false));
+    case 'AI_TEST':
+      return ok(await testAiConnection(aiClient, ai));
+    case 'AI_USAGE':
+      return cloudCall(() => aiUsageToday(supabase(), aiClient));
     case 'SETTINGS_GET':
       return ok(currentSettings());
     case 'SETTINGS_SET':

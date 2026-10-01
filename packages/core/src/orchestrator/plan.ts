@@ -55,7 +55,8 @@ export async function planField(
         confidence: 0,
         status: 'pending',
         reason: formatted.reason,
-        question: formatted.question,
+        // The AI's phrasing ("What is your team called?") beats the generic one.
+        question: mapping.question ?? formatted.question,
       };
     }
   }
@@ -90,7 +91,7 @@ export async function planField(
     confidence: 0,
     status: 'pending',
     reason: mapping.reason,
-    question: questionFor(field),
+    question: mapping.question ?? questionFor(field),
   };
 }
 

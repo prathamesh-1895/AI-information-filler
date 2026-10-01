@@ -14,6 +14,7 @@
  */
 import { z } from 'zod';
 import type { MapResult } from '../mapper/map.ts';
+import type { AiStatus } from './ai.ts';
 import { customKeyFor } from '../schema/keys.ts';
 import {
   FactValueSchema,
@@ -58,6 +59,8 @@ export interface SessionState {
   /** Values used so far in this session, by canonical key (keeps later pages consistent). */
   used: Record<string, FactValue>;
   error?: { code: SessionErrorCode; message: string };
+  /** AI mode reported by the latest mapping that needed the AI (Phase 8). */
+  ai?: AiStatus;
   endReason?: string;
   startedAt: string;
   updatedAt: string;
@@ -94,7 +97,7 @@ export type SystemEvent =
   | { type: 'START'; id: string; tabId: number; goal?: Goal; at: string }
   | { type: 'SCANNED'; url: string; title: string; fields: FieldDescriptor[]; at: string }
   | { type: 'SCAN_FAILED'; code: SessionErrorCode; message: string }
-  | { type: 'MAPPED'; mappings: Record<string, MapResult> }
+  | { type: 'MAPPED'; mappings: Record<string, MapResult>; ai?: AiStatus }
   | { type: 'PLANNED'; items: PlanItem[] }
   | { type: 'ANSWER_REJECTED'; fieldId: string; reason: string }
   | { type: 'FILL_RESULTS'; results: FillResultLite[] }
@@ -255,7 +258,12 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
       const ids = Object.keys(event.mappings);
       const { error: _e, ...rest } = s;
       return {
-        state: { ...rest, phase: 'PLANNING', mappings: { ...s.mappings, ...event.mappings } },
+        state: {
+          ...rest,
+          phase: 'PLANNING',
+          mappings: { ...s.mappings, ...event.mappings },
+          ...(event.ai ? { ai: event.ai } : {}),
+        },
         effects: [{ type: 'PLAN', fieldIds: ids }],
       };
     }

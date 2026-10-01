@@ -50,6 +50,10 @@ export const FieldMemorySchema = z.object({
   canonicalKey: FactKeySchema.optional(),
   /** Pointer to the Answer used last time, for open-ended fields. */
   lastAnswerId: id.optional(),
+  /** Who decided this mapping: the user (an answer) or the AI (a classification, Phase 8). */
+  via: z.enum(['user', 'ai']).optional(),
+  /** The field's kind, for AI classifications that have no key (open-ended, choice, skip). */
+  kind: z.enum(['fact', 'open_ended', 'choice', 'skip']).optional(),
   timesUsed: z.number().int().nonnegative(),
   updatedAt: isoDate,
 });

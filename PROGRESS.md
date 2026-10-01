@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 7 — Supabase: auth, database, encrypted sync (2026-10-01; checkpoint A pending)
+**Last completed phase:** Phase 8 — AI gateway & field understanding (2026-10-01; verified with mocked providers; 🔑 checkpoints A and B pending)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -16,7 +16,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 5 | Rule mapper & orchestrator | ✅ COMPLETE (2026-10-01) | 64-key dictionary with section-aware list groups, rule mapper (100% on fixture scans, no AI), lossless value formatter, pure session reducer + AI seam in core, background session host with vault, ask-once memory end to end |
 | 6 | Side panel UI | ✅ COMPLETE (2026-10-01) | Onboarding/unlock, fill session (shaped questions, keyboard review list, banners), vault manager (groups, repeat sections, deny list, encrypted backup, wipe), settings with proven behaviours, shortcuts, axe-clean light/dark UI. **Tier A complete.** |
 | 7 | Supabase: auth, database, encrypted sync | ✅ COMPLETE (2026-10-01, verified offline; 🔑 checkpoint A pending) | RLS schema proven on PGlite, email-code sign-in, end-to-end encrypted two-device sync with tombstones and conflict copies, Edge Function base (health, CORS, auth, quotas), generated shared core, local mock Supabase for e2e |
-| 8 | AI gateway & field understanding | ⬜ NOT STARTED | |
+| 8 | AI gateway & field understanding | ✅ COMPLETE (2026-10-01, mocked providers; 🔑 checkpoint B pending, live provider not configured) | Gemini/Groq/OpenRouter/Ollama adapters with retry, timeout, fallback and token caps; safety envelope (redaction, delimited untrusted data, strict output, per-item guard, policy re-check, metadata-only logs); `ai-classify` with chunking and cache; typed client + AI seam with offline fallback, AI field memory, mode chip; per-user and global daily limits; Test AI connection and usage panel. Rules + classify on fixtures: kind 100%, key 99% |
 | 9 | AI answer generation & goal context | ⬜ NOT STARTED | |
 | 10 | Screen Share & vision mode | ⬜ NOT STARTED | |
 | 11 | Résumé import & platform profiles | ⬜ NOT STARTED | |
@@ -27,12 +27,12 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | Checkpoint | Phase | Status |
 |---|---|---|
 | 🔑 A — Supabase project (URL + anon key, email-code template, migrations applied, health deployed) | 7 | ⏳ waiting for the user (no project on the account yet; steps in supabase/README.md) |
-| 🔑 B — Free AI API key in Supabase secrets | 8 | ⬜ pending |
+| 🔑 B — Free AI API key in Supabase secrets | 8 | ⏳ waiting for the user (needs A first; live provider not configured; steps in supabase/README.md → "AI provider") |
 
 ## Notes for next session
 
-- Next: **Phase 8, Task 8.1** (provider adapters). Model: **Opus 5.5**. Phase 8 has 🔑 USER CHECKPOINT B (free AI key); checkpoint A from Phase 7 is still open and is needed before any live AI call.
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5.
+- Next: **Phase 9, Task 9.1** (fact selection). Model: **Sonnet 5.5** (playbook §0.7). Checkpoints A (Supabase project) and B (free AI key) are still open; Phase 9 can be built and tested with the scripted model like Phase 8, but live drafting needs both.
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5.
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -395,3 +395,93 @@ Then rerun the account flow against the real project and record the result here.
 - Live verification (checkpoint A) is pending as above.
 - `profiles.display_name` is not shown in the UI yet (not needed so far).
 - The sync blob is the whole vault. That is fine for profile-sized data, but a very large document store (Phase 11 résumés) may need size checks; the column allows ≈30 MB.
+
+---
+
+## Phase 8 — files
+
+Created:
+- `packages/core/src/ai/`: `contract.ts` (Zod wire contract: `AiField`, `ClassifyRequest`, `ClassifiedField`, `ClassifyResponse`, `HealthResponse`, `toAiField`), `redact.ts` (`redactText`), `guard.ts` (`guardClassified`, `guardAll`, `isRegistryKey`, `isUnsafeText`), `convert.ts` (`fromClassified`), `ai.test.ts` (35)
+- `supabase/functions/_shared/ai/`: `types.ts`, `providers.ts` (Gemini, Groq, OpenRouter, Ollama), `gateway.ts` (`createGateway`), `envelope.ts` (prompt, encoding, parsing, `classifyChunk`)
+- `supabase/functions/_shared/deps.ts` (deployed token check, quota, token accounting, cache, log)
+- `supabase/functions/ai-classify/handler.ts` + `index.ts`
+- `supabase/migrations/20261002000000_ai_gateway.sql`: `ai_usage_global`, `consume_ai_call()`, `record_ai_tokens()`
+- `supabase/tests/ai.test.ts` (33: adapter contract suite ×4, gateway, envelope, adversarial suite, handler), `classify.fixtures.test.ts` (accuracy), `fake-llm.ts` (scripted provider)
+- `packages/ai-client/src/client.ts` (`AiClient`), `seam.ts` (`createAiSeam`), `client.test.ts` (15)
+- `apps/extension/src/cloud/ai-ops.ts` (connection check, usage), `entrypoints/sidepanel/AiChip.tsx`, `screens/AiSettings.tsx`
+- `test-fixtures/ai-understanding.html` + `.expected.json`, `test-fixtures/__ai__/classify-answers.json`, `test-fixtures/__scans__/ai-understanding.json`
+- `e2e/ai.spec.ts` (3)
+
+Modified:
+- `packages/core`: `schema/records.ts` (FieldMemory `via`, `kind`), `mapper/map.ts` (`source: 'ai'`, `question`, AI memory step, `concreteKeyFor`), `orchestrator/ai.ts` (`AiStatus`, `status()`, `title`), `orchestrator/session.ts` (`state.ai`, `MAPPED.ai`), `orchestrator/plan.ts` (AI question wins), `index.ts`
+- `config/field-dictionary.json`: bare "name" no longer matches "Team name", "Company name" etc. (found by the new fixture)
+- `packages/vault/src/repositories.ts` (+ test): AI memories never overwrite the user's own mapping
+- `supabase/functions/_shared/http.ts` (`AI_NOT_CONFIGURED`, error extras), `quota.ts` (verdicts, global limits, messages), `health/*` (configured = key + model; returns limits), `tests/rls.test.ts` (+3), `tests/functions.test.ts`
+- `apps/extension`: `settings.ts` (`aiAssist`, default on), `session/services.ts` (client + seam), `session/host.ts` (AI memory, mode into MAPPED; + test), `session/router.ts` (`AI_STATUS`, `AI_TEST`, `AI_USAGE`), `messaging/protocol.ts`, `sidepanel/store.ts`, `screens/FillView.tsx`, `screens/SettingsView.tsx`, `screens/Account.tsx`, `package.json`
+- `packages/ai-client/package.json`, `scripts/mock-supabase.mjs` (real function handlers, `ai_usage`, `/__mock/ai`), `e2e/scan-snapshots.spec.ts`, `supabase/README.md`
+
+Tests: 626 unit (core 433, vault 66, extension 39, ai-client 15, supabase 71, ui 1) + 56 e2e.
+
+## Phase 8 — design notes
+
+- **Nothing personal goes to the AI.** `classify` sends minimised descriptors only: input type, label, placeholder, help text, section, up to 60 option texts, required and maxLength.
+  - Never sent: values (page or vault), selectors, DOM ids, names, signatures. The strict request schema rejects anything extra, such as a smuggled `currentValue`.
+  - The user's `custom.*` key names are not sent either, because they can reveal personal topics. The server uses the canonical registry from the shared core.
+  - Text is redacted on the client (`toAiField`) and again on the server: emails, phones, long digit runs, card/Aadhaar groups, PAN, SSN and passport shapes. The goal text is redacted too.
+  - The e2e test reads every prompt the "model" got and finds no vault values.
+- **Prompt-injection defence.**
+  - Page text goes into one `<<<PAGE_DATA … PAGE_DATA>>>` block as JSON with `<` and `>` escaped, so a label can never close the block. The fixed system prompt says the block is untrusted data.
+  - The reply must be `{"fields":[…]}` (strict top level). Each item is validated strictly on its own; bad items are dropped and counted.
+  - Each item is then guarded:
+    - its id must be one that was sent;
+    - its reason and question may contain no URL, domain or action words (click, submit, visit, "ignore previous"…);
+    - the question may not ask for never-store data;
+    - keys must be registry keys, with `custom.*` allowed only as `newKeySuggestion` for facts.
+  - Policy runs three times: denied fields are dropped before the prompt, re-checked on the server output, and re-checked on the client with the user's own deny phrases.
+  - The adversarial suite plays a model that *obeyed* the injection: every field becomes an email, reasons carry a URL, a password field is invented, and an extra top-level `actions` appears. Nothing gets through, and the contract still validates.
+- **Gateway.**
+  - `AI_PROVIDER` may be a comma list giving the fallback order. `AI_MODEL_*` apply to the primary provider; fallbacks need `<P>_MODEL_<TIER>`. A provider missing a key or model is skipped. No model name is in code.
+  - Each attempt has a timeout. 429, 5xx, timeouts and network errors are retried with exponential backoff (honouring `Retry-After`, capped at 8 s), then the next provider is tried. Other 4xx errors go straight to the next provider.
+  - Output tokens are capped and oversized input is refused. Provider error text is trimmed and never echoes the prompt.
+  - Logs carry metadata only: provider, model, tier, attempt, latency, status, tokens. Tests assert that no field text or key appears.
+- **ai-classify.**
+  - Fast tier, temperature 0, at most 40 fields per model call (up to 120 per request), one retry on an invalid reply.
+  - The cache key is a SHA-256 of {prompt version, provider/model chain, host, title, goal, chunk}. Cached entries are re-guarded, and a cache hit costs no quota and no provider call.
+  - Quota is checked once per request, before any model call. Real token usage is recorded afterwards.
+- **Limits.**
+  - `consume_ai_call()` checks the user's daily calls/tokens and a new **global** daily counter *before* counting, so refused calls are not counted.
+  - It returns `ok`, `user_limit` or `global_limit`. A limit becomes a friendly 429 with a `scope`.
+  - If the quota check itself fails, the request is refused rather than spending the shared key unmetered. A token limit of 0 means no token limit.
+- **Client and seam.**
+  - Every failure becomes an offline reason, never an exception: no cloud in build, signed out, AI turned off, no provider on server, daily limit, provider unavailable, unusable reply. The flow continues through questions.
+  - The chip shows short fixed reasons. The connection check shows the server's full message.
+  - AI classifications are written to field memory (`via: 'ai'`, plus `kind` for key-less ones), so the same field never costs a second call. The mapper reports these as "Understood earlier by Filler's AI".
+  - A user's own answer replaces an AI memory, and an AI guess never overwrites a user mapping.
+  - AI confidence is capped at 0.9. Radios and checkbox groups always stay choices. Template keys get a concrete index (`projects[]` becomes `projects[1]` from "Project 2").
+  - `generateAnswer` stays offline until Phase 9.
+- **Accuracy (Task 8.3).** Rules + classify on all fixture scans (104 fields, 24 answered by the AI): **kind 104/104 (100%), key 103/104 (99.0%)**. The one miss ("Joining date" → `experience[].start`) is deliberate in the script.
+  - Caveat: the model is scripted (`test-fixtures/__ai__/classify-answers.json`, written by hand in the output format), not recorded. This measures the pipeline (envelope, guard, conversion, merge), not a real model.
+  - The live measurement waits for checkpoint B.
+- **The e2e mock runs the real handlers.** Node 24 runs the TypeScript functions with type stripping, so `scripts/mock-supabase.mjs` serves the real `health` and `ai-classify` (gateway, Gemini adapter, envelope) with the scripted model. `_shared` code therefore avoids parameter properties and enums.
+- **UI.**
+  - Mode chip on the start screen and in sessions: "AI on", or "Offline mode" plus the reason.
+  - Settings → AI help:
+    - on/off toggle (sends only labels, options and help text);
+    - Test AI connection (health + a one-field classify);
+    - usage today per feature: calls and tokens with their limits, from the user's own `ai_usage` rows under RLS.
+  - Walked at 360 px in light and dark: no console errors, no horizontal scroll.
+
+### 🔑 Checkpoint B — pending (user action)
+Needs checkpoint A (a Supabase project) first. Then, in the user's own terminal:
+1. Create a free key. Gemini is recommended; Groq, OpenRouter and Ollama are listed in `supabase/README.md`.
+2. Run `supabase secrets set AI_PROVIDER=… <P>_API_KEY=… AI_MODEL_FAST=… AI_MODEL_SMART=… AI_MODEL_VISION=…`.
+3. Apply the Phase 8 migration and deploy `health` and `ai-classify`.
+4. Run Settings → Test AI connection and record a live accuracy run here.
+
+**Live provider not configured** as of this phase.
+
+### Open items surfaced in Phase 8
+- Live checks are pending (above). Gemini's `responseJsonSchema` and the OpenAI-compatible `json_object` modes follow the providers' documented REST shapes but are untested against live APIs. If a model rejects them, the gateway counts a failure and falls back.
+- The panel shows a field's help text as the page gives it, so hidden injected text is visible in a question card (the `ai-understanding` fixture's sr-only "visit https://evil.example…"). Nothing acts on it. Phase 12's injection hardening should hide or flag text that isn't visible on the page.
+- `ai_cache` has no expiry yet; add a cleanup (e.g. rows older than 30 days) in Phase 12.
+- Redaction treats any 8+ digit run as a phone number. That's harmless for classification but coarse.

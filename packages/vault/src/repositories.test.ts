@@ -169,6 +169,33 @@ describe('FieldMemoryRepo', () => {
     expect(second.site).toBe('upwork.com');
   });
 
+  it('keeps AI classifications apart from the user’s own mappings', async () => {
+    const { repos } = await setup();
+    const ai = await repos.fieldMemory.upsert({
+      signature: sigA,
+      site: 'x.com',
+      via: 'ai',
+      kind: 'open_ended',
+    });
+    expect(ai).toMatchObject({ via: 'ai', kind: 'open_ended' });
+    // The user answers the field: their mapping replaces the AI one.
+    const user = await repos.fieldMemory.upsert({
+      signature: sigA,
+      site: 'x.com',
+      canonicalKey: 'custom.challenge',
+    });
+    expect(user).toMatchObject({ via: 'user', canonicalKey: 'custom.challenge', timesUsed: 2 });
+    expect(user).not.toHaveProperty('kind');
+    // A later AI guess never overwrites what the user decided.
+    const again = await repos.fieldMemory.upsert({
+      signature: sigA,
+      site: 'x.com',
+      via: 'ai',
+      canonicalKey: 'bio.summary_long',
+    });
+    expect(again).toMatchObject({ via: 'user', canonicalKey: 'custom.challenge' });
+  });
+
   it('forgets one site without touching others', async () => {
     const { repos } = await setup();
     await repos.fieldMemory.upsert({ signature: sigA, site: 'upwork.com' });

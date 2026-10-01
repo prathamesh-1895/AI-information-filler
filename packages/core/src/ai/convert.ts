@@ -1,0 +1,44 @@
+/**
+ * Turns a checked AI classification into the mapper's result shape, so the
+ * rest of the orchestrator treats it like any other mapping (PLAYBOOK 8.4).
+ */
+import { concreteKeyFor, type MapResult } from '../mapper/map';
+import { classifyRisk, type Policy } from '../policy/deny';
+import type { FieldDescriptor } from '../schema/records';
+import type { ClassifiedField } from './contract';
+import { isRegistryKey } from './guard';
+
+const GROUP_TYPES = new Set(['radio', 'checkbox-group', 'aria-radiogroup', 'aria-checkbox-group']);
+
+/**
+ * Returns null when the classification cannot be used for this field (the
+ * user's own deny rules refuse it, or the key is not real). AI confidence is
+ * capped below rule confidence: it is a good guess, not a fact.
+ */
+export function fromClassified(
+  field: FieldDescriptor,
+  item: ClassifiedField,
+  policy: Pick<Policy, 'classifyRisk'> = { classifyRisk },
+): MapResult | null {
+  if (item.id !== field.id) return null;
+  if (!policy.classifyRisk(field).allowed) return null;
+
+  let key: string | undefined;
+  if (item.canonicalKey) {
+    if (!isRegistryKey(item.canonicalKey)) return null;
+    key = concreteKeyFor(item.canonicalKey, field);
+  } else if (item.kind === 'fact' && item.newKeySuggestion) {
+    key = item.newKeySuggestion;
+  }
+
+  // Radio and checkbox groups are always the user's pick, whatever the model called them.
+  const kind = item.kind !== 'skip' && GROUP_TYPES.has(field.inputType) ? 'choice' : item.kind;
+  return {
+    kind,
+    ...(key && kind !== 'skip' ? { canonicalKey: key } : {}),
+    confidence: Math.min(0.9, Math.round(item.confidence * 100) / 100),
+    reason: item.reason,
+    source: 'ai',
+    ...(item.question && kind !== 'skip' ? { question: item.question } : {}),
+  };
+}

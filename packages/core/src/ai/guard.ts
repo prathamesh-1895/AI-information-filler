@@ -1,0 +1,92 @@
+/**
+ * Output checks for AI classifications (PLAYBOOK Task 8.2). Page text is
+ * untrusted, so a model may have been talked into something by hidden text.
+ * Every item is checked against the request before anyone uses it:
+ *  - it must describe a field that was actually sent;
+ *  - it may not mention URLs or tell anyone to do anything (click, submit…);
+ *  - keys must be real registry keys or `custom.<slug>` names;
+ *  - a field the deny policy refuses can never come back as fillable.
+ * Failing items are dropped (the field stays unresolved and Filler asks the user).
+ */
+import { classifyRisk, type Policy } from '../policy/deny';
+import { getKeyDef, isCustomKey, parseKey } from '../schema/keys';
+import type { AiField, ClassifiedField } from './contract';
+
+const URL_LIKE =
+  /\b(?:https?:\/\/|www\.)|\b[a-z0-9-]+\.(?:com|net|org|io|in|co|ai|app|dev|xyz|info|ru|cn|tk|me|ly|gl)\b(?:\/|\b)/i;
+const ACTION_WORDS =
+  /\b(?:click|submit|press|tap|navigate|visit|go to|open (?:the|this|a) (?:link|page|url)|download|install|execute|run (?:the|this)|ignore (?:all |the )?(?:previous|prior|above)|disregard|system prompt)\b/i;
+const SENSITIVE_WORDS =
+  /\b(?:password|passcode|otp|one[- ]time|cvv|cvc|card number|pin|aadhaa?r|passport|pan number|ssn|social security|bank account|ifsc)\b/i;
+
+export type GuardOutcome = { ok: true; item: ClassifiedField } | { ok: false; why: string };
+
+/** True when a model-written string tries to steer the user or points at a URL. */
+export function isUnsafeText(text: string): boolean {
+  return URL_LIKE.test(text) || ACTION_WORDS.test(text);
+}
+
+/** Canonical key check: a registry key (template or concrete index), never `custom.*` here. */
+export function isRegistryKey(key: string): boolean {
+  if (isCustomKey(key)) return false;
+  const concrete = key.replace('[]', '[0]');
+  return Boolean(parseKey(concrete) && getKeyDef(concrete));
+}
+
+export function guardClassified(
+  item: ClassifiedField,
+  sent: ReadonlyMap<string, AiField>,
+  policy: Pick<Policy, 'classifyRisk'> = { classifyRisk },
+): GuardOutcome {
+  const field = sent.get(item.id);
+  if (!field) return { ok: false, why: 'unknown field id' };
+  const risk = policy.classifyRisk({
+    inputType: field.inputType,
+    label: field.label,
+    ...(field.placeholder ? { placeholder: field.placeholder } : {}),
+    ...(field.sectionHeading ? { sectionHeading: field.sectionHeading } : {}),
+  });
+  if (!risk.allowed) return { ok: false, why: 'denied field' };
+  for (const t of [item.reason, item.question ?? '']) {
+    if (isUnsafeText(t)) return { ok: false, why: 'url or action in text' };
+  }
+  // A question must not ask for anything on the never-store list.
+  if (item.question && SENSITIVE_WORDS.test(item.question))
+    return { ok: false, why: 'asks for sensitive data' };
+
+  const out: ClassifiedField = { ...item };
+  if (out.canonicalKey !== undefined) {
+    if (!isRegistryKey(out.canonicalKey)) return { ok: false, why: 'unknown canonical key' };
+    if (out.kind === 'skip') delete out.canonicalKey;
+  }
+  if (out.newKeySuggestion !== undefined) {
+    if (
+      !isCustomKey(out.newKeySuggestion) ||
+      SENSITIVE_WORDS.test(out.newKeySuggestion.replace(/_/g, ' '))
+    )
+      delete out.newKeySuggestion;
+    else if (out.canonicalKey || out.kind !== 'fact') delete out.newKeySuggestion;
+  }
+  return { ok: true, item: out };
+}
+
+/** Applies `guardClassified` to a list, keeping the first valid item per field. */
+export function guardAll(
+  items: readonly ClassifiedField[],
+  sent: ReadonlyMap<string, AiField>,
+  policy?: Pick<Policy, 'classifyRisk'>,
+): { results: ClassifiedField[]; rejected: number } {
+  const seen = new Set<string>();
+  const results: ClassifiedField[] = [];
+  let rejected = 0;
+  for (const item of items) {
+    const outcome = guardClassified(item, sent, policy);
+    if (!outcome.ok || seen.has(item.id)) {
+      rejected++;
+      continue;
+    }
+    seen.add(item.id);
+    results.push(outcome.item);
+  }
+  return { results, rejected };
+}

@@ -4,6 +4,8 @@
  * this module; decrypted values reach no other context except the panel
  * that displays them.
  */
+import { AiClient, createAiSeam } from '@filler/ai-client';
+import { createPolicy } from '@filler/core';
 import { createRepositories, VaultService, type SessionKeyStore } from '@filler/vault';
 import {
   endSessionTab,
@@ -21,7 +23,7 @@ import {
   type SettingsPatch,
 } from '../settings';
 import { CloudAuth } from '../cloud/auth';
-import { supabase } from '../cloud/supabase';
+import { cloudConfig, supabase } from '../cloud/supabase';
 import { CloudSync } from '../cloud/sync-service';
 import { SessionHost } from './host';
 
@@ -53,9 +55,25 @@ const sessionKeyStore: SessionKeyStore = {
 export const vault = new VaultService({ sessionKeyStore });
 export const repos = createRepositories(vault);
 
+export const auth = new CloudAuth(supabase);
+
+const cloudCfg = cloudConfig();
+/** Filler's AI Edge Functions, called with the signed-in user's token (Phase 8). */
+export const aiClient = new AiClient({
+  functionsUrl: cloudCfg ? `${cloudCfg.url}/functions/v1` : null,
+  ...(cloudCfg ? { anonKey: cloudCfg.anonKey } : {}),
+  getAccessToken: () => auth.accessToken(),
+});
+export const ai = createAiSeam({
+  client: aiClient,
+  enabled: () => settings.aiAssist,
+  policy: () => createPolicy({ extraPatterns: settings.denyPatterns }),
+});
+
 export const host = new SessionHost({
   vault,
   repos,
+  ai,
   scanTab,
   fillTab,
   highlightTab,
@@ -71,7 +89,6 @@ export const host = new SessionHost({
 
 vault.onLock(() => void host.broadcast({ type: 'VAULT_LOCKED' }));
 
-export const auth = new CloudAuth(supabase);
 export const cloud = new CloudSync(vault, auth, supabase, () => settings.cloudSync);
 
 async function apply(next: Settings): Promise<void> {
@@ -95,6 +112,7 @@ export async function updateSettings(patch: SettingsPatch): Promise<Settings> {
   await ready;
   const next = await saveSettings(patch);
   await apply(next);
+  if (patch.aiAssist !== undefined) void ai.refreshStatus(true);
   if (patch.highlight === false) {
     // Clear outlines already on pages.
     await Promise.all(host.tabs().map((tabId) => highlightTab(tabId, [])));
