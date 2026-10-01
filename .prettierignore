@@ -5,5 +5,6 @@ node_modules
 pnpm-lock.yaml
 docs
 .output-e2e
+.output-e2e-capture
 test-fixtures/__scans__
 supabase/functions/_shared/core

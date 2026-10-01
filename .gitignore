@@ -15,3 +15,4 @@ supabase/.branches/
 *.log
 .DS_Store
 .output-e2e/
+.output-e2e-capture/

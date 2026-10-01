@@ -89,6 +89,11 @@ export const UserEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('SKIP'), fieldId: z.string() }),
   z.object({ type: z.literal('FILL'), fieldIds: z.array(z.string()).optional() }),
   z.object({ type: z.literal('RESCAN') }),
+  /** Better labels for fields, read from the screen and accepted by the user (Phase 10). */
+  z.object({
+    type: z.literal('RELABEL'),
+    labels: z.record(z.string(), z.string().trim().min(1).max(200)),
+  }),
   /** Ask the AI for a draft using these fact keys (Phase 9). */
   z.object({
     type: z.literal('DRAFT'),
@@ -413,6 +418,28 @@ export function reduce(current: SessionState, event: SessionEvent): Transition {
         effects: approving
           .filter((p) => p.source === 'ai')
           .flatMap((p) => recordAnswer(s, p, p.value!)),
+      };
+    }
+
+    case 'RELABEL': {
+      // Never-fill fields keep their label: a screen reading must not talk Filler out of a denial.
+      const deniedIds = new Set(s.plan.filter((p) => p.kind === 'denied').map((p) => p.fieldId));
+      const ids = Object.keys(event.labels).filter(
+        (id) => !deniedIds.has(id) && s.fields.some((f) => f.id === id),
+      );
+      if (
+        !ids.length ||
+        (current.phase !== 'AWAITING_REVIEW' && current.phase !== 'READY_TO_SUBMIT')
+      )
+        return none;
+      const fields = s.fields.map((f) =>
+        ids.includes(f.id)
+          ? { ...f, label: event.labels[f.id]!, labelSource: 'vision' as const }
+          : f,
+      );
+      return {
+        state: { ...s, fields, phase: 'MAPPING' },
+        effects: [{ type: 'MAP', fieldIds: ids }],
       };
     }
 

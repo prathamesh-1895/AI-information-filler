@@ -5,6 +5,7 @@ import { call, keepAlive } from '@/src/messaging/client';
 import { APP_NAME } from '@/src/app-info';
 import { FillView } from './screens/FillView';
 import { Onboarding } from './screens/Onboarding';
+import { ScreenView, SharingIndicator } from './screens/ScreenView';
 import { SettingsView } from './screens/SettingsView';
 import { Unlock } from './screens/Unlock';
 import { VaultView } from './screens/VaultView';
@@ -12,6 +13,7 @@ import { usePanel, type View } from './store';
 
 const TABS: Array<{ id: View; label: string }> = [
   { id: 'fill', label: 'Fill' },
+  { id: 'screen', label: 'Screen' },
   { id: 'vault', label: 'My details' },
   { id: 'settings', label: 'Settings' },
 ];
@@ -77,6 +79,7 @@ export function App() {
     <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5 dark:border-slate-800">
         <h1 className="text-lg font-semibold">{APP_NAME}</h1>
+        <SharingIndicator />
         {vault === 'unlocked' && (
           <Button
             size="sm"
@@ -111,7 +114,7 @@ export function App() {
                   aria-controls={`panel-${t.id}`}
                   tabIndex={view === t.id ? 0 : -1}
                   onClick={() => setView(t.id)}
-                  className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+                  className={`flex-1 rounded-md px-1 py-1.5 text-[13px] font-medium whitespace-nowrap focus-visible:outline-2 focus-visible:outline-emerald-600 ${
                     view === t.id
                       ? 'bg-white shadow-sm dark:bg-slate-800'
                       : 'text-slate-600 dark:text-slate-400'
@@ -123,6 +126,7 @@ export function App() {
             </div>
             <section id={`panel-${view}`} role="tabpanel" aria-labelledby={`tab-${view}`}>
               {view === 'fill' && <FillView />}
+              {view === 'screen' && <ScreenView />}
               {view === 'vault' && <VaultView />}
               {view === 'settings' && <SettingsView />}
             </section>

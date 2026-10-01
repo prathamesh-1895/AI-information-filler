@@ -20,3 +20,6 @@ export * from './ai/draft.ts';
 export * from './orchestrator/select.ts';
 export * from './orchestrator/goal.ts';
 export * from './orchestrator/suggest.ts';
+export * from './vision/contract.ts';
+export * from './vision/match.ts';
+export * from './vision/explain.ts';

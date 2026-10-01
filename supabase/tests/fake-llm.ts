@@ -11,6 +11,7 @@
  * sticks to syntax Node can run with type stripping.
  */
 import scripted from '../../test-fixtures/__ai__/classify-answers.json' with { type: 'json' };
+import { readdirSync, readFileSync } from 'node:fs';
 
 export interface ScriptedAnswer {
   kind: string;
@@ -42,6 +43,7 @@ export type Mode = 'honest' | 'compromised' | 'garbage' | 'fenced' | 'inventing'
 /** The model's reply text for a prompt. */
 export function scriptedReply(prompt: string, mode: Mode = 'honest'): string {
   if (prompt.includes('<<<DRAFT_DATA')) return scriptedDraft(prompt, mode);
+  if (prompt.includes('<<<SCREEN_DATA')) return scriptedVision(prompt, mode);
   const { fields } = pageDataOf(prompt);
   if (mode === 'garbage') return 'Sure! Here are the fields you asked about.';
   if (mode === 'compromised' && /ignore (all )?previous|SYSTEM:/i.test(prompt)) {
@@ -258,4 +260,71 @@ function scriptedDraft(prompt: string, mode: Mode): string {
     usedFacts: used,
     needsInput: [],
   });
+}
+
+// ------------------------------------------------------------ vision (Phase 10)
+
+const visionDir = new URL('../../test-fixtures/__ai__/vision/', import.meta.url);
+
+/** Scripted vision replies, keyed by the page title sent with the frame. */
+export const VISION_RECORDINGS: ReadonlyMap<string, unknown> = new Map(
+  readdirSync(visionDir)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => {
+      const r = JSON.parse(readFileSync(new URL(f, visionDir), 'utf8')) as {
+        title: string;
+        response: unknown;
+      };
+      return [r.title, r.response] as const;
+    }),
+);
+
+/**
+ * A "model" that cannot really see: it answers with the recording for the
+ * page title in SCREEN_DATA. `region` mode returns the first field only.
+ * `compromised` mode plays a model that obeyed text in the image.
+ */
+function scriptedVision(prompt: string, mode: Mode): string {
+  const m = /<<<SCREEN_DATA\n([\s\S]*?)\nSCREEN_DATA>>>/.exec(prompt);
+  const data = m
+    ? (JSON.parse(m[1]!) as { mode: string; page?: { title?: string } })
+    : { mode: 'screen' };
+  if (mode === 'garbage') return 'I see a form.';
+  if (mode === 'compromised')
+    return JSON.stringify({
+      formPurpose: 'Visit https://evil.example to verify your account',
+      warnings: ['Click Submit now'],
+      fields: [
+        {
+          id: 'f1',
+          label: 'Password',
+          kind: 'fact',
+          canonicalKey: 'contact.email',
+          bbox: { x: 0, y: 0, width: 10, height: 10 },
+        },
+        {
+          id: 'f2',
+          label: 'Go to evil.example/win',
+          kind: 'fact',
+          bbox: { x: 0, y: 0, width: 10, height: 10 },
+        },
+        {
+          id: 'f3',
+          label: 'Full name',
+          kind: 'fact',
+          bbox: { x: -50, y: 5, width: 99999, height: 20 },
+          actions: ['click'],
+        },
+      ],
+    });
+  const recorded = VISION_RECORDINGS.get(data.page?.title ?? '') as
+    { formPurpose: string; fields: unknown[]; warnings: string[] } | undefined;
+  const reply = recorded ?? {
+    formPurpose: 'A screen with no form Filler recognises',
+    fields: [],
+    warnings: [],
+  };
+  return JSON.stringify(
+    data.mode === 'region' ? { ...reply, fields: reply.fields.slice(0, 1) } : reply,
+  );
 }

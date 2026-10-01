@@ -1,0 +1,128 @@
+{
+  "title": "Campus Ambassador Application",
+  "response": {
+    "formPurpose": "Campus Ambassador Application",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "Full name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.full"
+      },
+      {
+        "id": "f2",
+        "label": "Email Address",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.email"
+      },
+      {
+        "id": "f3",
+        "label": "Phone number *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.phone.mobile"
+      },
+      {
+        "id": "f4",
+        "label": "Which year are you in",
+        "kind": "choice",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["First year", "Second year", "Third year", "Final year", "Other:"]
+      },
+      {
+        "id": "f5",
+        "label": "Other response",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f6",
+        "label": "Skills You Have",
+        "kind": "choice",
+        "bbox": {
+          "x": 40,
+          "y": 340,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Excel", "SQL", "Python", "Public speaking"],
+        "canonicalKey": "skills"
+      },
+      {
+        "id": "f7",
+        "label": "Rate yourself: Communication *",
+        "kind": "choice",
+        "bbox": {
+          "x": 40,
+          "y": 396,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Poor", "Good", "Excellent"]
+      },
+      {
+        "id": "f8",
+        "label": "Rate yourself: Teamwork",
+        "kind": "choice",
+        "bbox": {
+          "x": 40,
+          "y": 452,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Poor", "Good", "Excellent"]
+      },
+      {
+        "id": "f9",
+        "label": "Date of birth",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 508,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.dob"
+      },
+      {
+        "id": "f10",
+        "label": "Why Do You Want To Be A Campus Ambassador?",
+        "kind": "open_ended",
+        "bbox": {
+          "x": 40,
+          "y": 564,
+          "width": 400,
+          "height": 36
+        }
+      }
+    ]
+  }
+}

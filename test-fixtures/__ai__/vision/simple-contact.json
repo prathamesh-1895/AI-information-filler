@@ -1,0 +1,68 @@
+{
+  "title": "Simple contact form",
+  "response": {
+    "formPurpose": "Simple contact form",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "Full name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.full"
+      },
+      {
+        "id": "f2",
+        "label": "Email Address",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.email"
+      },
+      {
+        "id": "f3",
+        "label": "Mobile number *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.phone.mobile"
+      },
+      {
+        "id": "f4",
+        "label": "City",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.city"
+      },
+      {
+        "id": "f5",
+        "label": "Message",
+        "kind": "open_ended",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        }
+      }
+    ]
+  }
+}

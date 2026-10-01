@@ -6,6 +6,7 @@ import { call, onPageEvent, onSessionState, requestSiteAccess } from '@/src/mess
 import { asText, keyLabel, mask, PHASE, sensitivityOf, SOURCE, STATUS } from '../format';
 import { AiChip } from '../AiChip';
 import { DraftControls, DraftDetails, GoalChips, Suggestions } from './Drafts';
+import { ExplainButton } from './Explain';
 import { usePanel } from '../store';
 
 const CHOICE_TYPES = new Set([
@@ -258,6 +259,7 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
               send={send}
               focused={focusedId === item.fieldId}
               aiOn={aiOn}
+              tabId={session.tabId}
             />
           ))}
         </section>
@@ -286,6 +288,7 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
             send={send}
             focusedId={focusedId}
             aiOn={aiOn}
+            tabId={session.tabId}
           />
         </section>
       )}
@@ -312,6 +315,13 @@ function SessionPanel({ session, focusedId }: { session: SessionState; focusedId
                   </Badge>
                 )}
                 <p className="text-slate-600 dark:text-slate-400">{item.reason}</p>
+                <div className="flex flex-wrap">
+                  <ExplainButton
+                    tabId={session.tabId}
+                    fieldId={item.fieldId}
+                    label={fieldById.get(item.fieldId)?.label ?? 'this field'}
+                  />
+                </div>
               </li>
             ))}
           </ul>
@@ -380,12 +390,14 @@ function QuestionCard({
   send,
   focused,
   aiOn,
+  tabId,
 }: {
   item: PlanItem;
   field: FieldDescriptor | undefined;
   send: (e: UserEvent) => Promise<unknown>;
   focused: boolean;
   aiOn: boolean;
+  tabId?: number;
 }) {
   const [value, setValue] = useState<string | string[]>(
     MULTI_TYPES.has(field?.inputType ?? '') ? [] : '',
@@ -516,7 +528,10 @@ function QuestionCard({
             <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
             {item.kind === 'open_ended' ? 'Save for reuse' : 'Save to my vault'}
           </label>
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
+            {tabId !== undefined && (
+              <ExplainButton tabId={tabId} fieldId={item.fieldId} label={field.label} />
+            )}
             <Button
               size="sm"
               variant="ghost"
@@ -542,12 +557,14 @@ function ReviewList({
   send,
   focusedId,
   aiOn,
+  tabId,
 }: {
   items: PlanItem[];
   fieldById: Map<string, FieldDescriptor>;
   send: (e: UserEvent) => Promise<unknown>;
   focusedId: string | null;
   aiOn: boolean;
+  tabId: number;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
   const move = (from: HTMLElement, delta: number) => {
@@ -570,6 +587,7 @@ function ReviewList({
           focused={item.fieldId === focusedId}
           move={move}
           aiOn={aiOn}
+          tabId={tabId}
         />
       ))}
     </ul>
@@ -583,6 +601,7 @@ function ReviewRow({
   focused,
   move,
   aiOn,
+  tabId,
 }: {
   item: PlanItem;
   field: FieldDescriptor | undefined;
@@ -590,6 +609,7 @@ function ReviewRow({
   focused: boolean;
   move: (from: HTMLElement, delta: number) => void;
   aiOn: boolean;
+  tabId?: number;
 }) {
   const isDraft = item.source === 'ai' && item.draft !== undefined;
   const [editing, setEditing] = useState(false);
@@ -763,6 +783,13 @@ function ReviewRow({
             <SkipForward aria-hidden className="h-3.5 w-3.5" />
             Skip
           </Button>
+          {tabId !== undefined && (
+            <ExplainButton
+              tabId={tabId}
+              fieldId={item.fieldId}
+              label={field?.label ?? 'this field'}
+            />
+          )}
         </div>
       )}
       {item.canonicalKey && <span className="sr-only">Saved as {keyLabel(item.canonicalKey)}</span>}

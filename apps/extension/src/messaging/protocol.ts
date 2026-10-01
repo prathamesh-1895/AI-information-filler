@@ -9,6 +9,7 @@ import {
   SensitivitySchema,
   UserEventSchema,
   type SessionState,
+  VisionRequestSchema,
 } from '@filler/core';
 import { z } from 'zod';
 import { SettingsPatchSchema } from '../settings';
@@ -157,6 +158,37 @@ export const AiStatusRequestSchema = z.object({
 });
 export const AiTestRequestSchema = z.object({ type: z.literal('AI_TEST') });
 export const AiUsageRequestSchema = z.object({ type: z.literal('AI_USAGE') });
+// ---- Screen share & vision (Phase 10)
+export const VisionCaptureRequestSchema = z.object({
+  type: z.literal('VISION_CAPTURE'),
+  tabId,
+  segments: z.number().int().min(1).max(3),
+});
+export const VisionReadRequestSchema = z.object({
+  type: z.literal('VISION_READ'),
+  request: VisionRequestSchema,
+  /** For a tab snapshot: lets the background line boxes up with the page's fields. */
+  target: z
+    .object({
+      tabId,
+      toPage: z.object({
+        scale: z.number().positive(),
+        scrollX: z.number(),
+        scrollY: z.number(),
+      }),
+    })
+    .optional(),
+});
+export const VisionRelabelRequestSchema = z.object({
+  type: z.literal('VISION_RELABEL'),
+  tabId,
+  labels: z.record(z.string(), z.string().trim().min(1).max(200)),
+});
+export const ExplainRequestSchema = z.object({
+  type: z.literal('EXPLAIN'),
+  tabId,
+  fieldId: z.string().max(128),
+});
 export const SettingsGetRequestSchema = z.object({ type: z.literal('SETTINGS_GET') });
 export const SettingsSetRequestSchema = z.object({
   type: z.literal('SETTINGS_SET'),
@@ -210,6 +242,10 @@ export const PanelRequestSchema = z.discriminatedUnion('type', [
   AiStatusRequestSchema,
   AiTestRequestSchema,
   AiUsageRequestSchema,
+  VisionCaptureRequestSchema,
+  VisionReadRequestSchema,
+  VisionRelabelRequestSchema,
+  ExplainRequestSchema,
   SessionStartRequestSchema,
   SessionGetRequestSchema,
   SessionEventRequestSchema,

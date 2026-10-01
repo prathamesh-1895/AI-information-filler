@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Canvas registration form</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      body { margin: 0; font-family: sans-serif; background: #fff; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <!-- Phase 10 fixture: a form drawn on a canvas, like a canvas app or a
+         remote-desktop window. There is no DOM field to read or fill, so
+         Filler can only read it from a screenshot and suggest values to copy.
+         Boxes: label at (40, y), input box at (40, y + 8, 400 × 36). -->
+    <canvas id="form" width="800" height="560" aria-label="Registration form (drawn)"></canvas>
+    <script>
+      const ctx = document.getElementById('form').getContext('2d');
+      ctx.fillStyle = '#111';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillText('Event registration', 40, 50);
+      const rows = [
+        ['Full name', 100],
+        ['Email address', 190],
+        ['City', 280],
+        ['Password', 370],
+        ['Why do you want to attend?', 460],
+      ];
+      ctx.font = '18px sans-serif';
+      for (const [label, y] of rows) {
+        ctx.fillStyle = '#111';
+        ctx.fillText(label, 40, y);
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(40, y + 8, 400, 36);
+      }
+      ctx.fillStyle = '#444';
+      ctx.fillText('••••••••', 50, 400);
+    </script>
+  </body>
+</html>

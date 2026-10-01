@@ -1,0 +1,115 @@
+{
+  "title": "Fill lab",
+  "response": {
+    "formPurpose": "Fill lab",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "Nickname",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.display"
+      },
+      {
+        "id": "f2",
+        "label": "Pin Code",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.postal_code"
+      },
+      {
+        "id": "f3",
+        "label": "Languages known *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["English", "Hindi", "Marathi", "Tamil"],
+        "canonicalKey": "languages[].language"
+      },
+      {
+        "id": "f4",
+        "label": "Joining date",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f5",
+        "label": "Graduation month",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].end"
+      },
+      {
+        "id": "f6",
+        "label": "Short Code",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 340,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f7",
+        "label": "Current city *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 396,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.city"
+      },
+      {
+        "id": "f8",
+        "label": "Work mode",
+        "kind": "choice",
+        "bbox": {
+          "x": 40,
+          "y": 452,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Remote", "Hybrid", "On-site"]
+      },
+      {
+        "id": "f9",
+        "label": "You may contact me about openings",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 508,
+          "width": 400,
+          "height": 36
+        }
+      }
+    ]
+  }
+}

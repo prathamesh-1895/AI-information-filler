@@ -1,0 +1,69 @@
+{
+  "title": "Controlled form (React-style)",
+  "response": {
+    "formPurpose": "Controlled form (React-style)",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "First name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.first"
+      },
+      {
+        "id": "f2",
+        "label": "Last Name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.last"
+      },
+      {
+        "id": "f3",
+        "label": "Email *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.email"
+      },
+      {
+        "id": "f4",
+        "label": "Country",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["India", "United States", "United Kingdom"],
+        "canonicalKey": "address.country"
+      },
+      {
+        "id": "f5",
+        "label": "Send me the newsletter",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        }
+      }
+    ]
+  }
+}

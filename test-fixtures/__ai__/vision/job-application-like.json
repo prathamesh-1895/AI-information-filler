@@ -1,0 +1,295 @@
+{
+  "title": "Apply: Business Analyst Intern",
+  "response": {
+    "formPurpose": "Apply: Business Analyst Intern",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "First name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.first"
+      },
+      {
+        "id": "f2",
+        "label": "Last Name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.last"
+      },
+      {
+        "id": "f3",
+        "label": "Email *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.email"
+      },
+      {
+        "id": "f4",
+        "label": "Phone",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.phone.mobile"
+      },
+      {
+        "id": "f5",
+        "label": "Day",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.dob"
+      },
+      {
+        "id": "f6",
+        "label": "Month",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 340,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.dob"
+      },
+      {
+        "id": "f7",
+        "label": "Institution *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 396,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].institution"
+      },
+      {
+        "id": "f8",
+        "label": "Degree",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 452,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].degree"
+      },
+      {
+        "id": "f9",
+        "label": "Field of study",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 508,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].field"
+      },
+      {
+        "id": "f10",
+        "label": "Start",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 564,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].start"
+      },
+      {
+        "id": "f11",
+        "label": "End *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 620,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].end"
+      },
+      {
+        "id": "f12",
+        "label": "CGPA / Percentage",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 676,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].grade"
+      },
+      {
+        "id": "f13",
+        "label": "Institution",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 732,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].institution"
+      },
+      {
+        "id": "f14",
+        "label": "Degree",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 788,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "education[].degree"
+      },
+      {
+        "id": "f15",
+        "label": "Company *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 844,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "experience[].company"
+      },
+      {
+        "id": "f16",
+        "label": "Job title",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 900,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "experience[].title"
+      },
+      {
+        "id": "f17",
+        "label": "Start date",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 956,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "experience[].start"
+      },
+      {
+        "id": "f18",
+        "label": "Resume / CV",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 1012,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f19",
+        "label": "Cover letter *",
+        "kind": "open_ended",
+        "bbox": {
+          "x": 40,
+          "y": 1068,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f20",
+        "label": "Notice period",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 1124,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Immediate", "15 days", "30 days"],
+        "canonicalKey": "preferences.notice_period"
+      },
+      {
+        "id": "f21",
+        "label": "Expected CTC (LPA)",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 1180,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "preferences.expected_salary"
+      },
+      {
+        "id": "f22",
+        "label": "LinkedIn Profile",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 1236,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "links.linkedin"
+      },
+      {
+        "id": "f23",
+        "label": "How did you hear about us? *",
+        "kind": "choice",
+        "bbox": {
+          "x": 40,
+          "y": 1292,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["LinkedIn", "A friend", "College placement cell"]
+      },
+      {
+        "id": "f24",
+        "label": "I confirm the information above is correct",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 1348,
+          "width": 400,
+          "height": 36
+        }
+      }
+    ]
+  }
+}

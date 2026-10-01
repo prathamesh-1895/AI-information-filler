@@ -9,6 +9,9 @@ import {
   ClassifyResponseSchema,
   GenerateResponseSchema,
   HealthResponseSchema,
+  VisionResponseSchema,
+  type VisionRequest,
+  type VisionResponse,
   type ClassifyRequest,
   type ClassifyResponse,
   type GenerateRequest,
@@ -88,6 +91,10 @@ export class AiClient {
 
   generate(request: GenerateRequest): Promise<AiCall<GenerateResponse>> {
     return this.call(AI_ENDPOINTS.generate, 'POST', request, GenerateResponseSchema);
+  }
+
+  vision(request: VisionRequest): Promise<AiCall<VisionResponse>> {
+    return this.call(AI_ENDPOINTS.vision, 'POST', request, VisionResponseSchema);
   }
 
   private async call<S extends z.ZodType>(

@@ -8,6 +8,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/.output/**',
       '**/.output-e2e/**',
+      '**/.output-e2e-capture/**',
       '**/.wxt/**',
       '**/.turbo/**',
       '**/dist/**',

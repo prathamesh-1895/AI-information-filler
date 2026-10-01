@@ -23,6 +23,9 @@ import {
 import { z } from 'zod';
 import { fail, ok, PanelRequestSchema, type Result } from '../messaging/protocol';
 import { aiUsageToday, testAiConnection } from '../cloud/ai-ops';
+import { captureTab } from '../vision/capture';
+import { explainSessionField, readScreen, type VisionDeps } from '../vision/ops';
+import { createPolicy } from '@filler/core';
 import { supabase } from '../cloud/supabase';
 import {
   ai,
@@ -68,6 +71,14 @@ async function cloudCall<T>(fn: () => Promise<T>): Promise<Result<T>> {
     return fail('CLOUD', error instanceof Error ? error.message : String(error));
   }
 }
+
+const visionDeps: VisionDeps = {
+  aiClient,
+  vault,
+  repos,
+  settings: currentSettings,
+  session: (tabId) => host.get(tabId),
+};
 
 export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>> {
   await ready;
@@ -197,6 +208,19 @@ export async function handlePanelMessage(raw: unknown): Promise<Result<unknown>>
       return ok(await testAiConnection(aiClient, ai));
     case 'AI_USAGE':
       return cloudCall(() => aiUsageToday(supabase(), aiClient));
+    case 'VISION_CAPTURE':
+      return captureTab(request.tabId, {
+        segments: request.segments,
+        policy: createPolicy({ extraPatterns: currentSettings().denyPatterns }),
+      });
+    case 'VISION_READ':
+      return readScreen(visionDeps, request.request, request.target);
+    case 'VISION_RELABEL':
+      if (!host.get(request.tabId))
+        return fail('NO_SESSION', 'There is no Filler session on this tab. Start one first.');
+      return ok(await host.dispatch(request.tabId, { type: 'RELABEL', labels: request.labels }));
+    case 'EXPLAIN':
+      return explainSessionField(visionDeps, request.tabId, request.fieldId);
     case 'SETTINGS_GET':
       return ok(currentSettings());
     case 'SETTINGS_SET':

@@ -1,0 +1,180 @@
+/**
+ * Vision → plan (PLAYBOOK Task 10.3), two tiers:
+ *  1. DOM reachable: vision fields are matched to scanned DOM fields by box
+ *     overlap and label, so a field whose label is an image or canvas text
+ *     gets a readable label and is filled normally.
+ *  2. Not fillable (other apps, canvas): a suggestion list in on-screen order,
+ *     each with the vault value to copy. Filler never types here.
+ */
+import { formatForField, type FactLookup } from '../mapper/format';
+import { concreteKeyFor, mapField, type MapContext, type MapResult } from '../mapper/map';
+import { getKeyDef } from '../schema/keys';
+import type { FactValue, FieldDescriptor } from '../schema/records';
+import { similarity } from '../text/match';
+import type { Box, VisionField } from './contract';
+
+/** A deterministic 64-hex "signature" for descriptors that have no DOM (vision fields). */
+export function pseudoSignature(text: string): string {
+  let out = '';
+  for (let round = 0; out.length < 64; round++) {
+    let h = 0x811c9dc5 ^ round;
+    for (let i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    out += h.toString(16).padStart(8, '0');
+  }
+  return out.slice(0, 64);
+}
+
+/** A FieldDescriptor for a field seen on screen, so the normal mapper can read it. */
+export function visionDescriptor(field: VisionField): FieldDescriptor {
+  return {
+    id: `v:${field.id}`,
+    frameId: 0,
+    selector: '',
+    tag: 'vision',
+    inputType: field.options?.length
+      ? 'select-one'
+      : field.kind === 'open_ended'
+        ? 'textarea'
+        : 'text',
+    label: field.label,
+    labelSource: 'vision',
+    ...(field.options?.length
+      ? { options: field.options.map((o) => ({ value: o, text: o })) }
+      : {}),
+    required: false,
+    isVisible: true,
+    isDisabled: false,
+    bbox: field.bbox,
+    signature: pseudoSignature(`vision|${field.label.toLowerCase()}`),
+  };
+}
+
+export type ScreenSuggestion =
+  | {
+      fieldId: string;
+      label: string;
+      status: 'value';
+      value: string;
+      /** What the value is ("City"), and who decided the field ("rules" / "AI"). */
+      keyLabel: string;
+      source: 'rules' | 'ai';
+    }
+  | { fieldId: string; label: string; status: 'ask' | 'write' | 'skip' | 'denied'; reason: string };
+
+const asText = (v: FactValue) => (Array.isArray(v) ? v.join(', ') : v);
+
+/** On-screen order: top to bottom, then left to right (rows within 12 px count as one line). */
+export function readingOrder<T extends { bbox: Box }>(items: readonly T[]): T[] {
+  return [...items].sort((a, b) =>
+    Math.abs(a.bbox.y - b.bbox.y) > 12 ? a.bbox.y - b.bbox.y : a.bbox.x - b.bbox.x,
+  );
+}
+
+/** Tier 2: what to copy into each field on screen. */
+export function suggestFromVision(
+  fields: readonly VisionField[],
+  lookup: FactLookup,
+  ctx: MapContext,
+): ScreenSuggestion[] {
+  return readingOrder(fields).map((vf): ScreenSuggestion => {
+    const base = { fieldId: vf.id, label: vf.label };
+    if (vf.kind === 'denied')
+      return {
+        ...base,
+        status: 'denied',
+        reason: vf.hint ?? 'Filler never fills this kind of field.',
+      };
+    if (vf.kind === 'skip')
+      return { ...base, status: 'skip', reason: vf.hint ?? 'Not needed, or your decision.' };
+    const desc = visionDescriptor(vf);
+    const rules = mapField(desc, ctx);
+    if (rules.kind === 'denied') return { ...base, status: 'denied', reason: rules.reason };
+    let mapping: MapResult = rules;
+    let source: 'rules' | 'ai' = 'rules';
+    if (!rules.canonicalKey && vf.canonicalKey) {
+      mapping = {
+        kind: vf.kind,
+        canonicalKey: concreteKeyFor(vf.canonicalKey, desc),
+        confidence: 0.7,
+        reason: 'Read from the screen by the AI',
+        source: 'ai',
+      };
+      source = 'ai';
+    }
+    if (vf.kind === 'open_ended' && !mapping.canonicalKey)
+      return { ...base, status: 'write', reason: 'This needs your own words. Write it yourself.' };
+    if (!mapping.canonicalKey)
+      return { ...base, status: 'ask', reason: 'Filler has no saved detail for this.' };
+    const formatted = formatForField(desc, mapping, lookup);
+    if (!formatted.ok) return { ...base, status: 'ask', reason: formatted.reason };
+    const key = mapping.canonicalKey;
+    return {
+      ...base,
+      status: 'value',
+      value: asText(formatted.value),
+      keyLabel: getKeyDef(key)?.label ?? key.replace(/^custom\./, '').replace(/_/g, ' '),
+      source,
+    };
+  });
+}
+
+/** Overlap of two boxes as a share of the smaller one (0–1). */
+export function overlap(a: Box, b: Box): number {
+  const w = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+  const h = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  if (w <= 0 || h <= 0) return 0;
+  const smaller = Math.min(a.width * a.height, b.width * b.height);
+  return smaller > 0 ? (w * h) / smaller : 0;
+}
+
+export interface DomMatch {
+  domId: string;
+  visionId: string;
+  label: string;
+  score: number;
+}
+
+/**
+ * Tier 1: pairs vision fields with DOM fields. `toDom` converts an image box
+ * into the DOM fields' coordinate space (document pixels). A pair needs the
+ * boxes to overlap; label similarity breaks ties. Each side is used once.
+ */
+export function matchVisionToDom(
+  vision: readonly VisionField[],
+  dom: ReadonlyArray<Pick<FieldDescriptor, 'id' | 'label' | 'bbox'>>,
+  toDom: (b: Box) => Box,
+): DomMatch[] {
+  const pairs: DomMatch[] = [];
+  for (const v of vision) {
+    if (v.kind === 'denied') continue;
+    const vb = toDom(v.bbox);
+    for (const d of dom) {
+      if (!d.bbox) continue;
+      const o = overlap(vb, d.bbox);
+      if (o <= 0.2) continue;
+      pairs.push({
+        domId: d.id,
+        visionId: v.id,
+        label: v.label,
+        score: o * 0.6 + similarity(v.label, d.label) * 0.4,
+      });
+    }
+  }
+  pairs.sort((a, b) => b.score - a.score);
+  const usedDom = new Set<string>();
+  const usedVision = new Set<string>();
+  return pairs.filter((p) => {
+    if (usedDom.has(p.domId) || usedVision.has(p.visionId)) return false;
+    usedDom.add(p.domId);
+    usedVision.add(p.visionId);
+    return true;
+  });
+}
+
+/** True when a DOM label is too weak to trust and a vision label should replace it. */
+export function weakLabel(field: Pick<FieldDescriptor, 'label' | 'labelSource'>): boolean {
+  return !field.label.trim() || field.labelSource === 'name' || field.labelSource === 'placeholder';
+}

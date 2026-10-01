@@ -1,0 +1,117 @@
+{
+  "title": "Personal Info – Become a Seller",
+  "response": {
+    "formPurpose": "Personal Info – Become a Seller",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "First Name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.first"
+      },
+      {
+        "id": "f2",
+        "label": "Last Name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.last"
+      },
+      {
+        "id": "f3",
+        "label": "Display Name *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.display"
+      },
+      {
+        "id": "f4",
+        "label": "Profile Picture",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f5",
+        "label": "Description",
+        "kind": "open_ended",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "bio.summary_long"
+      },
+      {
+        "id": "f6",
+        "label": "Language",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 340,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["English", "Hindi", "Marathi"],
+        "canonicalKey": "languages[].language"
+      },
+      {
+        "id": "f7",
+        "label": "Your Occupation *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 396,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "professional.category"
+      },
+      {
+        "id": "f8",
+        "label": "Personal Website",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 452,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "links.website"
+      },
+      {
+        "id": "f9",
+        "label": "Email",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 508,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.email"
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@ import type { TargetTab } from '@/src/messaging/protocol';
 import { DEFAULT_SETTINGS, type Settings, type SettingsPatch } from '@/src/settings';
 
 export type VaultState = 'loading' | 'uninitialized' | 'locked' | 'unlocked';
-export type View = 'fill' | 'vault' | 'settings';
+export type View = 'fill' | 'screen' | 'vault' | 'settings';
 
 interface PanelStore {
   vault: VaultState;
@@ -16,6 +16,9 @@ interface PanelStore {
   session: SessionState | null;
   /** AI mode outside a session (Settings, start screen). */
   aiStatus: AiStatus | null;
+  /** The screen or window being shared (Phase 10); stays alive across tabs of the panel. */
+  sharing: MediaStream | null;
+  setSharing(stream: MediaStream | null): void;
   /** Bumped on sign-in/sign-out so account-dependent views reload. */
   authVersion: number;
   authChanged(): void;
@@ -36,6 +39,8 @@ export const usePanel = create<PanelStore>((set, get) => ({
   session: null,
   aiStatus: null,
   authVersion: 0,
+  sharing: null,
+  setSharing: (sharing) => set({ sharing }),
   authChanged() {
     set({ authVersion: get().authVersion + 1 });
     void get().refreshAi();

@@ -15,4 +15,9 @@ const run = (args) => spawnSync('pnpm', args, { stdio: 'inherit', shell: true, e
 
 const built = run(['--filter', '@filler/extension', 'build']);
 if (built !== 0) process.exit(built);
+// The tab-snapshot build (see wxt.config.ts): same code, plus <all_urls>.
+env.FILLER_E2E_CAPTURE = '1';
+const capture = run(['--filter', '@filler/extension', 'build']);
+delete env.FILLER_E2E_CAPTURE;
+if (capture !== 0) process.exit(capture);
 process.exit(run(['exec', 'playwright', 'test', ...process.argv.slice(2)]));

@@ -1,0 +1,72 @@
+{
+  "title": "Canvas registration form",
+  "response": {
+    "formPurpose": "Event registration",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "Full name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 108,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "person.name.full",
+        "hint": "Asks for full name"
+      },
+      {
+        "id": "f2",
+        "label": "Email address",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 198,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.email",
+        "hint": "Asks for email address"
+      },
+      {
+        "id": "f3",
+        "label": "City",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 288,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.city",
+        "hint": "Asks for city"
+      },
+      {
+        "id": "f4",
+        "label": "Password",
+        "kind": "denied",
+        "bbox": {
+          "x": 40,
+          "y": 378,
+          "width": 400,
+          "height": 36
+        },
+        "hint": "A password for the account"
+      },
+      {
+        "id": "f5",
+        "label": "Why do you want to attend?",
+        "kind": "open_ended",
+        "bbox": {
+          "x": 40,
+          "y": 468,
+          "width": 400,
+          "height": 36
+        },
+        "hint": "Asks for why do you want to attend?"
+      }
+    ]
+  }
+}

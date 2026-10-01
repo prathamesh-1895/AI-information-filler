@@ -19,3 +19,6 @@ export * from './ai/draft';
 export * from './orchestrator/select';
 export * from './orchestrator/goal';
 export * from './orchestrator/suggest';
+export * from './vision/contract';
+export * from './vision/match';
+export * from './vision/explain';

@@ -17,7 +17,7 @@ The extension only ever holds the **project URL** and the **anon/publishable key
    ```
 3. Turn on email codes. In **Authentication → Providers → Email**, keep Email enabled. In **Authentication → Email Templates → Magic Link**, make the email show the code by adding `{{ .Token }}` to the body, for example: `Your Filler sign-in code is {{ .Token }}`.
 4. Apply the schema, either with the Supabase CLI (`supabase link --project-ref <ref>` then `supabase db push`) or by asking Claude to apply `migrations/*.sql` through the Supabase connector after you confirm the project.
-5. Deploy the functions: `supabase functions deploy health`, `supabase functions deploy ai-classify` and `supabase functions deploy ai-generate` (`ai-vision` arrives in Phase 10).
+5. Deploy the functions: `supabase functions deploy health`, `supabase functions deploy ai-classify` and `supabase functions deploy ai-generate` and `supabase functions deploy ai-vision`.
 6. Optional: set `ALLOWED_ORIGINS=chrome-extension://<your extension id>` as a function secret to accept only your installed extension. Without it, any `chrome-extension://` origin is accepted and web pages are always refused.
 
 Rebuild the extension (`pnpm --filter @filler/extension build`) so it picks up the `.env` values. Settings → Account and sync then lets you sign in with a 6-digit code.
@@ -39,11 +39,11 @@ supabase secrets set AI_PROVIDER=gemini GEMINI_API_KEY=<your key> AI_MODEL_FAST=
 
 - Model names come only from secrets (free-tier names change). `AI_MODEL_*` apply to the first provider in `AI_PROVIDER`.
 - Fallback: `AI_PROVIDER=gemini,groq` plus per-provider models such as `GROQ_MODEL_FAST=<model>`. A provider without a key or model for a tier is skipped.
-- `ai-classify` uses `AI_MODEL_FAST`; `ai-generate` (drafts) uses `AI_MODEL_SMART`.
+- `ai-classify` uses `AI_MODEL_FAST`; `ai-generate` (drafts) uses `AI_MODEL_SMART`; `ai-vision` (Screen tab) uses `AI_MODEL_VISION`, which must accept images (Gemini's do).
 - Limits (optional): `LIMIT_AI_CLASSIFY_CALLS` / `_TOKENS` per user per day (defaults 200 calls / 400,000 tokens), `LIMIT_AI_GENERATE_CALLS` / `_TOKENS` (60 / 200,000), `LIMIT_GLOBAL_CALLS` / `LIMIT_GLOBAL_TOKENS` for everyone together (defaults 2,000 / 4,000,000), `AI_TIMEOUT_MS` (20,000), `AI_MAX_OUTPUT_TOKENS` (4,096), `AI_MAX_INPUT_CHARS` (60,000), `AI_RETRIES` (2).
 
 Then in the extension: Settings → AI help → **Test AI connection**.
 
 ## Local testing without a project
 
-`pnpm e2e` builds the extension against `scripts/mock-supabase.mjs`, a small local stand-in for Supabase Auth (email codes), the `vault_blobs` and `ai_usage` REST endpoints, and the `health` / `ai-classify` / `ai-generate` functions (the real handlers, with the scripted model in place of the provider). It enforces the same per-user and version rules as the real policies. Tests never contact a real Supabase project.
+`pnpm e2e` builds the extension against `scripts/mock-supabase.mjs`, a small local stand-in for Supabase Auth (email codes), the `vault_blobs` and `ai_usage` REST endpoints, and the `health` / `ai-classify` / `ai-generate` / `ai-vision` functions (the real handlers, with the scripted model in place of the provider). It enforces the same per-user and version rules as the real policies. Tests never contact a real Supabase project.

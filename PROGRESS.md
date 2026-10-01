@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 9 — AI answer generation & goal context (2026-10-01; verified with the scripted model; 🔑 checkpoints A and B pending)
+**Last completed phase:** Phase 10 — Screen Share & vision mode (2026-10-01; verified with scripted vision replies; screen-share manual check and 🔑 checkpoints A and B pending)
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -18,7 +18,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 7 | Supabase: auth, database, encrypted sync | ✅ COMPLETE (2026-10-01, verified offline; 🔑 checkpoint A pending) | RLS schema proven on PGlite, email-code sign-in, end-to-end encrypted two-device sync with tombstones and conflict copies, Edge Function base (health, CORS, auth, quotas), generated shared core, local mock Supabase for e2e |
 | 8 | AI gateway & field understanding | ✅ COMPLETE (2026-10-01, mocked providers; 🔑 checkpoint B pending, live provider not configured) | Gemini/Groq/OpenRouter/Ollama adapters with retry, timeout, fallback and token caps; safety envelope (redaction, delimited untrusted data, strict output, per-item guard, policy re-check, metadata-only logs); `ai-classify` with chunking and cache; typed client + AI seam with offline fallback, AI field memory, mode chip; per-user and global daily limits; Test AI connection and usage panel. Rules + classify on fixtures: kind 100%, key 99% |
 | 9 | AI answer generation & goal context | ✅ COMPLETE (2026-10-01, scripted model; live drafting waits for checkpoints A and B) | User-triggered drafts from public facts only ("Using" chips with untick), `ai-generate` with prompt rules, length/option/invention checks and one corrective retry, yellow draft cards (counter, why, alternatives, Regenerate with hint), approved drafts saved for reuse, goal parsing + editable goal chips, cross-page consistency, strengthen suggestions, offline reuse of earlier answers |
-| 10 | Screen Share & vision mode | ⬜ NOT STARTED | |
+| 10 | Screen Share & vision mode | ✅ COMPLETE (2026-10-01, scripted vision; manual screen-share check pending) | Tab snapshot (up to 3 screens) and screen/window share with a persistent Sharing badge; on-device blackout of never-fill fields plus user-drawn areas, baked into the JPEG; alignment guard blocks sending when boxes may be off; `ai-vision` with the same envelope (denied stays denied); tier 1 relabel of DOM fields, tier 2 copy list; "What is this?" with source, offline in DOM mode. Label match 93.8% on scripted recordings |
 | 11 | Résumé import & platform profiles | ⬜ NOT STARTED | |
 | 12 | Hardening, docs & release | ⬜ NOT STARTED | |
 
@@ -31,8 +31,8 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 10, Task 10.1** (capture modes). Model: **Sonnet 5.5** (playbook §0.7). Checkpoints A (Supabase project) and B (free AI key) are still open; Phase 10's vision calls need a vision-capable model (Gemini recommended) once B is done.
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet).
+- Next: **Phase 11, Task 11.1** (résumé import). Model: **Sonnet 5.5** (playbook §0.7). Still open: checkpoints A (Supabase project) and B (free AI key, vision-capable model for Phase 10), and the manual screen-share check in `docs/MANUAL_TESTS.md`.
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet) · Phase 10 — Opus 5.5 (the playbook suggested Sonnet).
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -549,3 +549,68 @@ Tests: 654 unit (core 447, vault 66, extension 40, ai-client 17, supabase 83, ui
 - Past answers match by word overlap only. A semantic match (e.g. through the AI) could come later.
 - Very long fact lists are cut at 40 facts / 5 items per group. The "Using" chips toggle whole groups, not single items.
 - The goal's platform shows the host for unknown sites (e.g. `forms.example.org`). It is editable.
+
+---
+
+## Phase 10 — files
+
+Created:
+- `packages/core/src/vision/contract.ts` (vision request/response schemas, `guardVision`), `match.ts` (`suggestFromVision`, `matchVisionToDom`, `visionDescriptor`, `readingOrder`, `weakLabel`), `explain.ts` (`explainField`, `SOURCE_LABELS`), `vision.test.ts`
+- `supabase/functions/_shared/ai/vision.ts` (prompt, `runVision`), `supabase/functions/ai-vision/handler.ts` + `index.ts`, `supabase/tests/vision.test.ts` (14)
+- `scripts/make-vision-recordings.mjs` → `test-fixtures/__ai__/vision/*.json` (scripted replies for every fixture + the canvas form)
+- `test-fixtures/canvas-form.html` (a form drawn on a canvas)
+- `apps/extension/src/vision/capture.ts` (tab snapshot + never-fill boxes), `image.ts` (bake blackouts, downscale to JPEG, grab a shared frame), `ops.ts` (`readScreen`, `explainSessionField`), `vision.test.ts`
+- `apps/extension/entrypoints/sidepanel/screens/ScreenView.tsx` (Screen tab, preview + hide/ask tools, results, sharing indicator), `Explain.tsx` ("What is this?")
+- `e2e/screen.spec.ts` (5), `docs/MANUAL_TESTS.md` (screen-share and permission checks)
+
+Modified:
+- core: `orchestrator/session.ts` (`RELABEL`, never for denied fields), `index.ts`
+- `packages/ai-client/src/client.ts` (`vision`)
+- extension: `messaging/protocol.ts` (`VISION_CAPTURE`, `VISION_READ`, `VISION_RELABEL`, `EXPLAIN`), `session/router.ts`, `sidepanel/App.tsx` (Screen tab, sharing badge, one-line tabs), `store.ts` (`sharing`), `screens/FillView.tsx` ("What is this?" on questions, review rows, never-filled rows), `wxt.config.ts` (capture test build)
+- `supabase/tests/fake-llm.ts` (scripted vision), `scripts/mock-supabase.mjs` (`ai-vision`, last uploaded image), `scripts/e2e.mjs` (second build), `e2e/fixtures.ts` (`captureTest`, `launchDevice({ realViewport, capture })`), `.gitignore`, `.prettierignore`, `eslint.config.js`, `supabase/README.md`
+
+Tests: 682 unit (core 458, vault 66, extension 43, ai-client 17, supabase 97, ui 1) + 63 e2e.
+
+## Phase 10 — design notes
+
+- **One picture, on request, previewed before upload.**
+  - **Tab snapshot** (`captureVisibleTab`) captures what you see, or up to 3 screens down.
+  - **Share a screen or window** uses the browser's own picker (`getDisplayMedia` in the side panel). A frame is grabbed only on "Take a picture…". A red **Sharing** badge with **Stop sharing** stays in the panel header on every tab, and stopping from Chrome's own bar clears it too.
+  - No video is ever streamed to the AI.
+- **Hiding is on the device and in the pixels.**
+  - Never-fill fields found through the page are blacked out automatically in tab snapshots. If a sensitive field is inside a frame, the whole frame is blacked out.
+  - The user can drag more rectangles, with undo.
+  - Hidden areas are painted solid (`#0f172a`), not blurred, so they can't be recovered. The JPEG (≤ 1600 px long edge) is made from those baked pixels.
+  - The e2e test decodes the image the "model" actually received and checks that the password field and a user-hidden box are solid.
+- **Found by testing, fixed:** the first capture measured the page *before* bringing the tab to the front, so the layout could differ from the picture and the auto box landed on the wrong field.
+  - Now the tab is activated first, then scanned and measured, then captured.
+  - Every picture's shape is also compared with the measured viewport. If they differ by more than 3% and the page has never-fill fields, the panel shows a red warning, and **Read with AI stays disabled** until the user ticks "I have hidden everything private on this picture". An e2e test covers this guard.
+- **ai-vision.**
+  - Vision tier (`AI_MODEL_VISION`), temperature 0, image attached through the same gateway and adapters, one retry on an invalid reply.
+  - Nothing is cached (personal image) and only metadata is logged (mode, image bytes, field count).
+  - Text inside the image is declared untrusted. Each field is validated on its own; labels and options are redacted; boxes are clamped; keys must be in the registry.
+  - The deny policy (built-in + the user's phrases) turns matching labels into `denied`, even if the model says otherwise. Purpose and warnings that contain links or instructions are dropped.
+  - The compromised-model test shows a "Password" field relabelled as email still comes back denied.
+  - Available keys are the server's registry; the user's custom key names are never sent.
+- **Recordings (10.2):** scripted replies for every fixture, written in the model's output format from the expected files, with realistic noise: Title Case, kept asterisks, dropped punctuation, one missed field on longer forms.
+  - Label match through the real handler and guard: **91/97 (93.8%)** (target ≥ 80%). Never-fill fields always come back denied.
+  - These are not live recordings. The real measurement waits for checkpoint B, with a vision-capable model.
+- **Vision → plan (10.3).**
+  - **Tier 1:** for a tab with a session, vision boxes are mapped into page coordinates (image scale + scroll) and matched to DOM fields by overlap, with label similarity breaking ties. Fields with weak or unknown labels get a "Use these labels" offer (`RELABEL` → re-map → re-plan).
+  - A never-fill field can never be relabelled: the reducer refuses it, and denied vision fields are never matched.
+  - **Tier 2:** a suggestion list in screen order with vault values and **Copy**. It is honest: "Filler can’t type into this app. Copy each value." Denied rows show **Never filled** with no Copy; open-ended rows say to write it yourself.
+- **"What is this?" (10.4).**
+  - **DOM mode** works offline: never-fill fields ("This asks for your PAN, which Filler won't fill."), known fields with the value Filler would use (masked if personal), open-ended, choice and skip. The source is always shown: never-fill rules / Filler's rules / remembered / Filler's AI / the page's own text.
+  - Unplaced fields ask `ai-classify` (text only) when AI help is on.
+  - **Vision mode:** drag around one area of a picture; Filler reads just that crop.
+- **Permissions.** The production manifest is unchanged (`activeTab`, optional site access); clicking Filler's toolbar button grants the snapshot.
+  - Playwright can't click the toolbar, so `pnpm e2e` now builds twice. The second build (`.output-e2e-capture`, only for `screen.spec.ts`) adds `<all_urls>`; the main e2e build keeps proving the "allow site access" flow.
+  - The tab-snapshot test runs with Playwright's viewport emulation off, because emulation makes the picture differ from the page (the guard test uses exactly that).
+- **Live walk:** 360 px, light and dark. Screen tab, snapshot preview with a hidden area, results with Copy and Never filled. No console errors, no horizontal scroll, axe clean in both themes. The tabs now fit on one line with four tabs.
+
+### Open items surfaced in Phase 10
+- **Manual check pending:** screen/window sharing (`docs/MANUAL_TESTS.md`) needs the OS picker. It is untested automatically; run it once in a real browser.
+- Whether a snapshot works after "Allow site access" (optional http/https permission), without a toolbar click, is unverified. If Chrome demands `activeTab`/`<all_urls>`, the user gets the readable message and can use Share instead.
+- Hiding by drag needs a pointer. A keyboard way to hide an area (or "hide the whole picture") would help accessibility; the picture itself has an aria-label.
+- Live vision accuracy is unknown until checkpoint B. Small text in downscaled 1600 px images may read poorly; segment captures help on long pages.
+- Sticky headers or content that moves between scan and capture could still shift boxes slightly (6 px padding). The 3% shape check catches resizes, not small scroll-linked movement.

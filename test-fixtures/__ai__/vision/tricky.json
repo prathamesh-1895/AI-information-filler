@@ -1,0 +1,136 @@
+{
+  "title": "Tricky form",
+  "response": {
+    "formPurpose": "Tricky form",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "Alternate phone",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "contact.phone.alt"
+      },
+      {
+        "id": "f2",
+        "label": "Pin Code",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "address.postal_code"
+      },
+      {
+        "id": "f3",
+        "label": "linkedin url *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "links.linkedin"
+      },
+      {
+        "id": "f4",
+        "label": "Company name",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "experience[].company"
+      },
+      {
+        "id": "f5",
+        "label": "Cover letter",
+        "kind": "open_ended",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f6",
+        "label": "State",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 340,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Maharashtra", "Gujarat", "Karnataka"],
+        "canonicalKey": "address.state"
+      },
+      {
+        "id": "f7",
+        "label": "Card number *",
+        "kind": "denied",
+        "bbox": {
+          "x": 40,
+          "y": 396,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f8",
+        "label": "Passport number",
+        "kind": "denied",
+        "bbox": {
+          "x": 40,
+          "y": 452,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f9",
+        "label": "Reference code",
+        "kind": "denied",
+        "bbox": {
+          "x": 40,
+          "y": 508,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f10",
+        "label": "I Agree To The Terms",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 564,
+          "width": 400,
+          "height": 36
+        }
+      },
+      {
+        "id": "f11",
+        "label": "Referral code *",
+        "kind": "skip",
+        "bbox": {
+          "x": 40,
+          "y": 620,
+          "width": 400,
+          "height": 36
+        }
+      }
+    ]
+  }
+}

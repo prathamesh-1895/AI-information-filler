@@ -1,0 +1,82 @@
+{
+  "title": "Create your profile – step 1 of 3",
+  "response": {
+    "formPurpose": "Create your profile – step 1 of 3",
+    "warnings": [],
+    "fields": [
+      {
+        "id": "f1",
+        "label": "Your professional role",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 60,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "bio.headline"
+      },
+      {
+        "id": "f2",
+        "label": "Hourly Rate",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 116,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "preferences.hourly_rate"
+      },
+      {
+        "id": "f3",
+        "label": "Skills *",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 172,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "skills"
+      },
+      {
+        "id": "f4",
+        "label": "Profile overview",
+        "kind": "open_ended",
+        "bbox": {
+          "x": 40,
+          "y": 228,
+          "width": 400,
+          "height": 36
+        },
+        "canonicalKey": "bio.summary_long"
+      },
+      {
+        "id": "f5",
+        "label": "Experience level",
+        "kind": "choice",
+        "bbox": {
+          "x": 40,
+          "y": 284,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Entry level", "Intermediate", "Expert"]
+      },
+      {
+        "id": "f6",
+        "label": "English Proficiency",
+        "kind": "fact",
+        "bbox": {
+          "x": 40,
+          "y": 340,
+          "width": 400,
+          "height": 36
+        },
+        "options": ["Basic", "Conversational", "Fluent", "Native or bilingual"],
+        "canonicalKey": "languages[].proficiency"
+      }
+    ]
+  }
+}

@@ -4,7 +4,7 @@
 //                   POST /auth/v1/token?grant_type=refresh_token, POST /auth/v1/logout
 //   REST (PostgREST): /rest/v1/vault_blobs  GET (select), POST (insert), PATCH (update with version=eq.N)
 //                   /rest/v1/ai_usage     GET (the caller's own rows, like RLS)
-//   Functions:      /functions/v1/health, ai-classify, ai-generate — the REAL handlers from
+//   Functions:      /functions/v1/health, ai-classify, ai-generate, ai-vision — the REAL handlers from
 //                   supabase/functions (Node runs them with type stripping), with in-memory
 //                   quota and cache, and the scripted model (supabase/tests/fake-llm.ts)
 //                   behind the real Gemini adapter.
@@ -20,6 +20,7 @@ import { randomUUID } from 'node:crypto';
 import { createGateway } from '../supabase/functions/_shared/ai/gateway.ts';
 import { handleClassify } from '../supabase/functions/ai-classify/handler.ts';
 import { handleGenerate } from '../supabase/functions/ai-generate/handler.ts';
+import { handleVision } from '../supabase/functions/ai-vision/handler.ts';
 import { handleHealth } from '../supabase/functions/health/handler.ts';
 import { fakeProviderFetch } from '../supabase/tests/fake-llm.ts';
 
@@ -48,6 +49,7 @@ function aiEnv() {
     GEMINI_API_KEY: ai.mode === 'unconfigured' ? '' : 'mock-gemini-key',
     AI_MODEL_FAST: 'mock-flash',
     AI_MODEL_SMART: 'mock-pro',
+    AI_MODEL_VISION: 'mock-eyes',
     LIMIT_AI_CLASSIFY_CALLS: String(ai.limitCalls),
     LIMIT_AI_GENERATE_CALLS: String(ai.limitCalls),
     AI_RETRIES: '1',
@@ -60,7 +62,14 @@ function aiDeps() {
   const provider = fakeProviderFetch(ai.mode === 'down' ? { status: 503 } : {});
   const recordingFetch = async (url, init) => {
     const response = await provider.fetch(url, init);
-    for (const call of provider.calls.splice(0)) ai.prompts.push(call.prompt);
+    for (const call of provider.calls.splice(0)) {
+      ai.prompts.push(call.prompt);
+      // The last image sent to the "model", so e2e can check what was hidden.
+      const image = JSON.stringify(call.body).match(
+        /"inline_data":\{"mime_type":"image\/jpeg","data":"([^"]+)"/,
+      );
+      if (image) ai.lastImage = image[1];
+    }
     return response;
   };
   const row = (userId, endpoint) => {
@@ -166,6 +175,7 @@ createServer(async (req, res) => {
   if (url.pathname === '/functions/v1/health') return runFunction(req, res, handleHealth);
   if (url.pathname === '/functions/v1/ai-classify') return runFunction(req, res, handleClassify);
   if (url.pathname === '/functions/v1/ai-generate') return runFunction(req, res, handleGenerate);
+  if (url.pathname === '/functions/v1/ai-vision') return runFunction(req, res, handleVision);
 
   if (req.method === 'OPTIONS') return json(res, 204);
 
@@ -188,6 +198,7 @@ createServer(async (req, res) => {
       providerCalls: ai.prompts.length,
       prompts: ai.prompts,
       usage: [...ai.usage.values()],
+      lastImage: ai.lastImage ?? null,
     });
   }
   if (url.pathname === '/__mock/reset') {
