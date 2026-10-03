@@ -18,7 +18,11 @@
     "e2e:install": "node scripts/playwright.mjs install chromium",
     "e2e:headed": "node scripts/e2e.mjs --headed",
     "sync:shared": "node scripts/sync-shared.mjs",
-    "sync:shared:check": "node scripts/sync-shared.mjs --check"
+    "sync:shared:check": "node scripts/sync-shared.mjs --check",
+    "package": "pnpm --filter @filler/extension zip",
+    "audit:secrets": "node scripts/secret-scan.mjs",
+    "audit:build": "node scripts/audit-build.mjs",
+    "verify:package": "node scripts/verify-package.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -33,5 +37,6 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3"
-  }
+  },
+  "version": "1.0.0"
 }

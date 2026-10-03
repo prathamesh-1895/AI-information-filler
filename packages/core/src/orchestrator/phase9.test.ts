@@ -8,7 +8,13 @@ import {
 } from '../ai/draft';
 import type { Fact, FieldDescriptor } from '../schema/records';
 import { parseGoal, parseGoalText, platformOf } from './goal';
-import { isDraftable, restrictSelection, selectFacts, topicGroups } from './select';
+import {
+  isDraftable,
+  isDraftContextKey,
+  restrictSelection,
+  selectFacts,
+  topicGroups,
+} from './select';
 import { initialState, reduce, type SessionState } from './session';
 import { strengthenSuggestions } from './suggest';
 
@@ -129,6 +135,22 @@ const req = (over: Partial<GenerateRequest> = {}): GenerateRequest => ({
   filled: [{ key: 'bio.headline', value: 'Business Consultant for Growing SMBs' }],
   examples: [],
   ...over,
+});
+
+describe('isDraftContextKey (Task 12.1 audit)', () => {
+  it('lets profile details through as consistency context, never names, contact or address', () => {
+    for (const key of ['bio.headline', 'preferences.hourly_rate', 'skills', 'projects[0].name'])
+      expect(isDraftContextKey(key)).toBe(true);
+    for (const key of [
+      'address.city',
+      'address.country',
+      'person.name.full',
+      'contact.email',
+      'preferences.expected_salary',
+      'custom.anything',
+    ])
+      expect(isDraftContextKey(key)).toBe(false);
+  });
 });
 
 describe('draft checks (Task 9.2)', () => {

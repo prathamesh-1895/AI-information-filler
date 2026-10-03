@@ -26,6 +26,9 @@ import {
   randomBytes,
   toBase64,
   type EncryptedBlob,
+  deriveRowIdKey,
+  hashRowId,
+  HASHED_ROW_ID,
 } from './crypto';
 import {
   DATA_TABLES,
@@ -111,6 +114,8 @@ export type Snapshot = z.infer<typeof SnapshotSchema>;
 export class VaultService {
   readonly db: VaultDb;
   private key: CryptoKey | null = null;
+  /** Names fact rows (see `rowIdFor`). Present exactly when `key` is. */
+  private idKey: CryptoKey | null = null;
   private lastActivity = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private queue: Promise<unknown> = Promise.resolve();
@@ -203,6 +208,7 @@ export class VaultService {
 
   lock(): void {
     this.key = null;
+    this.idKey = null;
     this.sessionKeyB64 = null;
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
@@ -248,6 +254,7 @@ export class VaultService {
       const salt = randomBytes(SALT_BYTES);
       const newRaw = await deriveKeyBytes(newPassphrase, salt, this.iterations);
       const newKey = await importAesKey(newRaw);
+      const newIdKey = await deriveRowIdKey(newRaw);
 
       // Crypto runs outside the IndexedDB transaction (awaiting WebCrypto inside
       // one lets it auto-commit). Any decryption failure aborts before writing.
@@ -257,9 +264,12 @@ export class VaultService {
         const next: EncryptedRow[] = [];
         for (const row of rows) {
           const value = await decryptJson(oldKey, row, aadFor(table, row.id));
+          // Fact row ids are keyed hashes of the fact key, so they change with the key.
+          const id =
+            table === 'facts' ? await hashRowId(newIdKey, (value as { key: string }).key) : row.id;
           next.push({
-            ...(await encryptJson(newKey, value, aadFor(table, row.id))),
-            id: row.id,
+            ...(await encryptJson(newKey, value, aadFor(table, id))),
+            id,
             updatedAt: row.updatedAt,
           });
         }
@@ -275,9 +285,14 @@ export class VaultService {
 
       await this.db.transaction(
         'rw',
-        [this.db.meta, ...DATA_TABLES.map((t) => this.db[t])],
+        [this.db.meta, this.db.tombstones, ...DATA_TABLES.map((t) => this.db[t])],
         async () => {
-          for (const table of DATA_TABLES) await this.db[table].bulkPut(rewritten.get(table) ?? []);
+          for (const table of DATA_TABLES) {
+            await this.db[table].clear();
+            await this.db[table].bulkPut(rewritten.get(table) ?? []);
+          }
+          // Deleted-fact markers name old row ids that no longer exist under the new key.
+          await this.db.tombstones.where('table').equals('facts').delete();
           await this.db.meta.put(nextMeta);
         },
       );
@@ -288,9 +303,21 @@ export class VaultService {
   // ------------------------------------------------------------ record crypto
 
   /** Encrypts and stores one record. Used by the repositories. */
-  writeRecord(table: DataTable, id: string, value: unknown): Promise<void> {
+  /**
+   * The stored row id for a logical id. Fact rows are named by a keyed hash of
+   * the fact key, so IndexedDB shows no key names; other tables already use
+   * opaque ids (UUIDs, field-signature hashes).
+   */
+  async rowIdFor(table: DataTable, id: string): Promise<string> {
+    if (table !== 'facts') return id;
+    this.requireKey();
+    return hashRowId(this.idKey!, id);
+  }
+
+  writeRecord(table: DataTable, logicalId: string, value: unknown): Promise<void> {
     return this.exclusive(async () => {
       const key = this.requireKey();
+      const id = await this.rowIdFor(table, logicalId);
       const blob = await encryptJson(key, value, aadFor(table, id));
       await this.db.transaction('rw', [this.db[table], this.db.tombstones], async () => {
         await this.db[table].put({ ...blob, id, updatedAt: new Date(this.now()).toISOString() });
@@ -300,8 +327,9 @@ export class VaultService {
     });
   }
 
-  async readRecord<T>(table: DataTable, id: string): Promise<T | undefined> {
+  async readRecord<T>(table: DataTable, logicalId: string): Promise<T | undefined> {
     const key = this.requireKey();
+    const id = await this.rowIdFor(table, logicalId);
     const row = await this.db[table].get(id);
     return row ? decryptJson<T>(key, row, aadFor(table, id)) : undefined;
   }
@@ -317,9 +345,10 @@ export class VaultService {
   }
 
   /** Deletes records and remembers the deletions, so sync does not bring them back. */
-  deleteRecords(table: DataTable, ids: string[]): Promise<void> {
+  deleteRecords(table: DataTable, logicalIds: string[]): Promise<void> {
     return this.exclusive(async () => {
       this.requireKey();
+      const ids = await Promise.all(logicalIds.map((i) => this.rowIdFor(table, i)));
       const deletedAt = new Date(this.now()).toISOString();
       await this.db.transaction('rw', [this.db[table], this.db.tombstones], async () => {
         const existing = (await this.db[table].bulkGet(ids)).flatMap((r) => (r ? [r.id] : []));
@@ -464,9 +493,10 @@ export class VaultService {
   ): Promise<EncryptedRow> {
     const key = this.requireKey();
     const value = transform(await decryptJson(key, row, aadFor(table, row.id)));
+    const id = await this.rowIdFor(table, newId);
     return {
-      ...(await encryptJson(key, value, aadFor(table, newId))),
-      id: newId,
+      ...(await encryptJson(key, value, aadFor(table, id))),
+      id,
       updatedAt: row.updatedAt,
     };
   }
@@ -493,6 +523,7 @@ export class VaultService {
         [this.db.tombstones, ...DATA_TABLES.map((t) => this.db[t])],
         () => this.writeAllInTransaction(snapshot.tables, snapshot.tombstones),
       );
+      await this.migrateFactRowIds();
     });
   }
 
@@ -597,12 +628,52 @@ export class VaultService {
     return meta;
   }
 
-  private async setKey(key: CryptoKey, raw: Uint8Array): Promise<void> {
+  private async setKey(key: CryptoKey, raw: Uint8Array<ArrayBuffer>): Promise<void> {
+    this.idKey = await deriveRowIdKey(raw);
     this.key = key;
     this.lastActivity = this.now();
     this.schedule();
     await this.persistSession(raw);
     raw.fill(0);
+    await this.migrateFactRowIds();
+  }
+
+  /**
+   * Renames fact rows stored under readable ids (vaults, backups or cloud
+   * copies from before Phase 12) to keyed-hash ids. Idempotent; runs on every
+   * unlock and after a snapshot is applied.
+   */
+  private async migrateFactRowIds(): Promise<void> {
+    const key = this.key;
+    const idKey = this.idKey;
+    if (!key || !idKey) return;
+    const old = (await this.db.facts.toArray()).filter((r) => !HASHED_ROW_ID.test(r.id));
+    const oldTombs = (await this.db.tombstones.where('table').equals('facts').toArray()).filter(
+      (t) => !HASHED_ROW_ID.test(t.rowId),
+    );
+    if (!old.length && !oldTombs.length) return;
+    const renamed: EncryptedRow[] = [];
+    for (const row of old) {
+      const value = await decryptJson(key, row, aadFor('facts', row.id));
+      const id = await hashRowId(idKey, row.id);
+      renamed.push({
+        ...(await encryptJson(key, value, aadFor('facts', id))),
+        id,
+        updatedAt: row.updatedAt,
+      });
+    }
+    const tombs = await Promise.all(
+      oldTombs.map(async (t) => {
+        const rowId = await hashRowId(idKey, t.rowId);
+        return { ...t, id: `facts/${rowId}`, rowId };
+      }),
+    );
+    await this.db.transaction('rw', [this.db.facts, this.db.tombstones], async () => {
+      await this.db.facts.bulkDelete(old.map((r) => r.id));
+      await this.db.facts.bulkPut(renamed);
+      await this.db.tombstones.bulkDelete(oldTombs.map((t) => t.id));
+      await this.db.tombstones.bulkPut(tombs);
+    });
   }
 
   private sessionKeyB64: string | null = null;

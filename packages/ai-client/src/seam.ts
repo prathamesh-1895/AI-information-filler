@@ -9,7 +9,7 @@ import {
   checkDraft,
   CLASSIFY_MAX_FIELDS,
   fromClassified,
-  getKeyDef,
+  isDraftContextKey,
   questionFor,
   toAiField,
   type AiContext,
@@ -162,7 +162,7 @@ const clipValue = (v: FactValue): FactValue =>
 /**
  * Builds the generate request from what the host selected. Values filled
  * earlier in the session are sent for consistency only when they are public
- * registry details (a headline, a rate), never contact or address data.
+ * profile details (a headline, a rate), never names, contact or address data.
  */
 export function generateRequest(field: FieldDescriptor, ctx: AiContext): GenerateRequest {
   const goal = ctx.goal;
@@ -187,7 +187,7 @@ export function generateRequest(field: FieldDescriptor, ctx: AiContext): Generat
     },
     facts: (ctx.facts ?? []).slice(0, 60).map((f) => ({ key: f.key, value: clipValue(f.value) })),
     filled: Object.entries(ctx.filled)
-      .filter(([key]) => getKeyDef(key)?.sensitivity === 'public')
+      .filter(([key]) => isDraftContextKey(key))
       .slice(0, 40)
       .map(([key, value]) => ({ key, value: clipValue(value) })),
     examples: (ctx.examples ?? [])

@@ -257,7 +257,13 @@ describe('generateAnswer (Phase 9)', () => {
       targetAudience: 'small businesses',
       language: 'Hindi',
     },
-    filled: { 'bio.headline': 'SMB Consultant', 'contact.email': 'priya@example.com' },
+    filled: {
+      'bio.headline': 'SMB Consultant',
+      'contact.email': 'priya@example.com',
+      'address.city': 'Pune',
+      'person.name.full': 'Priya',
+      'preferences.hourly_rate': '25',
+    },
     facts: [{ key: 'skills', value: ['Excel', 'SQL'] }],
     examples: [{ question: 'About you', answer: 'I help shops.' }],
     hint: 'shorter',
@@ -287,7 +293,10 @@ describe('generateAnswer (Phase 9)', () => {
     expect(f.calls[0]!.body).toMatchObject({
       goal: { role: 'business consultant', audience: 'small businesses', language: 'Hindi' },
       facts: [{ key: 'skills', value: ['Excel', 'SQL'] }],
-      filled: [{ key: 'bio.headline', value: 'SMB Consultant' }],
+      filled: [
+        { key: 'bio.headline', value: 'SMB Consultant' },
+        { key: 'preferences.hourly_rate', value: '25' },
+      ],
       examples: [{ question: 'About you', answer: 'I help shops.' }],
       hint: 'shorter',
     });

@@ -14,6 +14,12 @@ export interface ButtonLike {
   /** `value` attribute of `<input type="submit">`. */
   value?: string | undefined;
   title?: string | undefined;
+  /**
+   * True when clicking would submit a form (a submit/image button with a form
+   * owner, including a <button> with no type inside a form). Such a click
+   * sends the form, whatever the button says, so it is never navigation.
+   */
+  submitsForm?: boolean | undefined;
 }
 
 /** Any of these words anywhere in the button text means "commits something". */
@@ -36,8 +42,14 @@ function textOf(button: ButtonLike): string {
 }
 
 export function isSubmitLike(button: ButtonLike): boolean {
+  if (button.submitsForm) return true;
   const text = textOf(button);
   if (!text) return true; // An unlabelled button is unknowable: never click it.
-  if (COMMIT_WORDS.test(text)) return true;
+  // Every name the button has counts: a visible "Next" whose aria-label says
+  // "Submit application" is a submit button.
+  const names = [button.text, button.value, button.ariaLabel, button.title]
+    .filter((t): t is string => Boolean(t?.trim()))
+    .map((t) => normaliseLabel(t.replace(/&/g, ' and ')));
+  if (names.some((n) => COMMIT_WORDS.test(n))) return true;
   return !NAVIGATION_ONLY.test(text);
 }

@@ -26,6 +26,23 @@ export async function launchDevice(
   return { context, extensionId: new URL(worker.url()).host };
 }
 
+/**
+ * Collects console errors and uncaught page errors from every page of a
+ * context (PLAYBOOK Task 12.2: zero console errors across the e2e run).
+ */
+export function watchConsole(context: BrowserContext): string[] {
+  const errors: string[] = [];
+  context.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    const where = m.location().url;
+    // Browsers log every failed network request; the fixture server has no favicon.
+    if (/favicon\.ico/.test(where) || /favicon\.ico/.test(m.text())) return;
+    errors.push(`${where}: ${m.text()}`);
+  });
+  context.on('weberror', (e) => errors.push(`uncaught: ${String(e.error())}`));
+  return errors;
+}
+
 /** Playwright fixtures: a persistent Chromium context with the built extension loaded. */
 export const test = base.extend<{ context: BrowserContext; extensionId: string }>({
   // eslint-disable-next-line no-empty-pattern
@@ -34,8 +51,10 @@ export const test = base.extend<{ context: BrowserContext; extensionId: string }
       channel: 'chromium',
       args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
     });
+    const errors = watchConsole(context);
     await use(context);
     await context.close();
+    test.expect(errors, 'console errors during the test').toEqual([]);
   },
   extensionId: async ({ context }, use) => {
     let [worker] = context.serviceWorkers();
@@ -52,8 +71,10 @@ export const captureTest = base.extend<{ context: BrowserContext; extensionId: s
   // eslint-disable-next-line no-empty-pattern
   context: async ({}, use) => {
     const { context } = await launchDevice({ capture: true });
+    const errors = watchConsole(context);
     await use(context);
     await context.close();
+    base.expect(errors, 'console errors during the test').toEqual([]);
   },
   extensionId: async ({ context }, use) => {
     let [worker] = context.serviceWorkers();

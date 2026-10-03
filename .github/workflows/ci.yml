@@ -1,0 +1,62 @@
+# PLAYBOOK Task 12.6: every push and pull request runs the full gate plus the
+# release audits. Tests use local fixtures and the mock backend only, so CI
+# needs no secrets.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the secret scan reads the whole history
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Shared core copy is in sync
+        run: pnpm sync:shared:check
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - name: Unit, integration and function tests
+        run: pnpm test
+      - name: Secret scan (files and history)
+        run: pnpm audit:secrets
+      - name: Dependency audit
+        run: pnpm audit
+      - name: Production build and audit
+        run: |
+          pnpm package
+          pnpm audit:build
+      - name: Playwright browser
+        run: node scripts/playwright.mjs install --with-deps chromium
+      - name: Store zip loads in a fresh profile
+        run: pnpm verify:package
+      - name: End-to-end tests
+        run: pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: filler-extension
+          path: apps/extension/.output/filler-*-chrome.zip

@@ -1,5 +1,6 @@
 import { defineConfig } from 'wxt';
 import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath } from 'node:url';
 
 /** E2E builds get access to the local fixture server only, in their own output folder. */
 const e2e = process.env.FILLER_E2E === '1';
@@ -14,8 +15,11 @@ const capture = e2e && process.env.FILLER_E2E_CAPTURE === '1';
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   outDir: capture ? '.output-e2e-capture' : e2e ? '.output-e2e' : '.output',
+  zip: { artifactTemplate: 'filler-{{version}}-{{browser}}.zip' },
   vite: () => ({
     plugins: [tailwindcss()],
+    // The public Supabase values live in the repository root's .env (see README).
+    envDir: fileURLToPath(new URL('../..', import.meta.url)),
   }),
   manifest: {
     name: 'Filler',

@@ -86,6 +86,17 @@ const MAX_FACTS = 40;
 const groupOf = (key: string) =>
   key.startsWith('custom.') ? 'custom' : (parseKey(key)?.group ?? key);
 
+/**
+ * Whether a value already filled in the session may go to a draft request
+ * as consistency context: a public registry key in a profile group (bio,
+ * work, projects, rates…). Names, contact and address details never do,
+ * even the parts the registry calls public (city, country).
+ */
+export function isDraftContextKey(key: string): boolean {
+  const group = groupOf(key);
+  return group !== 'custom' && group in GROUP_LABELS && getKeyDef(key)?.sensitivity === 'public';
+}
+
 function words(text: string): Set<string> {
   return new Set(
     normaliseLabel(text)

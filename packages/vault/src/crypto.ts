@@ -75,6 +75,36 @@ export async function deriveKeyBytes(
   return new Uint8Array(bits);
 }
 
+/**
+ * Derives the key that names fact rows (Phase 12): an HMAC key from the vault
+ * key bytes via HKDF, so stored row ids reveal nothing (not even key names
+ * like `custom.medical_note`), yet stay the same on every device that shares
+ * the vault.
+ */
+export async function deriveRowIdKey(raw: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
+  const base = await subtle().importKey('raw', raw, 'HKDF', false, ['deriveKey']);
+  return subtle().deriveKey(
+    {
+      name: 'HKDF',
+      hash: 'SHA-256',
+      salt: encoder.encode('filler/row-ids'),
+      info: encoder.encode('v1'),
+    },
+    base,
+    { name: 'HMAC', hash: 'SHA-256', length: 256 },
+    false,
+    ['sign'],
+  );
+}
+
+/** A row id for a logical id: `k` + 40 hex characters of HMAC-SHA256. */
+export async function hashRowId(idKey: CryptoKey, id: string): Promise<string> {
+  const mac = new Uint8Array(await subtle().sign('HMAC', idKey, encoder.encode(id)));
+  return `k${[...mac.slice(0, 20)].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+}
+
+export const HASHED_ROW_ID = /^k[0-9a-f]{40}$/;
+
 /** Imports raw key bytes as a non-extractable AES-GCM key. */
 export function importAesKey(raw: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   return subtle().importKey('raw', raw, { name: 'AES-GCM', length: 256 }, false, [

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Submit fuzz</title>
+    <script src="fixture-harness.js"></script>
+    <style>
+      .icon::after {
+        content: 'Submit';
+      }
+      button,
+      [role='button'],
+      input {
+        display: block;
+        margin: 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Phase 12 security fixture: buttons that commit something but try to look
+         like navigation, plus a few real navigation buttons. Filler must refuse every
+         one marked data-commit; fixture-harness.js records any form submission. -->
+    <h1>Buttons that try to trick Filler</h1>
+    <form id="fuzz" action="/never">
+      <label for="name">Name</label>
+      <input id="name" name="name" />
+
+      <button type="submit" data-commit>Next</button>
+      <button data-commit>Continue</button>
+      <input type="submit" value="Proceed" data-commit />
+      <input type="image" alt="Next" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-commit />
+      <button type="button" aria-label="Submit application" data-commit>Next</button>
+      <button type="button" title="Pay now" data-commit>Continue</button>
+      <button type="button" data-commit>S u b m i t</button>
+      <button type="button" data-commit>Sub&#8203;mit</button>
+      <button type="button" data-commit>&#1029;ubmit</button>
+      <button type="button" data-commit>➡️</button>
+      <button type="button" class="icon" data-commit></button>
+      <div role="button" tabindex="0" data-commit>Pay ₹499</div>
+      <a role="button" href="#" data-commit>Checkout</a>
+      <button type="button" data-commit>Continue to payment</button>
+      <button type="button" data-commit>Review &amp; submit</button>
+      <button type="button" data-commit>Done</button>
+      <button type="button" data-commit>OK</button>
+      <button type="button" data-commit>Next (final)</button>
+
+      <button type="button" data-nav>Next</button>
+      <button type="button" data-nav>Save &amp; continue</button>
+      <button type="button" data-nav>Back</button>
+    </form>
+    <button data-nav>Continue</button>
+  </body>
+</html>

@@ -88,7 +88,8 @@ test('drafts: title and overview drafted from chosen facts, regenerated with a h
   context,
   extensionId,
 }) => {
-  await mockAi({ mode: 'up', limitCalls: 200, clearCache: true });
+  // The mock keeps every prompt since it started; only this test's count.
+  const { prompts: earlier } = await mockAi({ mode: 'up', limitCalls: 200, clearCache: true });
   const { page, panel } = await setup(context, extensionId);
   await start(panel, 'Create my Upwork profile as a business consultant for small businesses');
 
@@ -181,7 +182,10 @@ test('drafts: title and overview drafted from chosen facts, regenerated with a h
 
   // The "model" got only the ticked, public details: never the phone or city.
   const { prompts } = await mockAi();
-  const drafts = prompts.filter((p) => p.includes('<<<DRAFT_DATA')).join('\n');
+  const drafts = prompts
+    .slice(earlier.length)
+    .filter((p) => p.includes('<<<DRAFT_DATA'))
+    .join('\n');
   expect(drafts).toContain('Excel');
   for (const leak of ['98765', 'Pune', 'Priya']) expect(drafts).not.toContain(leak);
   expect(

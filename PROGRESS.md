@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 11 — Résumé import & platform profiles (2026-10-02; live-site and screen-share manual checks and 🔑 checkpoints A and B pending)
+**Last completed phase:** Phase 12 — Hardening, docs & release (2026-10-03; GitHub push waiting for the user's repo name and visibility; live-site and screen-share manual checks and 🔑 checkpoints A and B pending). **All 13 phases built.**
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -20,7 +20,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 9 | AI answer generation & goal context | ✅ COMPLETE (2026-10-01, scripted model; live drafting waits for checkpoints A and B) | User-triggered drafts from public facts only ("Using" chips with untick), `ai-generate` with prompt rules, length/option/invention checks and one corrective retry, yellow draft cards (counter, why, alternatives, Regenerate with hint), approved drafts saved for reuse, goal parsing + editable goal chips, cross-page consistency, strengthen suggestions, offline reuse of earlier answers |
 | 10 | Screen Share & vision mode | ✅ COMPLETE (2026-10-01, scripted vision; manual screen-share check pending) | Tab snapshot (up to 3 screens) and screen/window share with a persistent Sharing badge; on-device blackout of never-fill fields plus user-drawn areas, baked into the JPEG; alignment guard blocks sending when boxes may be off; `ai-vision` with the same envelope (denied stays denied); tier 1 relabel of DOM fields, tier 2 copy list; "What is this?" with source, offline in DOM mode. Label match 93.8% on scripted recordings |
 | 11 | Résumé import & platform profiles | ✅ COMPLETE (2026-10-02; manual live-site check pending user) | PDF/DOCX/text résumé import read on the device, contacts never sent, AI extract checked against the text, review with new/same/different/adds and duplicate matching; validated platform profiles by family (freelance, jobs, forms, events, college/govt) + Upwork, detected by host or content, adding only tips, length windows and more-confident fields; goal templates; encrypted per-site session history with re-use and copyable summary. Rules 99%, with profiles 100% on fixtures |
-| 12 | Hardening, docs & release | ⬜ NOT STARTED | |
+| 12 | Hardening, docs & release | ✅ COMPLETE (2026-10-03; push + first CI run waiting for the user) | Security audit with evidence (4 findings fixed: readable fact row ids → HMAC ids, form-submitting "Next" buttons, history memory leak, city in draft context); metrics (25-field page planned in 0.1 s median, 1 classify call ≈1.3k tokens); every e2e fails on console errors; README, user/developer/privacy guides, as-built architecture; demo script rehearsed with AI on and offline; report notes; v1.0.0 store zip verified in a fresh profile, store listing + permission justifications; CI workflow |
 
 ## Checkpoints
 
@@ -31,8 +31,8 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **Phase 12, Task 12.1** (security audit). Model: **Opus 5.5** (playbook §0.7). Still open: checkpoints A (Supabase) and B (AI key), the manual screen-share check and the live-site-per-family check (`docs/MANUAL_TESTS.md`).
-- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet) · Phase 10 — Opus 5.5 (the playbook suggested Sonnet) · Phase 11 — Opus 5.5 (the playbook suggested Sonnet).
+- Next: **the user's answer on GitHub** (repository name, public or private). Then push, see CI go green and record the link under Phase 12. The playbook is otherwise complete; the recommended next playbook is the **Android client** (reuses `packages/core`, the vault format and the Edge Functions). Still open: checkpoints A (Supabase) and B (AI key), the manual screen-share check and the live-site-per-family check (`docs/MANUAL_TESTS.md`).
+- **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet) · Phase 10 — Opus 5.5 (the playbook suggested Sonnet) · Phase 11 — Opus 5.5 (the playbook suggested Sonnet) · Phase 12 — Opus 5.5.
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
 - Toolchain on the dev machine: Node 24.13, pnpm 9.15.9 (installed globally via npm; `corepack enable` failed with EPERM on `C:\Program Files\nodejs`), git 2.52.
@@ -683,3 +683,79 @@ Tests: 718 unit (core 487, vault 67, extension 44, ai-client 17, supabase 102, u
 - The import review lists every detail (47 rows for a full résumé). Collapsible sections or "tick all in section" would help.
 - Profiles are built in. User-editable profiles (or downloading new ones) would need signing or review, because profiles influence mapping.
 - AI extraction is checked against the text, but the scripted model uses the same patterns as the local extractor. Real AI value is unmeasured until checkpoint B.
+
+---
+
+## Phase 12 — files
+
+Created:
+- `docs/SECURITY_AUDIT.md`, `docs/USER_GUIDE.md`, `docs/DEVELOPER_GUIDE.md`, `docs/PRIVACY.md`, `docs/DEMO_SCRIPT.md`, `docs/REPORT_NOTES.md`, `docs/STORE_LISTING.md`, `README.md`, `docs/screenshots/` (5 panel screenshots)
+- `test-fixtures/submit-fuzz.html` (18 disguised commit buttons, 4 real navigation buttons)
+- `e2e/security.spec.ts` (submit fuzz, nothing readable at rest, AI payload audit across classify/generate/extract/vision), `e2e/metrics.spec.ts` (writes `test-results/metrics.json`), `e2e/demo.spec.ts` (demo script rehearsed with AI on and offline)
+- `scripts/secret-scan.mjs` (tracked files + full history), `scripts/audit-build.mjs` (production manifest + bundle), `scripts/verify-package.mjs` (store zip in a fresh Chromium profile), `scripts/make-icons.mjs`
+- `apps/extension/public/icon/{16,32,48,128}.png`
+- `.github/workflows/ci.yml`
+
+Modified:
+- core: `policy/submit.ts` (`submitsForm`; commit words checked in text, value, aria-label and title), `orchestrator/select.ts` (`isDraftContextKey`) + `phase9.test.ts`, shared copy synced
+- ai-client: `seam.ts` (filled context limited to profile keys) + `client.test.ts`; `e2e/drafts.spec.ts` (own prompts only)
+- extension: `page-agent/navigation.ts` (form-submitting buttons, `input[type=image]`), `session/host.ts` (history buffers freed on end/replace/forget, `memoryFootprint`) + test, `wxt.config.ts` (root `envDir`, zip name), `package.json` (1.0.0, `zip`)
+- vault: `crypto.ts` (`deriveRowIdKey`, `hashRowId`), `service.ts` (HMAC fact row ids, migration on unlock and after sync/import, passphrase change recomputes ids), `sync.ts` (conflict copies keyed by the decrypted key), `service.test.ts`
+- `e2e/fixtures.ts` (`watchConsole`: any console error fails the test), root `package.json` (1.0.0; `package`, `audit:secrets`, `audit:build`, `verify:package`), `docs/ARCHITECTURE.md` (§0 "As built (v1.0)")
+
+Tests: 722 unit (core 488, vault 69, extension 45, ai-client 17, supabase 102, ui 1) + 75 e2e, zero console errors.
+
+## Phase 12 — design notes
+
+- **Security audit (12.1).** Each item has evidence in `docs/SECURITY_AUDIT.md`.
+  - The secret scan (files + history) is clean. `pnpm audit` is clean. Permissions are exactly `activeTab, scripting, sidePanel, storage`, with optional http/https only. There is no CSP override, no eval and no remote code.
+  - Nothing is readable at rest: IndexedDB, `chrome.storage.local` and `chrome.storage.session` are dumped after a full session and searched for private values.
+  - AI payloads are captured for all four endpoints. Classify carries no vault values; generate carries only ticked public facts; extract carries no contacts; vision carries the blacked-out picture.
+  - The prompt-injection suites (text and image) pass, and RLS is re-proven (16 tests).
+  - **Found and fixed:**
+    1. Fact row ids were readable key names (`identity.email`). They are now HMAC-SHA256 ids (`k` + 40 hex) under a key derived from the vault key, and old vaults and backups migrate on unlock.
+    2. A form-submitting button labelled "Next" counted as navigation. Any button that would submit its form is now refused, and commit words are checked in every name source. 18 disguised buttons are refused.
+    3. Per-tab history buffers were never freed. 40 sessions now leave no growth.
+    4. Found by the full-gate run: the user's city reached AI draft prompts as "already filled" context. The registry calls city/state/country `public`, and the filter only checked sensitivity. The filled context is now limited to profile groups (`isDraftContextKey` in core), so names, contact and address details are never sent. Covered by core and request-builder tests. The drafts e2e now checks only its own prompts, because the mock keeps prompts from earlier specs; the shared log is how this was found.
+  - **Recorded limitations:** fill errors echo the value, but only in the user's own panel. Free-tier providers may train on prompts (stated in PRIVACY.md).
+- **Quality (12.2).** Measured by `e2e/metrics.spec.ts` (Chromium, laptop, fixture pages):
+
+  | Page | Fields | Scan → plan median | Worst |
+  |---|---|---|---|
+  | job-application-like | 25 | 100 ms | 361 ms |
+  | upwork-profile-like | 6 | 66 ms | — |
+  | college-form-like | 16 | 56 ms | — |
+  | ai-understanding (rules only) | 13 | 107 ms | — |
+  | ai-understanding (AI on, mock) | 13 | 127 ms | — |
+
+  - The target is under 5 s per page.
+  - AI classify makes 1 call per page: 5,165 characters, about 1,292 input and 720 output tokens. That costs ₹0 on free tiers.
+  - Every e2e test now fails on any console error, and the full run has **zero console errors**.
+  - The panel was walked in light and dark for the README screenshots.
+- **Docs (12.3–12.4).**
+  - README (quick start, load unpacked, Supabase + AI key setup), user guide, developer guide, privacy, and an updated architecture doc.
+  - The demo script and report notes, with Mermaid diagrams and a comparison with existing tools.
+  - The demo is rehearsed automatically in both modes. It drafts on step 3, because the résumé import already fills the overview.
+  - A bug found while checking README setup: the root `.env` never reached the build. Fixed with WXT `envDir`.
+- **Packaging (12.5).** Version 1.0.0, generated icons, and `pnpm package` → `filler-1.0.0-chrome.zip` (≈948 KB).
+  - `pnpm verify:package` unpacks the zip into a fresh profile. It checks the service worker, the manifest (no host permissions) and the welcome screen, with no console errors.
+  - The store listing text, single purpose, permission justifications and data disclosures are in `docs/STORE_LISTING.md`. Publishing is the user's action.
+- **CI (12.6).** `.github/workflows/ci.yml` runs on push to main and on PRs:
+  - install;
+  - shared-core drift check;
+  - typecheck, lint, unit and function tests;
+  - secret scan (full history);
+  - `pnpm audit`;
+  - production zip and build audit;
+  - fresh-profile zip check;
+  - e2e (headless Chromium with the extension).
+
+  It needs no secrets. The zip is uploaded as a build artifact, and Playwright results are uploaded on failure.
+
+### ⏳ GitHub push — waiting for the user
+Nothing has been pushed. The user's answers are needed first: the repository name, and public or private. After the push, the repo link and the first green CI run are recorded here.
+
+### Open items surfaced in Phase 12
+- Push and first CI run: waiting for the user (above). CI has not run on GitHub yet. Every step passes locally on Windows; Linux-only differences (fonts, timing) may show up on the first run.
+- Still open from earlier phases: 🔑 checkpoints A (Supabase) and B (AI key); manual screen-share check (Phase 10); live site per family (Phase 11). Live AI quality is unmeasured until B.
+- The README "clean profile" check was verified for the packaged extension (`verify:package`). The Supabase and AI steps can only be followed once the user creates the project and key.

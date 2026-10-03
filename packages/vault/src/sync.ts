@@ -99,20 +99,20 @@ export async function mergeSnapshots(
               vault.peekRecord<Fact>(table, newer),
               vault.peekRecord<Fact>(table, older),
             ]);
+            // Row ids are opaque (keyed hashes): the fact key comes from the decrypted value.
+            const factKey = newerValue.key;
             if (
               JSON.stringify(newerValue.value) !== JSON.stringify(olderValue.value) &&
-              !id.startsWith('custom.conflict_')
+              !factKey.startsWith('custom.conflict_')
             ) {
-              const copyKey = customKeyFor(`conflict ${id}`);
-              out.set(
-                copyKey,
-                await vault.rekeyRecord(table, older, copyKey, (v) => ({
-                  ...(v as Fact),
-                  key: copyKey,
-                  source: 'user',
-                })),
-              );
-              conflicts.push({ key: id, keptCopyAs: copyKey });
+              const copyKey = customKeyFor(`conflict ${factKey}`);
+              const copy = await vault.rekeyRecord(table, older, copyKey, (v) => ({
+                ...(v as Fact),
+                key: copyKey,
+                source: 'user',
+              }));
+              out.set(copy.id, copy);
+              conflicts.push({ key: factKey, keptCopyAs: copyKey });
             }
           }
         }

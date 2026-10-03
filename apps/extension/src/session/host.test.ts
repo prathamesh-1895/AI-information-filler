@@ -381,4 +381,21 @@ describe('settings change host behaviour (PLAYBOOK Task 6.4)', () => {
       reason: expect.stringContaining('earlier answer'),
     });
   });
+
+  it('long use does not grow memory: 40 sessions on one tab keep one session and no stale buffers', async () => {
+    const { host, repos } = await setup(snapshot('simple-contact'));
+    await repos.facts.setValue('person.name.full', 'Priya Sharma');
+    for (let i = 0; i < 40; i++) {
+      await host.start(1);
+      await host.dispatch(1, { type: 'APPROVE_ALL_VAULT' });
+      await host.dispatch(1, { type: 'FILL' });
+    }
+    expect(host.memoryFootprint()).toEqual({ sessions: 1, histories: 1, queues: 1 });
+    await host.dispatch(1, { type: 'END' });
+    expect(host.memoryFootprint()).toMatchObject({ histories: 0, queues: 0 });
+    host.forget(1);
+    expect(host.memoryFootprint()).toEqual({ sessions: 0, histories: 0, queues: 0 });
+    // History kept only the newest sessions for the site.
+    expect((await repos.history.forSite('127.0.0.1')).length).toBe(10);
+  });
 });

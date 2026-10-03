@@ -14,10 +14,18 @@ export interface NavButton {
 }
 
 const BUTTONS =
-  'button, input[type="submit"], input[type="button"], [role="button"], a[role="button"]';
+  'button, input[type="submit"], input[type="button"], input[type="image"], [role="button"], a[role="button"]';
 
 const buttons = new Map<string, Element>();
 let nextId = 0;
+
+/** Would a click submit a form? (`<button>` defaults to type=submit inside a form.) */
+function submitsForm(el: Element): boolean {
+  if (el instanceof HTMLButtonElement) return el.type === 'submit' && el.form !== null;
+  if (el instanceof HTMLInputElement)
+    return (el.type === 'submit' || el.type === 'image') && el.form !== null;
+  return false;
+}
 
 function describeButton(el: Element) {
   const text = collapse(
@@ -28,6 +36,8 @@ function describeButton(el: Element) {
     submitLike: isSubmitLike({
       text,
       type: el.getAttribute('type') ?? undefined,
+      submitsForm: submitsForm(el),
+      ...(el instanceof HTMLInputElement ? { value: el.value } : {}),
       ariaLabel: el.getAttribute('aria-label') ?? undefined,
       title: el.getAttribute('title') ?? undefined,
     }),

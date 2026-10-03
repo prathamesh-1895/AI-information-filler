@@ -227,11 +227,14 @@ describe('changePassphrase', () => {
       value: 'I help',
       approvedAt: new Date().toISOString(),
     });
-    const before = await vault.db.facts.get('contact.email');
+    const before = await vault.db.facts.get(await vault.rowIdFor('facts', 'contact.email'));
 
     await vault.changePassphrase(PASS, 'a brand new passphrase');
-    const after = await vault.db.facts.get('contact.email');
+    const after = await vault.db.facts.get(await vault.rowIdFor('facts', 'contact.email'));
+    expect(before).toBeDefined();
     expect(after?.ciphertext).not.toBe(before?.ciphertext);
+    // Row ids are keyed by the vault key, so they change with it too.
+    expect(after?.id).not.toBe(before?.id);
 
     vault.lock();
     await expect(vault.unlock(PASS)).rejects.toBeInstanceOf(WrongPassphraseError);
@@ -257,7 +260,7 @@ describe('changePassphrase', () => {
     await vault.create(PASS);
     await repos.facts.setValue('contact.email', 'priya@example.com');
     await repos.facts.setValue('address.city', 'Pune');
-    const row = await vault.db.facts.get('address.city');
+    const row = await vault.db.facts.get(await vault.rowIdFor('facts', 'address.city'));
     await vault.db.facts.put({ ...row!, ciphertext: btoa('garbage-garbage-garbage') });
 
     await expect(vault.changePassphrase(PASS, 'another passphrase')).rejects.toThrow();
@@ -279,14 +282,16 @@ describe('changePassphrase', () => {
       value: 'v',
       approvedAt: new Date().toISOString(),
     });
-    const factBefore = await vault.db.facts.get('contact.email');
+    const factId = await vault.rowIdFor('facts', 'contact.email');
+    const factBefore = await vault.db.facts.get(factId);
+    expect(factBefore).toBeDefined();
     const metaBefore = await vault.db.meta.get('vault');
 
     const spy = vi.spyOn(vault.db.answers, 'bulkPut').mockRejectedValueOnce(new Error('disk full'));
     await expect(vault.changePassphrase(PASS, 'another passphrase')).rejects.toThrow('disk full');
     spy.mockRestore();
 
-    expect(await vault.db.facts.get('contact.email')).toEqual(factBefore);
+    expect(await vault.db.facts.get(factId)).toEqual(factBefore);
     expect(await vault.db.meta.get('vault')).toEqual(metaBefore);
     vault.lock();
     await vault.unlock(PASS);
@@ -398,5 +403,65 @@ describe('session key store switch', () => {
     vault.lock();
     await vault.unlock(PASS);
     expect(entries.length).toBeGreaterThan(0);
+  });
+});
+
+describe('fact row ids (Phase 12 audit)', () => {
+  it('stores no readable key names, even for custom facts', async () => {
+    const vault = makeVault();
+    const repos = createRepositories(vault);
+    await vault.create(PASS);
+    await repos.facts.setValue('custom.medical_note', 'private');
+    await repos.facts.setValue('contact.email', 'priya@example.com');
+    const ids = (await vault.db.facts.toArray()).map((r) => r.id);
+    expect(ids).toHaveLength(2);
+    for (const id of ids) expect(id).toMatch(/^k[0-9a-f]{40}$/);
+    expect(JSON.stringify(await vault.db.facts.toArray())).not.toMatch(/medical|contact\.email/);
+    await repos.facts.delete('custom.medical_note');
+    const tombs = await vault.db.tombstones.toArray();
+    expect(tombs.map((t) => t.rowId)).toEqual([
+      await vault.rowIdFor('facts', 'custom.medical_note'),
+    ]);
+    expect((await repos.facts.list()).map((f) => f.key)).toEqual(['contact.email']);
+  });
+
+  it('migrates rows from older vaults, backups and cloud copies that used readable ids', async () => {
+    const { deriveKeyBytes, importAesKey, encryptJson, createVerifier, toBase64, randomBytes } =
+      await import('./crypto');
+    const salt = randomBytes(16);
+    const key = await importAesKey(await deriveKeyBytes(PASS, salt, 1_000));
+    const fact = {
+      key: 'custom.medical_note',
+      value: 'private',
+      sensitivity: 'public',
+      source: 'user',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const backup = {
+      format: 'filler-backup',
+      formatVersion: 1,
+      exportedAt: '2026-10-01T00:00:00.000Z',
+      kdf: { salt: toBase64(salt), iterations: 1_000 },
+      verifier: await createVerifier(key),
+      tables: {
+        facts: [
+          {
+            ...(await encryptJson(key, fact, 'facts/custom.medical_note')),
+            id: 'custom.medical_note',
+            updatedAt: fact.updatedAt,
+          },
+        ],
+        documents: [],
+        fieldMemory: [],
+        answers: [],
+      },
+    };
+    const vault = makeVault();
+    const repos = createRepositories(vault);
+    await vault.importBackup(JSON.stringify(backup), PASS);
+    expect((await repos.facts.get('custom.medical_note'))?.value).toBe('private');
+    expect((await vault.db.facts.toArray()).map((r) => r.id)).toEqual([
+      await vault.rowIdFor('facts', 'custom.medical_note'),
+    ]);
   });
 });

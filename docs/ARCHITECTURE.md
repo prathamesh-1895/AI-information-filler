@@ -1,9 +1,25 @@
 # Filler — System Architecture (Draft v0.1)
 
-> Status: v0.2 — decisions from §14 applied (Supabase, free AI API, extension first). This is the first of three foundation documents:
+> Status: **v1.0, as built (2026-10-03).** The original design below still holds; §0 lists where the build differs or goes further. Companion documents: [PLAYBOOK.md](PLAYBOOK.md) (how it was built), [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md), [PRIVACY.md](PRIVACY.md), [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 > **1. Architecture (this file)** → 2. Playbook (phase-by-phase AI build prompts) → 3. Documentation (developer + user docs).
 
 ---
+
+## 0. As built (v1.0)
+
+| Area | As built |
+|---|---|
+| Client | Chrome/Edge MV3 extension (WXT + React 19 + Tailwind v4): background service worker (session host, vault, AI client, capture), side panel, page agent injected on demand (no content scripts, no host permissions at install). |
+├─ supabase/            # migrations, Edge Functions (AI gateway, envelopes), function tests
+| AI functions | `health`, `ai-classify` (fast model), `ai-generate` (smart), `ai-vision` (vision), `ai-extract` (smart, résumé import). One gateway: Gemini / Groq / OpenRouter / Ollama adapters over plain REST, retries, timeouts, fallback order, token caps. Model names only in secrets. Per-user **and global** daily limits, checked before any call. |
+| Safety envelope | Delimited, escaped untrusted data; strict schemas; per-item guards (ids, links, action words, real keys); deny policy re-applied on server and client; **invention check** for drafts and extraction. Classification cache holds no personal data. Logs are metadata only. |
+| Vault | IndexedDB (Dexie) tables: facts, documents, field memory, answers, **history**. AES-256-GCM per record, AAD bound to table and id. PBKDF2-SHA256 600k (Argon2 was not used: WebCrypto has no Argon2). **Fact row ids are HMAC hashes**, so no key names are stored readably. Backups and sync are end-to-end encrypted (one opaque blob per user). |
+| Drafting | User-triggered only. "Using: …" chips show which public facts may be sent; personal and restricted facts are never selectable. Drafts are never auto-approved. |
+| Vision | Tab snapshot (up to 3 screens) or screen/window share. Preview first. Never-fill fields blacked out automatically, user-drawn areas painted over on the device, alignment guard. Two tiers: relabel DOM fields, or a copy-to-clipboard list. |
+| Site-agnostic + profiles | Works on any site with no profile. JSON **platform profiles** by family (freelance, jobs, online forms, events, college/government) plus Upwork only add tips, length windows, more-confident mappings, goal defaults and never-click texts. |
+| Résumé import | PDF (pdf.js) / DOCX (mammoth) / text read on the device; contacts extracted locally and never sent; AI extraction checked against the text; review before saving. |
+| Submit safety | Refused in code: commit words in any button name, buttons that would submit their form, unlabelled buttons. Filler never auto-clicks; the user clicks Next and Submit. |
+| Not built (future) | Android client, Firefox build, desktop companion, iOS. |
 
 ## 1. Problem
 
@@ -117,8 +133,8 @@ Order of resolution:
 4. **Unresolved** → send to AI classification.
 
 ### 5.4 Encrypted Vault
-- Storage: IndexedDB (extension) / encrypted SQLite (mobile).
-- Encryption: AES-256-GCM; key derived from the user's passphrase with PBKDF2/Argon2; key kept only in memory while unlocked.
+- Storage: IndexedDB (extension); a future mobile client would use an encrypted local database.
+- Encryption: AES-256-GCM; key derived from the user's passphrase with PBKDF2-SHA256 (600,000 iterations); key kept only in memory while unlocked.
 - Contents (see §7): **Facts**, **Documents** (résumé, portfolio text), **Field Memory**, **Answer History** (past AI drafts the user approved, reusable per platform).
 - Every fact has a **sensitivity tier**: `public` (name, skills), `personal` (phone, address, DOB), `restricted` (never sent to cloud AI; filled locally only), `denied` (passport, gov ID, bank, passwords — never stored).
 
@@ -253,13 +269,13 @@ The Orchestrator, Mapper, Vault format and AI service are **shared** across plat
 
 ---
 
-## 10. Tech stack (proposed)
+## 10. Tech stack (as built)
 
 | Layer | Choice | Why |
 |---|---|---|
 | Language | TypeScript everywhere (client + backend) | One language, shared types |
 | Monorepo | pnpm workspaces + Turborepo | Shared `core` package across extension/mobile/backend |
-| Extension framework | WXT (or Plasmo) + React + Tailwind | MV3 boilerplate, hot reload, side panel support |
+| Extension framework | WXT + React 19 + Tailwind v4 + Zustand | MV3 boilerplate, hot reload, side panel support |
 | Validation | Zod | Same schemas for AI output, API, storage |
 | Local storage | IndexedDB via Dexie + WebCrypto | Encrypted vault in browser |
 | Backend | **Supabase** (Auth via email OTP, Postgres + RLS, Edge Functions on Deno) | Chosen. Thin backend, no server to run |

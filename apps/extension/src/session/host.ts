@@ -144,7 +144,12 @@ export class SessionHost {
       const follow = await this.run(tabId, effect);
       for (const next of follow) await this.apply(tabId, next);
     }
-    if (state.phase === 'ENDED') this.queues.delete(tabId);
+    if (state.phase === 'ENDED') {
+      this.queues.delete(tabId);
+      this.histories.delete(state.id); // already saved; free the buffer
+    }
+    // A restarted session on the same tab replaces the old one: drop its buffer too.
+    if (current.id && current.id !== state.id) this.histories.delete(current.id);
     return this.sessions.get(tabId) ?? state;
   }
 
@@ -473,7 +478,18 @@ export class SessionHost {
   }
 
   forget(tabId: number): void {
+    const id = this.sessions.get(tabId)?.id;
+    if (id) this.histories.delete(id);
     this.sessions.delete(tabId);
     this.queues.delete(tabId);
+  }
+
+  /** Sessions and history buffers held in memory (for leak tests). */
+  memoryFootprint(): { sessions: number; histories: number; queues: number } {
+    return {
+      sessions: this.sessions.size,
+      histories: this.histories.size,
+      queues: this.queues.size,
+    };
   }
 }
