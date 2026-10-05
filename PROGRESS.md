@@ -1,6 +1,6 @@
 # Filler — Build Progress
 
-**Last completed phase:** Phase 12 — Hardening, docs & release (2026-10-03; GitHub push waiting for the user's repo name and visibility; live-site and screen-share manual checks and 🔑 checkpoints A and B pending). **All 13 phases built.**
+**Last completed phase:** Phase 12 — Hardening, docs & release (2026-10-03; pushed 2026-10-05, CI green; live-site and screen-share manual checks and 🔑 checkpoints A and B pending). **All 13 phases built.**
 
 Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
@@ -20,7 +20,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 | 9 | AI answer generation & goal context | ✅ COMPLETE (2026-10-01, scripted model; live drafting waits for checkpoints A and B) | User-triggered drafts from public facts only ("Using" chips with untick), `ai-generate` with prompt rules, length/option/invention checks and one corrective retry, yellow draft cards (counter, why, alternatives, Regenerate with hint), approved drafts saved for reuse, goal parsing + editable goal chips, cross-page consistency, strengthen suggestions, offline reuse of earlier answers |
 | 10 | Screen Share & vision mode | ✅ COMPLETE (2026-10-01, scripted vision; manual screen-share check pending) | Tab snapshot (up to 3 screens) and screen/window share with a persistent Sharing badge; on-device blackout of never-fill fields plus user-drawn areas, baked into the JPEG; alignment guard blocks sending when boxes may be off; `ai-vision` with the same envelope (denied stays denied); tier 1 relabel of DOM fields, tier 2 copy list; "What is this?" with source, offline in DOM mode. Label match 93.8% on scripted recordings |
 | 11 | Résumé import & platform profiles | ✅ COMPLETE (2026-10-02; manual live-site check pending user) | PDF/DOCX/text résumé import read on the device, contacts never sent, AI extract checked against the text, review with new/same/different/adds and duplicate matching; validated platform profiles by family (freelance, jobs, forms, events, college/govt) + Upwork, detected by host or content, adding only tips, length windows and more-confident fields; goal templates; encrypted per-site session history with re-use and copyable summary. Rules 99%, with profiles 100% on fixtures |
-| 12 | Hardening, docs & release | ✅ COMPLETE (2026-10-03; push + first CI run waiting for the user) | Security audit with evidence (4 findings fixed: readable fact row ids → HMAC ids, form-submitting "Next" buttons, history memory leak, city in draft context); metrics (25-field page planned in 0.1 s median, 1 classify call ≈1.3k tokens); every e2e fails on console errors; README, user/developer/privacy guides, as-built architecture; demo script rehearsed with AI on and offline; report notes; v1.0.0 store zip verified in a fresh profile, store listing + permission justifications; CI workflow |
+| 12 | Hardening, docs & release | ✅ COMPLETE (2026-10-03; pushed and CI green 2026-10-05) | Security audit with evidence (4 findings fixed: readable fact row ids → HMAC ids, form-submitting "Next" buttons, history memory leak, city in draft context); metrics (25-field page planned in 0.1 s median, 1 classify call ≈1.3k tokens); every e2e fails on console errors; README, user/developer/privacy guides, as-built architecture; demo script rehearsed with AI on and offline; report notes; v1.0.0 store zip verified in a fresh profile, store listing + permission justifications; CI workflow |
 
 ## Checkpoints
 
@@ -31,7 +31,7 @@ Playbook: `docs/PLAYBOOK.md` · Architecture: `docs/ARCHITECTURE.md`
 
 ## Notes for next session
 
-- Next: **the user's answer on GitHub** (repository name, public or private). Then push, see CI go green and record the link under Phase 12. The playbook is otherwise complete; the recommended next playbook is the **Android client** (reuses `packages/core`, the vault format and the Edge Functions). Still open: checkpoints A (Supabase) and B (AI key), the manual screen-share check and the live-site-per-family check (`docs/MANUAL_TESTS.md`).
+- The playbook is complete; the repo is on GitHub with green CI (link under Phase 12); the recommended next playbook is the **Android client** (reuses `packages/core`, the vault format and the Edge Functions). Still open: checkpoints A (Supabase) and B (AI key), the manual screen-share check and the live-site-per-family check (`docs/MANUAL_TESTS.md`).
 - **Model log:** Phase 0 — Opus 5.5 · Phase 1 — Opus 5.5 · Phase 2 — Opus 5.5 · Phase 3 — Opus 5.5 (the session stayed on Opus; the playbook suggested Sonnet) · Phase 4 — Opus 5.5 · Phase 5 — Opus 5.5 · Phase 6 — Opus 5.5 (the playbook suggested Sonnet) · Phase 7 — Opus 5.5 · Phase 8 — Opus 5.5 · Phase 9 — Opus 5.5 (the playbook suggested Sonnet) · Phase 10 — Opus 5.5 (the playbook suggested Sonnet) · Phase 11 — Opus 5.5 (the playbook suggested Sonnet) · Phase 12 — Opus 5.5.
 - **User requirement (2026-10-01):** Filler must work on any site where the user signs in and fills in profile or personal details, not just Upwork and Fiverr. PLAYBOOK Phase 11 was rewritten to be generic-first with site-family profiles. Keep every phase site-agnostic.
 - **User request (2026-10-01):** tell the user whenever free API keys are needed for different models. At checkpoint B (Phase 8) list every free provider/model option and exactly where each key goes; Supabase (checkpoint A, Phase 7) comes first.
@@ -752,10 +752,10 @@ Tests: 722 unit (core 488, vault 69, extension 45, ai-client 17, supabase 102, u
 
   It needs no secrets. The zip is uploaded as a build artifact, and Playwright results are uploaded on failure.
 
-### ⏳ GitHub push — waiting for the user
-Nothing has been pushed. The user's answers are needed first: the repository name, and public or private. After the push, the repo link and the first green CI run are recorded here.
+### ✅ GitHub
+- Repository (public, created by the user): https://github.com/prathamesh-1895/AI-information-filler
+- `main` was pushed on 2026-10-05. The first CI run passed on all steps: https://github.com/prathamesh-1895/AI-information-filler/actions/runs/37264414811
 
 ### Open items surfaced in Phase 12
-- Push and first CI run: waiting for the user (above). CI has not run on GitHub yet. Every step passes locally on Windows; Linux-only differences (fonts, timing) may show up on the first run.
 - Still open from earlier phases: 🔑 checkpoints A (Supabase) and B (AI key); manual screen-share check (Phase 10); live site per family (Phase 11). Live AI quality is unmeasured until B.
 - The README "clean profile" check was verified for the packaged extension (`verify:package`). The Supabase and AI steps can only be followed once the user creates the project and key.
